@@ -31,7 +31,7 @@
 
   xgb_param_grid:
   - clf_param_grid:  
-    - eta: [0.01]
+    - eta: [0.01]s
     - n_estimators: [10]
     - max_depth: [4]
     - subsample: [0.6]  
@@ -49,16 +49,16 @@
 
   - knn_param_grid:
     - clf_param_grid:  
-      - max_samples': [0.5]
+      - max_samples: [0.5]
       - max_features': [0.5]
-      - estimator__leaf_size': [30]
-      - estimator__n_neighbors': [3]
-      - estimator__p':  [1]           
+      - estimator__leaf_size: [30]
+      - estimator__n_neighbors: [3]
+      - estimator__p:  [1]           
       - estimator__weights': ["uniform"]
     - reg_param_grid:  
-      - regressor__max_samples': [0.5]
-      - regressor__max_features': [0.5]
-      - regressor__estimator__leaf_size': [30]
-      - regressor__estimator__n_neighbors': [3]
-      - regressor__estimator__p':  [1]           
-      - regressor__estimator__weights': ["uniform"]
+      - regressor__max_samples: [0.5]
+      - regressor__max_features: [0.5]
+      - regressor__estimator__leaf_size: [30]
+      - regressor__estimator__n_neighbors: [3]
+      - regressor__estimator__p:  [1]           
+      - regressor__estimator__weights: ["uniform"]
