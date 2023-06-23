@@ -32,23 +32,18 @@ import logging
 
 class tune:
 
-    def __init__(self, d, X_vars, species, seed, n_threads, verbose, cv, path_out, scale=True, hot_encode=True):
+    def __init__(self, X, y, seed, n_threads, verbose, cv, path_out, scale=True):
 
-        self.y = d[species]
-        X = d[X_vars]
+        self.y = y
+
         if scale==True:
             scaler = StandardScaler()  
             scaler.fit(X)  
-            X = pd.DataFrame(scaler.transform(X), index=X.index, columns=X.columns)
-        
-        if hot_encode==True:
-            enc = OneHotEncoder()
-            regions  = enc.fit_transform(d[['FID']])
-            X[enc.categories_[0]] = regions.toarray()
+            X = pd.DataFrame(scaler.transform(X))
 
         self.X = X
         self.seed = seed
-        self.species = species
+        self.species = "species" #fix so it is the name of y
         self.n_jobs = n_threads
         self.verbose = verbose
         self.path_out = path_out
@@ -69,7 +64,6 @@ class tune:
         """
         This was cloned from scikit-lego (0.6.14)
         https://github.com/koaning/scikit-lego
-        This script was modified to not raise and error if the classifier predicts all zeros
         """
 
         def __init__(self, classifier, regressor) -> None:
