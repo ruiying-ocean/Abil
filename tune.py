@@ -27,6 +27,7 @@ from sklearn.utils.validation import check_is_fitted, check_X_y, check_array
 from sklearn.exceptions import NotFittedError
 from inspect import signature
 import logging
+from functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, tau_scoring, tau_scoring_p
 
 
 
@@ -48,191 +49,6 @@ class tune:
         self.verbose = verbose
         self.path_out = path_out
         self.cv = cv
-
-
-    def tau_scoring(self, y_pred):
-        tau, p_value = kendalltau(self.y, y_pred)
-        return(tau)
-
-    def tau_scoring_p(self, y_pred):
-        tau, p_value = kendalltau(self.y, y_pred)
-        return(p_value)
-    
-
-        
-    class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
-        """
-        This was cloned from scikit-lego (0.6.14)
-        https://github.com/koaning/scikit-lego
-        """
-
-        def __init__(self, classifier, regressor) -> None:
-            """Initialize."""
-            self.classifier = classifier
-            self.regressor = regressor
-
-        def fit(self, X, y, sample_weight=None):
-            """
-            Fit the model.
-
-            Parameters
-            ----------
-            X : np.ndarray of shape (n_samples, n_features)
-                The training data.
-
-            y : np.ndarray, 1-dimensional
-                The target values.
-
-            sample_weight : Optional[np.array], default=None
-                Individual weights for each sample.
-
-            Returns
-            -------
-            ZeroInflatedRegressor
-                Fitted regressor.
-
-            Raises
-            ------
-            ValueError
-                If `classifier` is not a classifier or `regressor` is not a regressor.
-            """
-            X, y = check_X_y(X, y)
-            self._check_n_features(X, reset=True)
-            if not is_classifier(self.classifier):
-                raise ValueError(
-                    f"`classifier` has to be a classifier. Received instance of {type(self.classifier)} instead.")
-            if not is_regressor(self.regressor):
-                raise ValueError(f"`regressor` has to be a regressor. Received instance of {type(self.regressor)} instead.")
-
-            try:
-                check_is_fitted(self.classifier)
-                self.classifier_ = self.classifier
-            except NotFittedError:
-                self.classifier_ = clone(self.classifier)
-
-                if "sample_weight" in signature(self.classifier_.fit).parameters:
-                    self.classifier_.fit(X, y != 0, sample_weight=sample_weight)
-                else:
-                #    logging.warning("Classifier ignores sample_weight.")
-                    self.classifier_.fit(X, y != 0)
-
-            non_zero_indices = np.where(self.classifier_.predict(X) == 1)[0]
-
-            if non_zero_indices.size > 0:
-                try:
-                    check_is_fitted(self.regressor)
-                    self.regressor_ = self.regressor
-                except NotFittedError:
-                    self.regressor_ = clone(self.regressor)
-
-                    if "sample_weight" in signature(self.regressor_.fit).parameters:
-                        self.regressor_.fit(
-                            X[non_zero_indices],
-                            y[non_zero_indices],
-                            sample_weight=sample_weight[non_zero_indices] if sample_weight is not None else None
-                        )
-                    else:
-                    #    logging.warning("Regressor ignores sample_weight.")
-                        self.regressor_.fit(
-                            X[non_zero_indices],
-                            y[non_zero_indices],
-                        )
-            else:
-                None
-
-            return self
-
-
-        def predict(self, X):
-            """
-            Get predictions.
-
-            Parameters
-            ----------
-            X : np.ndarray, shape (n_samples, n_features)
-                Samples to get predictions of.
-
-            Returns
-            -------
-            y : np.ndarray, shape (n_samples,)
-                The predicted values.
-            """
-            check_is_fitted(self)
-            X = check_array(X)
-            self._check_n_features(X, reset=False)
-
-            output = np.zeros(len(X))
-            non_zero_indices = np.where(self.classifier_.predict(X))[0]
-
-            if non_zero_indices.size > 0:
-                output[non_zero_indices] = self.regressor_.predict(X[non_zero_indices])
-
-            return output
-
-
-
-    class LogGridSearch:
-        def __init__(self, m, verbose, cv, param_grid, scoring):
-            self.m = m
-            self.verbose = verbose
-            self.cv = cv
-            self.param_grid = param_grid
-            self.scoring = scoring
-
-        def do_log(self, x):
-            y = np.log(x+1)
-            return(y)
-        
-        def do_exp(self, x):
-            y = np.exp(x)-1
-            return(y)
-        
-        def transformed_fit(self, X, y, log):
-
-            if log=="yes":
-
-                model = TransformedTargetRegressor(self.m, func = self.do_log, inverse_func=self.do_exp)
-                grid_search = GridSearchCV(model, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
-                                cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
-                grid_search.fit(X, y)
-            
-            elif log=="no":
-
-                model = TransformedTargetRegressor(self.m, func = None, inverse_func=None)
-                grid_search = GridSearchCV(model, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
-                                cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
-                grid_search.fit(X, y)
-
-            elif log =="both":
-
-                normal_m = TransformedTargetRegressor(self.m, func = None, inverse_func=None)
-                grid_search1 = GridSearchCV(normal_m, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
-                                cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
-                grid_search1.fit(X, y)
-
-                log_m = TransformedTargetRegressor(self.m, func = self.do_log, inverse_func=self.do_exp)
-                grid_search2 = GridSearchCV(log_m, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
-                                cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
-                grid_search2.fit(X, y)
-
-                if (grid_search1.best_score_ > grid_search2.best_score_):
-                    grid_search = grid_search1
-                    best_transformation = "nolog"
-            
-                elif (grid_search1.best_score_ < grid_search2.best_score_):
-                    grid_search = grid_search2
-                    best_transformation = "log"
-                else:
-                    print("same performance for both models")
-                    grid_search = grid_search1
-                    best_transformation = "nobest"
-                grid_search.cv_results_['best_transformation'] = best_transformation
-
-            else: 
-                print("defined log invalid, pick from yes, no or both")
-
-            return grid_search
-
     
     def XGB(self, reg_scoring,  reg_param_grid, cv, model, clf_scoring=None, clf_param_grid=None, zir=True, log="yes", bagging_estimators=None):
 
@@ -255,7 +71,7 @@ class tune:
 
         if zir==False:
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-                reg = self.LogGridSearch(regressor, verbose = self.verbose, cv=cv, param_grid=reg_param_grid, scoring="neg_mean_absolute_error")
+                reg = LogGridSearch(regressor, verbose = self.verbose, cv=cv, param_grid=reg_param_grid, scoring="neg_mean_absolute_error")
                 reg_grid_search = reg.transformed_fit(self.X, self.y, log)
 
             m2 = reg_grid_search.best_estimator_
@@ -276,9 +92,9 @@ class tune:
 
 
             print("finished tuning model")
-            print("reg rRMSE: " + str(np.mean(reg_scores['test_RMSE'])/np.mean(self.y)))
-            print("reg rMAE: " + str(np.mean(reg_scores['test_RMSE'])/np.mean(self.y)))
-            print("reg R2: " + str(np.mean(reg_scores['test_R2'])))
+            print("reg rRMSE: " + str(int(round(np.mean(reg_scores['test_RMSE'])/np.mean(self.y), 2)*-100))+"%")
+            print("reg rMAE: " + str(round(np.mean(reg_scores['test_MAE'])/np.mean(self.y), 1)*-100)+"%")
+            print("reg R2: " + str(round(np.mean(reg_scores['test_R2']), 2)))
 
         elif zir==True:
 
@@ -294,7 +110,7 @@ class tune:
             y_clf[y_clf > 0] = 1
 
             with parallel_backend('multiprocessing', self.n_jobs):
-                reg = self.LogGridSearch(regressor, self.verbose, cv=cv, param_grid=reg_param_grid, scoring="neg_mean_absolute_error")
+                reg = LogGridSearch(regressor, self.verbose, cv=cv, param_grid=reg_param_grid, scoring="neg_mean_absolute_error")
                 reg_grid_search = reg.transformed_fit(self.X, self.y, log)
             m2 = reg_grid_search.best_estimator_
 
@@ -304,7 +120,7 @@ class tune:
 
             m1 = clf.best_estimator_
 
-            zir = self.ZeroInflatedRegressor(
+            zir = ZeroInflatedRegressor(
                 classifier=m1,
                 regressor=m2,
             )
@@ -332,17 +148,14 @@ class tune:
 
             print("finished tuning model")
 
+            print("reg rRMSE: " + str(int(round(np.mean(reg_scores['test_RMSE'])/np.mean(self.y), 2)*-100))+"%")
+            print("reg rMAE: " + str(round(np.mean(reg_scores['test_MAE'])/np.mean(self.y), 1)*-100)+"%")
+            print("reg R2: " + str(round(np.mean(reg_scores['test_R2']), 2)))
 
 
-
-            print("reg rRMSE: " + str(np.mean(reg_scores['test_RMSE'])/np.mean(self.y)))
-            print("reg rMAE: " + str(np.mean(reg_scores['test_RMSE'])/np.mean(self.y)))
-            print("reg R2: " + str(np.mean(reg_scores['test_R2'])))
-
-
-            print("zir rRMSE: " + str(np.mean(zir_scores['test_RMSE'])/np.mean(self.y)))
-            print("zir rMAE: " + str(np.mean(zir_scores['test_RMSE'])/np.mean(self.y)))
-            print("zir R2: " + str(np.mean(zir_scores['test_R2'])))
+            print("zir rRMSE: " + str(round(np.mean(zir_scores['test_RMSE'])/np.mean(self.y), 2)*-100))
+            print("zir rMAE: " + str(round(np.mean(zir_scores['test_MAE'])/np.mean(self.y), 2)*-100))
+            print("zir R2: " + str(round(np.mean(zir_scores['test_R2']), 2)))
 
         else: 
             print("zir definition not valid, should be True or False")
@@ -352,18 +165,6 @@ class tune:
 
         print("execution time:", elapsed_time, "seconds")        
 
-
-    #predict model
-
-
-    #predict ensemble model
-
-    #out_path = path + "HXGB/parameters/"
-
-        #try: #make new dir if needed
-        #    os.makedirs(self.path_out)
-        #except:
-        #    print("dir already exists")
 
 
 
