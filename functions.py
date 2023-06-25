@@ -9,11 +9,15 @@ import logging
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
 
-def tau_scoring(y_pred):
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.datasets import make_regression
+
+
+def tau_scoring(y, y_pred):
     tau, p_value = kendalltau(y, y_pred)
     return(tau)
 
-def tau_scoring_p(y_pred):
+def tau_scoring_p(y, y_pred):
     tau, p_value = kendalltau(y, y_pred)
     return(p_value)
 
@@ -212,3 +216,22 @@ class ZeroStratifiedKFold:
 
     def get_n_splits(self, X, y, groups=None):
         return self.n_splits
+    
+
+
+def example_data(n_samples=500, n_features=5, noise=20, random_state=59):
+
+    #example data:
+    X, y = make_regression(n_samples=n_samples, n_features=n_features, noise=noise, random_state=random_state)
+    # scale so values are strictly positive:
+    scaler = MinMaxScaler()  
+    scaler.fit(y.reshape(-1,1))  
+    y = scaler.transform(y.reshape(-1,1))
+    # add exp transformation to data
+    # make distribution exponential:
+    y = np.exp(y)-1
+    #cut tail
+    y[y <= 0.5] = 0
+    y = np.squeeze(y)
+
+    return(X, y)
