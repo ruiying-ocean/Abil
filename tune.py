@@ -44,7 +44,7 @@ class tune:
 
         self.X = X
         self.seed = seed
-        self.species = "species" #fix so it is the name of y
+        self.species = "Emiliania huxleyi" #fix so it is the name of y
         self.n_jobs = n_threads
         self.verbose = verbose
         self.path_out = path_out
@@ -76,24 +76,28 @@ class tune:
 
             m2 = reg_grid_search.best_estimator_
 
-            pickle.dump(m2, open(self.path_out + self.species + '_reg.sav', 'wb'))
-
-            with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-                reg_scores = cross_validate(m2, self.X, self.y, cv = self.cv, verbose = self.verbose, scoring=reg_scoring)
-
-            reg_sav_out = self.path_out + "scoring/" + model + "/" 
+            reg_sav_out = self.path_out + model + "/scoring/"
 
             try: #make new dir if needed
                 os.makedirs(reg_sav_out)
             except:
                 None
 
+
+            pickle.dump(m2, open(reg_sav_out  + self.species + '_reg.sav', 'wb'))
+
+            with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
+                reg_scores = cross_validate(m2, self.X, self.y, cv = self.cv, verbose = self.verbose, scoring=reg_scoring)
+
+
+
             pickle.dump(reg_scores, open(reg_sav_out + self.species + '_reg.sav', 'wb'))
 
 
             print("finished tuning model")
+
             print("reg rRMSE: " + str(int(round(np.mean(reg_scores['test_RMSE'])/np.mean(self.y), 2)*-100))+"%")
-            print("reg rMAE: " + str(round(np.mean(reg_scores['test_MAE'])/np.mean(self.y), 1)*-100)+"%")
+            print("reg rMAE: " + str(int(round(np.mean(reg_scores['test_MAE'])/np.mean(self.y), 2)*-100))+"%")
             print("reg R2: " + str(round(np.mean(reg_scores['test_R2']), 2)))
 
         elif zir==True:
@@ -125,36 +129,49 @@ class tune:
                 regressor=m2,
             )
 
-            pickle.dump(m1, open(self.path_out + self.species + model + '_clf.sav', 'wb'))
-            pickle.dump(m2, open(self.path_out + self.species + model + '_reg.sav', 'wb'))
-            pickle.dump(zir, open(self.path_out + self.species + model + '_zir.sav', 'wb'))
+
+
+            zir_scores_out = self.path_out + model + "/scoring/" 
+
+            try: #make new dir if needed
+                os.makedirs(zir_scores_out)
+            except:
+                None
+            zir_sav_out = self.path_out + model + "/model/"
+
+            try: #make new dir if needed
+                os.makedirs(zir_sav_out)
+            except:
+                None           
+
+            pickle.dump(m1, open(zir_sav_out + self.species + '_clf.sav', 'wb'))
+            pickle.dump(m2, open(zir_sav_out + self.species +'_reg.sav', 'wb'))
+            pickle.dump(zir, open(zir_sav_out + self.species + '_zir.sav', 'wb'))
 
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
                 clf_scores = cross_validate(m1, self.X, y_clf, cv=cv, verbose =self.verbose, scoring=clf_scoring)
                 reg_scores = cross_validate(m2, self.X, self.y, cv=cv, verbose =self.verbose, scoring=reg_scoring)
                 zir_scores = cross_validate(zir, self.X, self.y, cv=cv, verbose =self.verbose, scoring=reg_scoring)
 
-
-            zir_sav_out = self.path_out + "scoring/" + model + "/" 
+            zir_scores_out = self.path_out + model + "/scoring/" 
 
             try: #make new dir if needed
-                os.makedirs(zir_sav_out)
+                os.makedirs(zir_scores_out)
             except:
                 None
 
-            pickle.dump(clf_scores, open(zir_sav_out + self.species + '_clf.sav', 'wb'))
-            pickle.dump(reg_scores, open(zir_sav_out + self.species + '_reg.sav', 'wb'))
-            pickle.dump(zir_scores, open(zir_sav_out + self.species + '_zir.sav', 'wb'))
+            pickle.dump(clf_scores, open(zir_scores_out + self.species + '_clf.sav', 'wb'))
+            pickle.dump(reg_scores, open(zir_scores_out + self.species + '_reg.sav', 'wb'))
+            pickle.dump(zir_scores, open(zir_scores_out + self.species + '_zir.sav', 'wb'))
 
             print("finished tuning model")
 
             print("reg rRMSE: " + str(int(round(np.mean(reg_scores['test_RMSE'])/np.mean(self.y), 2)*-100))+"%")
-            print("reg rMAE: " + str(round(np.mean(reg_scores['test_MAE'])/np.mean(self.y), 1)*-100)+"%")
+            print("reg rMAE: " + str(int(round(np.mean(reg_scores['test_MAE'])/np.mean(self.y), 2)*-100))+"%")
             print("reg R2: " + str(round(np.mean(reg_scores['test_R2']), 2)))
 
-
-            print("zir rRMSE: " + str(round(np.mean(zir_scores['test_RMSE'])/np.mean(self.y), 2)*-100))
-            print("zir rMAE: " + str(round(np.mean(zir_scores['test_MAE'])/np.mean(self.y), 2)*-100))
+            print("zir rRMSE: " + str(int(round(np.mean(zir_scores['test_RMSE'])/np.mean(self.y), 2)*-100))+"%")
+            print("zir rMAE: " + str(int(round(np.mean(zir_scores['test_MAE'])/np.mean(self.y), 2)*-100))+"%")
             print("zir R2: " + str(round(np.mean(zir_scores['test_R2']), 2)))
 
         else: 
