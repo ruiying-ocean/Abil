@@ -47,9 +47,8 @@ if n>2 and ensemble = True then make an ensemble model weighted based on scores
 
 class predict:
 
-    def __init__(self, X, y, envdata, model_config, seed, n_threads, verbose, cv, path_out, species, scale=True):
+    def __init__(self, X, y, envdata, model_config, seed, n_threads, verbose, cv, path_out, scale=True):
 
-        self.y = y
 
         if scale==True:
             scaler = StandardScaler()  
@@ -58,13 +57,14 @@ class predict:
 
         self.X = X
         self.seed = seed
-        self.species = species
+        self.species = y.columns[0] 
         self.n_jobs = n_threads
         self.verbose = verbose
         self.path_out = path_out
         self.cv = cv
         self.envdata = envdata
         self.model_config = model_config
+        self.y = y[self.species].ravel()
 
     def calculate_weights(self, m, mae_dict):
 
@@ -107,16 +107,15 @@ class predict:
     def export_prediction(self, m, ens_model_out):
 
         d = self.envdata.copy()
-        d['Emiliania huxleyi'] = m.fit(self.X, self.y).predict(self.envdata)
+        d[self.species] = m.fit(self.X, self.y).predict(self.envdata)
         d = d.to_xarray()
-        print(d)
-
+        
         try: #make new dir if needed
             os.makedirs(ens_model_out)
         except:
             None
 
-        d.to_netcdf(ens_model_out + self.species + ".nc") #remoce spacing from species
+        d[self.species].to_netcdf(ens_model_out + self.species + ".nc") #remoce spacing from species
 
 
     def make_prediction(self):
@@ -188,3 +187,55 @@ class predict:
         elapsed_time = et-st
         print("finished")
         print("execution time:", elapsed_time, "seconds")
+
+
+'''
+
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.datasets import make_regression
+import numpy as np
+import pandas as pd
+from functions import example_data
+from numpy.random import rand
+from predict import predict
+
+seed = 1
+n_threads = 4
+verbose = 1 
+cv = 3
+path_out = "/home/phyto/ModelOutput/test/"
+
+X, y = example_data(y_name =  "Emiliania huxleyi", n_samples=500, n_features=5, noise=20, random_state=seed)
+
+envdata = pd.DataFrame({"no3": rand(50), "mld": rand(50), "par": rand(50), "o2": rand(50), "temp": rand(50),
+                        "lat": range(0,50, 1), "lon": range(0,50, 1)})
+envdata.set_index(['lat', 'lon'], inplace=True)
+
+
+model_config = {
+    "rf": {
+        "path":"/home/phyto/ModelOutput/test/rf/",
+        "config": "zir"
+    },
+    "xgb": {
+        "path":"/home/phyto/ModelOutput/test/xgb/",
+        "config": "zir"
+    },
+    "knn": {
+        "path":"/home/phyto/ModelOutput/test/knn/",
+        "config": "zir"
+    }
+}
+
+m = predict(X, y, envdata, model_config, seed, n_threads, verbose, cv, path_out, scale=True)
+m.make_prediction()
+
+X, y = example_data(y_name =  "Coccolithus pelagicus", n_samples=500, n_features=5, noise=20, random_state=seed)
+
+m = predict(X, y, envdata, model_config, seed, n_threads, verbose, cv, path_out, scale=True)
+m.make_prediction()
+
+
+print("fin")
+
+'''

@@ -8,7 +8,7 @@ from inspect import signature
 import logging
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
-
+import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.datasets import make_regression
 
@@ -136,7 +136,7 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         non_zero_indices = np.where(self.classifier_.predict(X))[0]
 
         if non_zero_indices.size > 0:
-            output[non_zero_indices] = self.regressor_.predict(X[non_zero_indices])
+            output[non_zero_indices] = self.regressor_.predict(X[non_zero_indices]).ravel()
 
         return output
 
@@ -219,7 +219,7 @@ class ZeroStratifiedKFold:
     
 
 
-def example_data(n_samples=500, n_features=5, noise=20, random_state=59):
+def example_data(y_name, n_samples=500, n_features=5, noise=20, random_state=59):
 
     #example data:
     X, y = make_regression(n_samples=n_samples, n_features=n_features, noise=noise, random_state=random_state)
@@ -233,5 +233,11 @@ def example_data(n_samples=500, n_features=5, noise=20, random_state=59):
     #cut tail
     y[y <= 0.5] = 0
     y = np.squeeze(y)
-
+    y = pd.DataFrame({y_name: y})
     return(X, y)
+
+
+
+def lat_weights(d):
+    d_w = d*10
+    return(d_w)
