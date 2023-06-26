@@ -29,8 +29,6 @@ from inspect import signature
 import logging
 from functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, tau_scoring, tau_scoring_p
 
-
-
 class tune:
 
     def __init__(self, X, y, seed, n_threads, verbose, cv, path_out, scale=True):
@@ -44,7 +42,7 @@ class tune:
 
         self.X = X
         self.seed = seed
-        self.species = "Emiliania huxleyi" #fix so it is the name of y
+        self.species = y.columns[0] #"Emiliania huxleyi" #fix so it is the name of y
         self.n_jobs = n_threads
         self.verbose = verbose
         self.path_out = path_out
