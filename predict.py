@@ -47,21 +47,21 @@ if n>2 and ensemble = True then make an ensemble model weighted based on scores
 
 class predict:
 
-    def __init__(self, X, y, envdata, model_config, seed, n_threads, verbose, cv, path_out, scale=True):
+    def __init__(self, X, y, envdata, model_config):
 
 
-        if scale==True:
+        if model_config['scale_X']==True:
             scaler = StandardScaler()  
             scaler.fit(X)  
             X = pd.DataFrame(scaler.transform(X))
 
         self.X = X
-        self.seed = seed
+        self.seed = model_config['seed']
         self.species = y.columns[0] 
-        self.n_jobs = n_threads
-        self.verbose = verbose
-        self.path_out = path_out
-        self.cv = cv
+        self.n_jobs = model_config['n_threads']
+        self.verbose = model_config['verbose']
+        self.path_out =model_config['path_out']
+        self.cv = model_config['cv']
         self.envdata = envdata
         self.model_config = model_config
         self.y = y[self.species].ravel()
