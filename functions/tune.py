@@ -58,7 +58,6 @@ class tune:
 
         reg_scoring = self.model_config['reg_scoring']
         reg_param_grid = self.model_config['param_grid'][model + '_param_grid']['reg_param_grid']
-        print(reg_param_grid)
 
         if model =="xgb":
             classifier = XGBClassifier(nthread=1)
