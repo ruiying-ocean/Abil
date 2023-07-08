@@ -36,6 +36,13 @@ class post:
         self.d = self.d.apply(lambda row : (row[self.species]* var), axis = 1)
         print("finished estimating " + variable)
 
+
+    def def_groups(self, dict):
+        df = (self.d.rename(columns=dict)
+            .groupby(level=0, axis=1, dropna=False)).sum( min_count=1)
+        self.d = pd.concat([self.d, df], axis=1)
+        print("finished defining groups")
+
     def cwm(self, variable):
         w = self.traits.query('species in @self.species')
         var = w[variable].to_numpy()
