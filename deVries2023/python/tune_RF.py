@@ -47,4 +47,4 @@ X = d[predictors]
 #setup model:
 m = tune(X, y, model_config)
 #run model:
-m.train(model="knn", zir=True, log="both")
+m.train(model="rf", zir=True, log="both")
