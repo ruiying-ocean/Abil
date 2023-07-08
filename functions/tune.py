@@ -27,6 +27,8 @@ from sklearn.utils.validation import check_is_fitted, check_X_y, check_array
 from sklearn.exceptions import NotFittedError
 from inspect import signature
 import logging
+
+
 from functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, tau_scoring, tau_scoring_p
 
 class tune:
@@ -41,10 +43,10 @@ class tune:
             self.X = X
         self.model_config = model_config
         self.seed = model_config['seed']
-        self.species = y.columns[0] 
+        self.species = y.name
         self.n_jobs = model_config['n_threads']
         self.verbose = model_config['verbose'] 
-        self.path_out =  model_config['local_root'] + model_config['path_out']
+        self.path_out =  model_config['root'] + model_config['path_out']
         self.cv = model_config['cv'] 
         try:
             self.bagging_estimators = model_config['knn_bagging_estimators'] 
@@ -55,7 +57,8 @@ class tune:
     def train(self, model, zir=False, log="no"):
 
         reg_scoring = self.model_config['reg_scoring']
-        reg_param_grid = self.model_config[model + '_param_grid']['reg_param_grid']
+        reg_param_grid = self.model_config['param_grid'][model + '_param_grid']['reg_param_grid']
+        print(reg_param_grid)
 
         if model =="xgb":
             classifier = XGBClassifier(nthread=1)
@@ -77,7 +80,7 @@ class tune:
 
         with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
             reg = LogGridSearch(regressor, verbose = self.verbose, cv=self.cv, param_grid=reg_param_grid, scoring="neg_mean_absolute_error")
-            reg_grid_search = reg.transformed_fit(self.X, self.y[self.species].ravel(), log)
+            reg_grid_search = reg.transformed_fit(self.X, self.y.ravel(), log)
 
         m2 = reg_grid_search.best_estimator_
 
@@ -91,7 +94,7 @@ class tune:
         pickle.dump(m2, open(reg_sav_out  + self.species + '_reg.sav', 'wb'))
 
         with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-            reg_scores = cross_validate(m2, self.X, self.y[self.species].ravel(), cv = self.cv, verbose = self.verbose, scoring=reg_scoring)
+            reg_scores = cross_validate(m2, self.X, self.y.ravel(), cv = self.cv, verbose = self.verbose, scoring=reg_scoring)
 
         pickle.dump(reg_scores, open(reg_sav_out + self.species + '_reg.sav', 'wb'))
 
@@ -103,7 +106,7 @@ class tune:
 
 
         if zir==True:
-            clf_param_grid = self.model_config[model + '_param_grid']['clf_param_grid']
+            clf_param_grid = self.model_config['param_grid'][model + '_param_grid']['clf_param_grid']
             clf_scoring = self.model_config['clf_scoring']
 
             clf = GridSearchCV(
@@ -118,7 +121,7 @@ class tune:
             y_clf[y_clf > 0] = 1
 
             with parallel_backend('multiprocessing', self.n_jobs):
-                clf.fit(self.X, y_clf[self.species].ravel())
+                clf.fit(self.X, y_clf.ravel())
 
             m1 = clf.best_estimator_
 
@@ -144,8 +147,8 @@ class tune:
             pickle.dump(zir, open(zir_sav_out + self.species + '_zir.sav', 'wb'))
 
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-                clf_scores = cross_validate(m1, self.X, y_clf[self.species].ravel(), cv=self.cv, verbose =self.verbose, scoring=clf_scoring)
-                zir_scores = cross_validate(zir, self.X, self.y[self.species].ravel(), cv=self.cv, verbose =self.verbose, scoring=reg_scoring)
+                clf_scores = cross_validate(m1, self.X, y_clf.ravel(), cv=self.cv, verbose =self.verbose, scoring=clf_scoring)
+                zir_scores = cross_validate(zir, self.X, self.y.ravel(), cv=self.cv, verbose =self.verbose, scoring=reg_scoring)
 
             zir_scores_out = self.path_out + model + "/scoring/" 
 
