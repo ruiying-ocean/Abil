@@ -38,7 +38,8 @@ class post:
 
 
     def def_groups(self, dict):
-        df = (self.d.rename(columns=dict)
+        df = self.d[self.species]
+        df = (df.rename(columns=dict)
             .groupby(level=0, axis=1, dropna=False)).sum( min_count=1)
         self.d = pd.concat([self.d, df], axis=1)
         print("finished defining groups")
