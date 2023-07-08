@@ -233,7 +233,9 @@ def example_data(y_name, n_samples=500, n_features=5, noise=20, random_state=59)
     #cut tail
     y[y <= 0.5] = 0
     y = np.squeeze(y)
-    y = pd.DataFrame({y_name: y})
+    y = pd.Series(y)
+#    y = pd.DataFrame({y_name: y})
+    y.name = y_name
     return(X, y)
 
 
