@@ -34,13 +34,16 @@ from functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, Zer
 class tune:
 
     def __init__(self, X, y, model_config, scale=True):
-        self.y = y
+
+        self.y = y.sample(frac=1, random_state=model_config['seed']) #shuffle
         if scale==True:
             scaler = StandardScaler()  
             scaler.fit(X)  
             self.X = pd.DataFrame(scaler.transform(X))
         else:
             self.X = X
+        self.X.sample(frac=1, random_state=model_config['seed']) #shuffle
+
         self.model_config = model_config
         self.seed = model_config['seed']
         self.species = y.name
