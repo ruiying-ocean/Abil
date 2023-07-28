@@ -31,16 +31,16 @@
     rf_param_grid:
       reg_param_grid:
         regressor__n_estimators: [100]
-        regressor__max_features: [2, 3, 4]
-        regressor__max_depth: [3, 5]
-        regressor__min_samples_leaf: [0.2, 0.5]
-        regressor__max_samples: [0.2, 0.5]     
+        regressor__max_features: [3, 4]
+        regressor__max_depth: [50, 100]
+        regressor__min_samples_leaf: [ 0.5, 1]
+        regressor__max_samples: [0.5, 1]     
       clf_param_grid:
         n_estimators: [100]
-        max_features: [2, 3, 4]
-        max_depth: [3, 5]
-        min_samples_leaf: [0.2, 0.5]
-        max_samples: [0.5]   
+        max_features: [3, 4]
+        max_depth: [50, 100]
+        min_samples_leaf: [0.5, 1]
+        max_samples: [0.5, 1]   
 
     xgb_param_grid:
       clf_param_grid:  
