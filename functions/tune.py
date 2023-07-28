@@ -35,6 +35,44 @@ class tune:
 
     def __init__(self, X, y, model_config, scale=True):
 
+        """
+        Tuning function
+
+        Parameters
+        ----------
+
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            The training input samples. Internally, its dtype will be converted
+            to ``dtype=np.float32``. If a sparse matrix is provided, it will be
+            converted into a sparse ``csc_matrix``.
+
+        y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+            The target values (class labels in classification, real numbers in
+            regression).
+
+        model comfig: dictionary, default=None
+            A dictionary containing:
+
+            `seed` : int, used to create random numbers
+            `root`: string, path to folder
+            `path_out`: string, where predictions are saved
+            `path_in`: string, where to find tuned models
+            `traits`: string, file name of your trait file
+            `verbose`: int, to set verbosity (0-3)
+            `n_threads`: int, number of threads to use
+            `cv` : int, number of cross-folds
+                        
+            `ensemble_config` : 
+            `clf_scoring` :
+            `reg_scoring` :
+
+            
+        scale : bool, default=False
+            If True, normalize X before training
+
+        """
+
+
         self.y = y.sample(frac=1, random_state=model_config['seed']) #shuffle
         if scale==True:
             scaler = StandardScaler()  
@@ -42,7 +80,7 @@ class tune:
             self.X = pd.DataFrame(scaler.transform(X))
         else:
             self.X = X
-        self.X.sample(frac=1, random_state=model_config['seed']) #shuffle
+        self.X = self.X.sample(frac=1, random_state=model_config['seed']) #shuffle
 
         self.model_config = model_config
         self.seed = model_config['seed']
@@ -57,62 +95,69 @@ class tune:
             self.bagging_estimators = None
 
     
-    def train(self, model, zir=False, log="no"):
+    def train(self, model, classifier=False, regressor=False, log="no"):
 
-        reg_scoring = self.model_config['reg_scoring']
-        reg_param_grid = self.model_config['param_grid'][model + '_param_grid']['reg_param_grid']
+        """
+        Training function
+
+        Parameters
+        ----------
+        model : string, default="rf"
+            Which model to train: 
+            Supported models:
+            `"rf"` Random Forest 
+            `"knn"` K-Nearest Neighbors
+            `"xgb"` XGBoost
+
+        classifier : bool, default=False
+
+        regressor : bool, default=False
+
+        log : string, default="no"
+            If "yes", log transformation is applied to y
+            If "no", y is not transformed
+            If "both", both log and no-log transformations are fitted by 
+                running the model two times.
+
+        Notes
+        -----
+        Requires `tune` to be initialized
+        """
 
         if model =="xgb":
-            classifier = XGBClassifier(nthread=1)
-            regressor = XGBRegressor(nthread=1)
+            clf_estimator = XGBClassifier(nthread=1)
+            reg_estimator = XGBRegressor(nthread=1)
         elif model=="knn":
             if self.bagging_estimators ==None:
                 print("you forgot to define the number of bagging estimators")
             else:
-                classifier = BaggingClassifier(estimator=KNeighborsClassifier(), n_estimators=self.bagging_estimators)
-                regressor = BaggingRegressor(estimator=KNeighborsRegressor(), n_estimators=self.bagging_estimators)
+                clf_estimator = BaggingClassifier(estimator=KNeighborsClassifier(), n_estimators=self.bagging_estimators)
+                reg_estimator = BaggingRegressor(estimator=KNeighborsRegressor(), n_estimators=self.bagging_estimators)
         elif model=="rf":
-            classifier = RandomForestClassifier(random_state=self.seed, oob_score=True)
-            regressor = RandomForestRegressor(random_state=self.seed, oob_score=True)
+            clf_estimator = RandomForestClassifier(random_state=self.seed, oob_score=True)
+            reg_estimator = RandomForestRegressor(random_state=self.seed, oob_score=True)
         else:
             print("invalid model")
 
-        st = time.time()
 
+        if classifier == False and regressor ==False:
+            print("both classifier defined as False")
+            print("no model was trained")
 
-        with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-            reg = LogGridSearch(regressor, verbose = self.verbose, cv=self.cv, param_grid=reg_param_grid, scoring="neg_mean_absolute_error")
-            reg_grid_search = reg.transformed_fit(self.X, self.y.ravel(), log)
-
-        m2 = reg_grid_search.best_estimator_
-
-        reg_sav_out = self.path_out + model + "/scoring/"
-
-        try: #make new dir if needed
-            os.makedirs(reg_sav_out)
-        except:
-            None
-
-        pickle.dump(m2, open(reg_sav_out  + self.species + '_reg.sav', 'wb'))
-
-        with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-            reg_scores = cross_validate(m2, self.X, self.y.ravel(), cv = self.cv, verbose = self.verbose, scoring=reg_scoring)
-
-        pickle.dump(reg_scores, open(reg_sav_out + self.species + '_reg.sav', 'wb'))
-
-        print("finished tuning model")
-
-        print("reg rRMSE: " + str(int(round(np.mean(reg_scores['test_RMSE'])/np.mean(self.y), 2)*-100))+"%")
-        print("reg rMAE: " + str(int(round(np.mean(reg_scores['test_MAE'])/np.mean(self.y), 2)*-100))+"%")
-        print("reg R2: " + str(round(np.mean(reg_scores['test_R2']), 2)))
-
-
-        if zir==True:
+        if classifier ==True:
+            print("training classifier")
             clf_param_grid = self.model_config['param_grid'][model + '_param_grid']['clf_param_grid']
             clf_scoring = self.model_config['clf_scoring']
 
+            clf_sav_out = self.path_out + model + "/scoring/"
+            try: #make new dir if needed
+                os.makedirs(clf_sav_out)
+            except:
+                None
+
+
             clf = GridSearchCV(
-                estimator=classifier,
+                estimator=clf_estimator,
                 param_grid= clf_param_grid,
                 scoring= 'balanced_accuracy',
                 cv = self.cv,
@@ -126,6 +171,48 @@ class tune:
                 clf.fit(self.X, y_clf.ravel())
 
             m1 = clf.best_estimator_
+            pickle.dump(m1, open(clf_sav_out + self.species + '_clf.sav', 'wb'))
+
+
+            clf_scores = cross_validate(m1, self.X, y_clf.ravel(), cv=self.cv, verbose =self.verbose, scoring=clf_scoring)
+            pickle.dump(clf_scores, open(clf_sav_out + self.species + '_clf.sav', 'wb'))
+
+            print("clf balanced accuray " + str((round(np.mean(clf_scores['test_accuracy']), 2))))
+
+
+
+
+        if regressor ==True:
+            print("training regressor")
+
+            reg_scoring = self.model_config['reg_scoring']
+            reg_param_grid = self.model_config['param_grid'][model + '_param_grid']['reg_param_grid']
+            reg_sav_out = self.path_out + model + "/scoring/"
+            try: #make new dir if needed
+                os.makedirs(reg_sav_out)
+            except:
+                None
+
+            with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
+                reg = LogGridSearch(reg_estimator, verbose = self.verbose, cv=self.cv, param_grid=reg_param_grid, scoring="neg_mean_absolute_error")
+                reg_grid_search = reg.transformed_fit(self.X, self.y.ravel(), log)
+
+            m2 = reg_grid_search.best_estimator_
+            pickle.dump(m2, open(reg_sav_out  + self.species + '_reg.sav', 'wb'))
+
+            with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
+                reg_scores = cross_validate(m2, self.X, self.y.ravel(), cv = self.cv, verbose = self.verbose, scoring=reg_scoring)
+
+            pickle.dump(reg_scores, open(reg_sav_out + self.species + '_reg.sav', 'wb'))
+
+
+            print("reg rRMSE: " + str(int(round(np.mean(reg_scores['test_RMSE'])/np.mean(self.y), 2)*-100))+"%")
+            print("reg rMAE: " + str(int(round(np.mean(reg_scores['test_MAE'])/np.mean(self.y), 2)*-100))+"%")
+            print("reg R2: " + str(round(np.mean(reg_scores['test_R2']), 2)))
+
+
+
+        if (classifier ==True) and (regressor ==True):
 
             zir = ZeroInflatedRegressor(
                 classifier=m1,
@@ -145,11 +232,9 @@ class tune:
             except:
                 None           
 
-            pickle.dump(m1, open(zir_sav_out + self.species + '_clf.sav', 'wb'))
             pickle.dump(zir, open(zir_sav_out + self.species + '_zir.sav', 'wb'))
 
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-                clf_scores = cross_validate(m1, self.X, y_clf.ravel(), cv=self.cv, verbose =self.verbose, scoring=clf_scoring)
                 zir_scores = cross_validate(zir, self.X, self.y.ravel(), cv=self.cv, verbose =self.verbose, scoring=reg_scoring)
 
             zir_scores_out = self.path_out + model + "/scoring/" 
@@ -159,174 +244,16 @@ class tune:
             except:
                 None
 
-            pickle.dump(clf_scores, open(zir_scores_out + self.species + '_clf.sav', 'wb'))
             pickle.dump(zir_scores, open(zir_scores_out + self.species + '_zir.sav', 'wb'))
 
             print("zir rRMSE: " + str(int(round(np.mean(zir_scores['test_RMSE'])/np.mean(self.y), 2)*-100))+"%")
             print("zir rMAE: " + str(int(round(np.mean(zir_scores['test_MAE'])/np.mean(self.y), 2)*-100))+"%")
             print("zir R2: " + str(round(np.mean(zir_scores['test_R2']), 2)))
-        else: 
-            None
-        
 
+
+
+        st = time.time()
         et = time.time()
         elapsed_time = et-st
 
         print("execution time:", elapsed_time, "seconds")        
-
-
-
-
-
-'''
-EXAMPLE 1 (local version)
-
-st = time.time()
-
-seed = 1 #random seed
-n_threads = 2 # how many cpu threads to use
-n_spp = 0 # which species to model
-path_out = "/home/phyto/ModelOutput/test/" #where to save model output
-
-d = pd.DataFrame({"mld":[50, 100, 120, 50, 50, 100, 120, 50, 200], 
-                    "temperature":[25, 20, 15, 45, 25, 20, 15, 45, 10],
-                    "Emiliania huxleyi":[300000, 100000, 0, 6000, 9000, 5000, 3000, 0, 0],
-                    "Coccolithus pelagicus":[50000, 30000, 500, 800, 900, 0, 1000, 5000, 0]
-})
-
-dict =  {
-
-    "X_vars" : ["mld", "temperature"],
-
-    "species" : ["Emiliania huxleyi", "Coccolithus pelagicus"],
-
-    "reg_scoring" : {
-                "R2":"r2",
-                "MAE": "neg_mean_absolute_error", 
-                "RMSE":"neg_root_mean_squared_error",
-                },
-
-    "reg_param_grid" : {
-                    'regressor__eta': [0.01],
-                    'regressor__n_estimators': [10],
-                    'regressor__max_depth': [4],
-                    'regressor__colsample_bytree': [0.6],               
-                    'regressor__subsample': [0.6],          
-                    'regressor__gamma': [1],
-                    'regressor__alpha': [1]
-                    },
-
-
-    "clf_scoring" : {
-                "accuracy": "balanced_accuracy",
-                },
-
-    "clf_param_grid" : {    
-                    'eta':[0.01],       
-                    'n_estimators': [10],
-                    'max_depth': [4],
-                    'subsample': [0.6],  
-                    'colsample_bytree': [0.6],  
-                    'gamma':[1],     
-                    'alpha':[1]   
-                    },                    
-
-}
-
-X_vars = dict["X_vars"] 
-species = dict["species"][n_spp]
-reg_scoring = dict['reg_scoring']
-reg_param_grid = dict['reg_param_grid']
-cv = 3
-verbose = 3
-
-
-#initiate model and load data:
-m = tune(d, X_vars, species, seed, n_threads, verbose, cv, path_out,  hot_encode=False)
-
-#run regressor model:
-#m.XGB(reg_scoring, reg_param_grid, cv=cv, model="reg", log="yes")
-
-et = time.time()
-elapsed_time = et-st
-print("elapsed time:" + elapsed_time)
-
-EXAMPLE 2 (cluster version)
-
-seed = 1
-n_threads = sys.arg[0]
-n_species = sys.arg[1]
-path = "cluster_path/data/"
-path_out = "cluster_path/out/"
-
-dict =  {
-
-    X_vars = ["temperature", "mld"],
-
-    species = ["Emiliania huxleyi", "Coccolithus pelagicus"],
-
-    clf_scoring = {
-                "accuracy": "balanced_accuracy"
-                },
-
-    reg_scoring = {
-                "R2":"r2",
-                "tau": make_scorer(tau_scoring),
-                "tau_p": make_scorer(tau_scoring_p, greater_is_better=False),
-                "MAE": "neg_mean_absolute_error", 
-                "RMSE":"neg_root_mean_squared_error",
-                },
-
-                
-
-    
-    clf_param_grid = {    
-                    'eta': eta,       
-                    'n_estimators': n_estimators,  
-                    'max_depth': max_depth,  
-                    'subsample': sub_sample,   
-                    'colsample_bytree': colsample_bytree,
-                    'gamma':gamma,       
-                    'alpha':alpha    
-                    },
-
-    reg_param_grid = {
-                    'regressor__eta': eta,
-                    'regressor__n_estimators': n_estimators,
-                    'regressor__max_depth': max_depth,
-                    'regressor__colsample_bytree':colsample_bytree,               
-                    'regressor__subsample': sub_sample,          
-                    'regressor__gamma': gamma,
-                    'regressor__alpha': alpha
-                    }
-
-}
-
-X_vars = dict["X_vars"] 
-species = dict["species"][n_spp]
-d = pd.read_csv(path + "abundances_environment.csv")
-clf_scoring = dict['scoring']
-clf_param_grid = dict['param_grid']
-reg_scoring = dict['reg_scoring']
-reg_param_grid = dict['reg_param_grid']
-cv = 10
-
-#run zir model:
-#m.XGB(reg_scoring, reg_param_grid, clf_scoring = clf_scoring, clf_param_grid = clf_param_grid, cv=cv, model="zir", log="both")
-
-#run zir model:
-m.XGB.tune(clf_scoring, reg_scoring, clf_param_grid, reg_param_grid, model="zir", log="both")
-m.XGB.export_csv()
-m.XGB.export_sav()
-X_pred = m.XGB.predict()
-X_pred.to_csv(path_out)
-
-run knn model:
-
-
-predict ensemble model:
-
-
-
-
-'''
