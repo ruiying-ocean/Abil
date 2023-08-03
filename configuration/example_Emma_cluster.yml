@@ -1,0 +1,42 @@
+---
+  root: /home/phyto/CoccoML/   # change this
+
+  path_out: predictions/merged/
+  path_in: predictions/ENS/
+
+  traits: your_species_list.csv #path to list of species
+  
+  scale_X: True
+
+  verbose: 1
+  seed : 1 
+  n_threads : 2 # how many cpu threads to use #change this
+  cv : 10
+
+  ensemble_config: 
+    m1: 
+      model : "rf"
+      regressor : False
+      classifier : True
+
+
+  
+  local_param_grid:
+    param_grid:
+      rf_param_grid:
+        reg_param_grid:
+          regressor__n_estimators: [100]
+          regressor__max_features: [2, 3, 4]
+          regressor__max_depth: [3, 5]
+          regressor__min_samples_leaf: [0.2, 0.5]
+          regressor__max_samples: [0.2, 0.5] 
+
+  remote_param_grid:
+    param_grid:
+      rf_param_grid:
+        reg_param_grid:
+          regressor__n_estimators: [100]
+          regressor__max_features: [2, 3, 4]
+          regressor__max_depth: [3, 5]
+          regressor__min_samples_leaf: [0.2, 0.5]
+          regressor__max_samples: [0.2, 0.5] 
