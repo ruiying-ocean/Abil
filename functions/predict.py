@@ -57,14 +57,15 @@ class predict:
 
         self.X = X
         self.seed = model_config['seed']
-        self.species = y.columns[0] 
+        self.species = y.name
         self.n_jobs = model_config['n_threads']
         self.verbose = model_config['verbose']
-        self.path_out =model_config['path_out']
+        self.path_out = model_config['root'] + model_config['path_out']
         self.cv = model_config['cv']
         self.envdata = envdata
+        self.ensemble_config = model_config['ensemble_config']
         self.model_config = model_config
-        self.y = y[self.species].ravel()
+        self.y = y.ravel()
 
     def calculate_weights(self, m, mae_dict):
 
@@ -77,37 +78,69 @@ class predict:
 
     def def_prediction(self, n):
         
-        path_to_param = self.model_config[list(self.model_config)[n]]['path'] + "model/"
-        path_to_scores = self.model_config[list(self.model_config)[n]]['path'] + "scoring/"
-        if self.model_config[list(self.model_config)[n]]['config'] == "zir":
-            regr_zir_scores = pickle.load(open(path_to_scores + self.species + '_zir.sav', 'rb'))
-            regr_reg_scores = pickle.load(open(path_to_scores + self.species + '_reg.sav', 'rb'))
 
-            regr_zir_mae = np.mean(regr_zir_scores['test_MAE'])
-            regr_reg_mae = np.mean(regr_reg_scores['test_MAE'])
 
-            if (regr_zir_mae > regr_reg_mae):
-                m = pickle.load(open(path_to_param + self.species + '_zir.sav', 'rb'))
-                mae = regr_zir_mae
-            elif (regr_zir_mae < regr_reg_mae):
-                m = pickle.load(open(path_to_param + self.species + '_reg.sav', 'rb'))
-                mae = regr_reg_mae
-            else:
-                m = pickle.load(open(path_to_param + self.species + '_reg.sav', 'rb'))
-                mae = regr_reg_mae
-        elif self.model_config[list(self.model_config)[n]]['config'] == "reg":
-            m = pickle.load(open(path_to_param + self.species + '_reg.sav', 'rb'))
-            regr_reg_scores = pickle.load(open(path_to_scores + self.species + '_reg.sav', 'rb'))            
-            mae = np.mean(regr_reg_scores['test_MAE'])
+        path_to_scores  = self.path_out + self.ensemble_config["m"+str(n+1)]["model"] + "/scoring/"
+        path_to_param  = self.path_out +  self.ensemble_config["m"+str(n+1)]["model"] + "/model/"
 
-        else:
-            print("model config invalid, should be zir or reg")
-        return(m, mae)
+        print(path_to_scores)
+        print(path_to_param)
+
+
+#        path_to_param = self.model_config[list(self.model_config)[n]]['path'] + "model/"
+#        path_to_scores = self.model_config[list(self.model_config)[n]]['path'] + "scoring/"
+
+
+        if (self.ensemble_config["m"+str(n+1)]["classifier"] ==True) and (self.ensemble_config["m"+str(n+1)]["regressor"] ==False):
+            print("predicting classifier")
+
+            m = pickle.load(open(path_to_param + self.species + '_clf.sav', 'rb'))
+            regr_reg_scores = pickle.load(open(path_to_scores + self.species + '_clf.sav', 'rb'))            
+            scoring = 1
+
+
+        elif (self.ensemble_config["m"+str(n+1)]["classifier"] ==False) and (self.ensemble_config["m"+str(n+1)]["regressor"] ==True):
+
+            print("not implemented yet :/")
+
+        elif (self.ensemble_config["m"+str(n+1)]["classifier"] ==True) and (self.ensemble_config["m"+str(n+1)]["regressor"] ==True):
+
+            print("not implemented yet :/")
+
+        elif (self.ensemble_config["m"+str(n+1)]["classifier"] ==False) and (self.ensemble_config["m"+str(n+1)]["regressor"] ==False):
+
+            print("Both regressor and classifier are defined as false")
+
+
+        # if self.model_config[list(self.model_config)[n]]['config'] == "zir":
+        #     regr_zir_scores = pickle.load(open(path_to_scores + self.species + '_zir.sav', 'rb'))
+        #     regr_reg_scores = pickle.load(open(path_to_scores + self.species + '_reg.sav', 'rb'))
+
+        #     regr_zir_mae = np.mean(regr_zir_scores['test_MAE'])
+        #     regr_reg_mae = np.mean(regr_reg_scores['test_MAE'])
+
+        #     if (regr_zir_mae > regr_reg_mae):
+        #         m = pickle.load(open(path_to_param + self.species + '_zir.sav', 'rb'))
+        #         mae = regr_zir_mae
+        #     elif (regr_zir_mae < regr_reg_mae):
+        #         m = pickle.load(open(path_to_param + self.species + '_reg.sav', 'rb'))
+        #         mae = regr_reg_mae
+        #     else:
+        #         m = pickle.load(open(path_to_param + self.species + '_reg.sav', 'rb'))
+        #         mae = regr_reg_mae
+        # elif self.model_config[list(self.model_config)[n]]['config'] == "reg":
+        #     m = pickle.load(open(path_to_param + self.species + '_reg.sav', 'rb'))
+        #     regr_reg_scores = pickle.load(open(path_to_scores + self.species + '_reg.sav', 'rb'))            
+        #     mae = np.mean(regr_reg_scores['test_MAE'])
+
+        # else:
+        #     print("model config invalid, should be zir or reg")
+        return(m, scoring)
     
     def export_prediction(self, m, ens_model_out):
 
         d = self.envdata.copy()
-        d[self.species] = m.fit(self.X, self.y).predict(self.envdata)
+        d[self.species] = m.predict(self.envdata)
         d = d.to_xarray()
         
         try: #make new dir if needed
@@ -121,68 +154,71 @@ class predict:
     def make_prediction(self):
 
         st = time.time()
-
-        if len(self.model_config)==1:
+        print(len(self.ensemble_config))
+        if len(self.ensemble_config)==1:
 
             m, mae1 = self.def_prediction(0)
-            model_out = self.path_out + list(self.model_config)[0] + "/predictions/"
+            model_out = self.path_out + self.ensemble_config["m"+str(1)]["model"] + "/predictions/"
             self.export_prediction(m, model_out)
 
-        elif len(self.model_config)==2:
-            #iteratively make prediction for each model
-            m1, mae1 = self.def_prediction(0)
-            model_out = self.path_out + list(self.model_config)[0] + "/predictions/"
-            self.export_prediction(m1, model_out)
 
-            m2, mae2 = self.def_prediction(1)
-            model_out = self.path_out + list(self.model_config)[1] + "/predictions/"
-            self.export_prediction(m2, model_out)
+        elif len(self.ensemble_config)==2:
+            print("not implemented yet :/")
+            # #iteratively make prediction for each model
+            # m1, mae1 = self.def_prediction(0)
+            # model_out = self.path_out + list(self.ensemble_config)[0] + "/predictions/"
+            # self.export_prediction(m1, model_out)
 
-            mae_dict = {mae1, mae2}
-            w = self.calculate_weights(mae_dict)
+            # m2, mae2 = self.def_prediction(1)
+            # model_out = self.path_out + list(self.ensemble_config)[1] + "/predictions/"
+            # self.export_prediction(m2, model_out)
 
-            models = list()
-            models.append((list(self.model_config)[0], m1))  #replace knn with name from dict
-            models.append((list(self.model_config)[1], m2))
-            m = VotingRegressor(estimators=models, weights=w)
-            model_out = self.path_out + "ens/predictions/"
-            self.export_prediction(m, model_out)
+            # mae_dict = {mae1, mae2}
+            # w = self.calculate_weights(mae_dict)
 
-        elif len(self.model_config)==3:
+            # models = list()
+            # models.append((list(self.ensemble_config)[0], m1))  #replace knn with name from dict
+            # models.append((list(self.ensemble_config)[1], m2))
+            # m = VotingRegressor(estimators=models, weights=w)
+            # model_out = self.path_out + "ens/predictions/"
+            # self.export_prediction(m, model_out)
 
-            #iteratively make prediction for each model
-            m1, mae1 = self.def_prediction(0)
-            model_out = self.path_out + list(self.model_config)[0] + "/predictions/"
-            self.export_prediction(m1, model_out)
+        elif len(self.ensemble_config)==3:
+            print("not implemented yet :/")
 
-            m2, mae2 = self.def_prediction(1)
-            model_out = self.path_out + list(self.model_config)[1] + "/predictions/"
-            self.export_prediction(m2, model_out)
+            # #iteratively make prediction for each model
+            # m1, mae1 = self.def_prediction(0)
+            # model_out = self.path_out + list(self.ensemble_config)[0] + "/predictions/"
+            # self.export_prediction(m1, model_out)
 
-            m3, mae3 = self.def_prediction(2)
-            model_out = self.path_out + list(self.model_config)[2] + "/predictions/"
-            self.export_prediction(m3, model_out)
+            # m2, mae2 = self.def_prediction(1)
+            # model_out = self.path_out + list(self.ensemble_config)[1] + "/predictions/"
+            # self.export_prediction(m2, model_out)
 
-            mae_dict = [mae1, mae2, mae3]
+            # m3, mae3 = self.def_prediction(2)
+            # model_out = self.path_out + list(self.ensemble_config)[2] + "/predictions/"
+            # self.export_prediction(m3, model_out)
 
-            print(mae_dict)
-            w1 = self.calculate_weights(mae1, mae_dict)
-            w2 = self.calculate_weights(mae2, mae_dict)
-            w3 = self.calculate_weights(mae3, mae_dict)
+            # mae_dict = [mae1, mae2, mae3]
 
-            w = [w1, w2, w3]
+            # print(mae_dict)
+            # w1 = self.calculate_weights(mae1, mae_dict)
+            # w2 = self.calculate_weights(mae2, mae_dict)
+            # w3 = self.calculate_weights(mae3, mae_dict)
+
+            # w = [w1, w2, w3]
             
-            models = list()
-            models.append((list(self.model_config)[0], m1)) 
-            models.append((list(self.model_config)[1], m2))
-            models.append((list(self.model_config)[2], m3))
-            m = VotingRegressor(estimators=models, weights=w)
+            # models = list()
+            # models.append((list(self.ensemble_config)[0], m1)) 
+            # models.append((list(self.ensemble_config)[1], m2))
+            # models.append((list(self.ensemble_config)[2], m3))
+            # m = VotingRegressor(estimators=models, weights=w)
 
-            model_out = self.path_out + "ens/predictions/"
-            d = self.export_prediction(m, model_out)
+            # model_out = self.path_out + "ens/predictions/"
+            # d = self.export_prediction(m, model_out)
 
         else:
-            print("wtf")
+            print("max three models supported in ensemble")
         et = time.time()
         elapsed_time = et-st
         print("finished")

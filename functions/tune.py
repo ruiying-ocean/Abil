@@ -149,11 +149,21 @@ class tune:
             clf_param_grid = self.model_config['param_grid'][model + '_param_grid']['clf_param_grid']
             clf_scoring = self.model_config['clf_scoring']
 
-            clf_sav_out = self.path_out + model + "/scoring/"
+            clf_sav_out_scores = self.path_out + model + "/scoring/"
+            clf_sav_out_model = self.path_out + model + "/model/"
+
+
             try: #make new dir if needed
-                os.makedirs(clf_sav_out)
+                os.makedirs(clf_sav_out_scores)
             except:
                 None
+
+
+            try: #make new dir if needed
+                os.makedirs(clf_sav_out_model)
+            except:
+                None
+
 
 
             clf = GridSearchCV(
@@ -171,11 +181,11 @@ class tune:
                 clf.fit(self.X, y_clf.ravel())
 
             m1 = clf.best_estimator_
-            pickle.dump(m1, open(clf_sav_out + self.species + '_clf.sav', 'wb'))
+            pickle.dump(m1, open(clf_sav_out_model + self.species + '_clf.sav', 'wb'))
 
 
             clf_scores = cross_validate(m1, self.X, y_clf.ravel(), cv=self.cv, verbose =self.verbose, scoring=clf_scoring)
-            pickle.dump(clf_scores, open(clf_sav_out + self.species + '_clf.sav', 'wb'))
+            pickle.dump(clf_scores, open(clf_sav_out_scores + self.species + '_clf.sav', 'wb'))
 
             print("clf balanced accuray " + str((round(np.mean(clf_scores['test_accuracy']), 2))))
 
