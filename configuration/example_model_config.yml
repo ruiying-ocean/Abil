@@ -1,9 +1,9 @@
 ---
   root: /home/phyto/CoccoML/
 
-  path_out: predictions/merged/
+  path_out: ModelOutput/
 #  path_in: predictions/ENS/
-  path_in: predictions/ENS/
+#  path_in: predictions/ENS/
 
   traits: /home/phyto/CoccoML/data/traits.csv
   
@@ -15,9 +15,14 @@
   cv : 3
   
   ensemble_config: 
-    rf: zir
-    xgb: zir
-    knn: zir
+    m1: 
+      model : "rf"
+      regressor : False
+      classifier : True
+    # m2: 
+    #   model : "xgb"
+    #   regressor : False
+    #   classifier : True      
 
   clf_scoring:
    accuracy: balanced_accuracy
