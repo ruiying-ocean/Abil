@@ -1,4 +1,4 @@
 
 To compile singularity run:
 
-''' sudo singularity build planktonSDM.sif Singularity.sif  '''
+``` sudo singularity build planktonSDM.sif Singularity.sif  ``
