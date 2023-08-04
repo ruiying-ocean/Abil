@@ -7,7 +7,8 @@
   
   scale_X: True
   upsample: True
-
+  predict_probability: True
+  
   verbose: 1
   seed : 1 
   n_threads : 10 # how many cpu threads to use #change this

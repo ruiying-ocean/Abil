@@ -13,7 +13,8 @@
   seed : 1 # random seed
   n_threads : 2 # how many cpu threads to use
   cv : 3
-  
+  predict_probability: False 
+
   ensemble_config: 
     m1: 
       model : "rf"
