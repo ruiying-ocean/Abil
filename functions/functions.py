@@ -203,6 +203,28 @@ class LogGridSearch:
 
         return grid_search
 
+
+class UpsampledZeroStratifiedKFold:
+    def __init__(self, n_splits=3):
+        self.n_splits = n_splits
+
+    def split(self, X, y, groups=None):
+        #convert target variable to binary for stratified sampling
+        y_binary = np.where(y!=0, 1, 0)
+
+        for rx, tx in StratifiedKFold(n_splits=self.n_splits).split(X,y_binary):
+            nix = np.where(y_binary[rx]==0)[0]
+            pix = np.where(y_binary[rx]==1)[0]
+            pixu = np.random.choice(pix, size=nix.shape[0], replace=True)
+            ix = np.append(nix, pixu)
+            rxm = rx[ix]
+            yield rxm, tx
+
+    def get_n_splits(self, X, y, groups=None):
+        return self.n_splits
+    
+    
+    
 class ZeroStratifiedKFold:
     def __init__(self, n_splits=3):
         self.n_splits = n_splits

@@ -1,16 +1,17 @@
 ---
   root: /home/phyto/CoccoML/   # change this
 
-  path_out: ModelOutput/
+  path_out: ModelOutputEmma/
 
   traits: your_species_list.csv #path to list of species
   
   scale_X: True
+  upsample: True
 
   verbose: 1
   seed : 1 
-  n_threads : 2 # how many cpu threads to use #change this
-  cv : 10
+  n_threads : 10 # how many cpu threads to use #change this
+  cv : 3
 
   ensemble_config: 
     m1: 
@@ -28,6 +29,6 @@
         n_estimators: [100]
         max_features: [2, 3, 4]
         max_depth: [5, 50, 100]
-        min_samples_leaf: [0.5, 0.8, 1]
-        max_samples: [0.5, 0.8, 1] 
+        min_samples_leaf: [0.8, 1]
+        max_samples: [0.8, 1] 
 

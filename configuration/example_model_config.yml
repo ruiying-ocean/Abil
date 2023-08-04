@@ -23,7 +23,7 @@
     #   model : "xgb"
     #   regressor : False
     #   classifier : True      
-
+  upsample: False
   clf_scoring:
    accuracy: balanced_accuracy
 

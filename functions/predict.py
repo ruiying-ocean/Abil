@@ -20,52 +20,71 @@ import time
 from sklearn.ensemble import VotingRegressor
 import csv
 from sklearn.preprocessing import OneHotEncoder
-from functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, tau_scoring, tau_scoring_p
+from functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
 from numpy.random import rand
-
-'''
-
-model_config = {
-    "RF": {
-        "path":"/home/phyto/CoccoML/ModelOutput",
-        "config": "zir"
-    },
-    "XGB": {
-        "path":"/home/phyto/CoccoML/ModelOutput",
-        "config": "zir"
-    },
-    "KNN": {
-        "path":"/home/phyto/CoccoML/ModelOutput",
-        "config": "zir"
-    }
-}
-
-#for each model in dictionary make prediction
-if n>2 and ensemble = True then make an ensemble model weighted based on scores
-
-'''
 
 class predict:
 
-    def __init__(self, X, y, envdata, model_config):
+    def __init__(self, X_train, y, X_predict, model_config):
+
+        """
+        Prediction function
+
+        Parameters
+        ----------
+
+        X_train : should be the same as the X used for tuning
+
+        y : only used to define species name, should be the same as the y used for tuning
+
+        X_predict : X to predict on. 
+
+                
+        model config: dictionary, default=None
+            A dictionary containing:
+
+            `seed` : int, used to create random numbers
+            `root`: string, path to folder
+            `path_out`: string, where predictions are saved
+            `path_in`: string, where to find tuned models
+            `traits`: string, file name of your trait file
+            `verbose`: int, to set verbosity (0-3)
+            `n_threads`: int, number of threads to use
+            `cv` : int, number of cross-folds
+                        
+            `ensemble_config` : 
+            `clf_scoring` :
+            `reg_scoring` :
+
+            
+            
+
+        """
 
 
         if model_config['scale_X']==True:
             scaler = StandardScaler()  
-            scaler.fit(X)  
-            X = pd.DataFrame(scaler.transform(X))
+            scaler.fit(X_train)  
+            X_train = pd.DataFrame(scaler.transform(X_train))
+            print("scale X = True")
 
-        self.X = X
+        self.X_train = X_train
         self.seed = model_config['seed']
         self.species = y.name
         self.n_jobs = model_config['n_threads']
         self.verbose = model_config['verbose']
         self.path_out = model_config['root'] + model_config['path_out']
-        self.cv = model_config['cv']
-        self.envdata = envdata
+
+        if model_config['upsample']==True:
+            self.cv = UpsampledZeroStratifiedKFold(n_splits=model_config['cv'])
+            print("upsampling = True")
+
+        else:
+            self.cv = ZeroStratifiedKFold(n_splits=model_config['cv'])
+
+        self.X_predict = X_predict
         self.ensemble_config = model_config['ensemble_config']
         self.model_config = model_config
-        self.y = y.ravel()
 
     def calculate_weights(self, m, mae_dict):
 
@@ -139,8 +158,8 @@ class predict:
     
     def export_prediction(self, m, ens_model_out):
 
-        d = self.envdata.copy()
-        d[self.species] = m.predict(self.envdata)
+        d = self.X_predict.copy()
+        d[self.species] = m.predict(self.X_predict)
         d = d.to_xarray()
         
         try: #make new dir if needed
@@ -154,7 +173,7 @@ class predict:
     def make_prediction(self):
 
         st = time.time()
-        print(len(self.ensemble_config))
+        print("number of models in ensemble:" + str(len(self.ensemble_config)))
         if len(self.ensemble_config)==1:
 
             m, mae1 = self.def_prediction(0)
@@ -165,13 +184,16 @@ class predict:
         elif len(self.ensemble_config)==2:
             print("not implemented yet :/")
             # #iteratively make prediction for each model
-            # m1, mae1 = self.def_prediction(0)
-            # model_out = self.path_out + list(self.ensemble_config)[0] + "/predictions/"
-            # self.export_prediction(m1, model_out)
 
-            # m2, mae2 = self.def_prediction(1)
-            # model_out = self.path_out + list(self.ensemble_config)[1] + "/predictions/"
-            # self.export_prediction(m2, model_out)
+
+            m1, mae1 = self.def_prediction(0)
+            model_out = self.path_out + self.ensemble_config["m"+str(1)]["model"] + "/predictions/"
+            self.export_prediction(m1, model_out)
+
+            m2, mae2 = self.def_prediction(1)
+            model_out = self.path_out + self.ensemble_config["m"+str(2)]["model"] + "/predictions/"
+            self.export_prediction(m2, model_out)
+
 
             # mae_dict = {mae1, mae2}
             # w = self.calculate_weights(mae_dict)

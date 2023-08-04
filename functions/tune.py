@@ -29,7 +29,7 @@ from inspect import signature
 import logging
 
 
-from functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, tau_scoring, tau_scoring_p
+from functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
 
 class tune:
 
@@ -50,7 +50,7 @@ class tune:
             The target values (class labels in classification, real numbers in
             regression).
 
-        model comfig: dictionary, default=None
+        model config: dictionary, default=None
             A dictionary containing:
 
             `seed` : int, used to create random numbers
@@ -78,17 +78,25 @@ class tune:
             scaler = StandardScaler()  
             scaler.fit(X)  
             self.X = pd.DataFrame(scaler.transform(X))
+            print("scale X = True")
+
         else:
             self.X = X
         self.X = self.X.sample(frac=1, random_state=model_config['seed']) #shuffle
-
+        print(self.X)
         self.model_config = model_config
         self.seed = model_config['seed']
         self.species = y.name
         self.n_jobs = model_config['n_threads']
         self.verbose = model_config['verbose'] 
         self.path_out =  model_config['root'] + model_config['path_out']
-        self.cv = model_config['cv'] 
+
+        if model_config['upsample']==True:
+            self.cv = UpsampledZeroStratifiedKFold(n_splits=model_config['cv'])
+            print("upsampling = True")
+        else:
+            self.cv = ZeroStratifiedKFold(n_splits=model_config['cv'])
+            
         try:
             self.bagging_estimators = model_config['knn_bagging_estimators'] 
         except:
@@ -178,15 +186,15 @@ class tune:
             y_clf[y_clf > 0] = 1
 
             with parallel_backend('multiprocessing', self.n_jobs):
-                clf.fit(self.X, y_clf.ravel())
+                clf.fit(self.X, y_clf.values.ravel())
 
             m1 = clf.best_estimator_
             pickle.dump(m1, open(clf_sav_out_model + self.species + '_clf.sav', 'wb'))
 
 
-            clf_scores = cross_validate(m1, self.X, y_clf.ravel(), cv=self.cv, verbose =self.verbose, scoring=clf_scoring)
+            clf_scores = cross_validate(m1, self.X, y_clf.values.ravel(), cv=self.cv, verbose =self.verbose, scoring=clf_scoring)
             pickle.dump(clf_scores, open(clf_sav_out_scores + self.species + '_clf.sav', 'wb'))
-
+            print(clf_scores['test_accuracy'])
             print("clf balanced accuray " + str((round(np.mean(clf_scores['test_accuracy']), 2))))
 
 
@@ -205,13 +213,13 @@ class tune:
 
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
                 reg = LogGridSearch(reg_estimator, verbose = self.verbose, cv=self.cv, param_grid=reg_param_grid, scoring="neg_mean_absolute_error")
-                reg_grid_search = reg.transformed_fit(self.X, self.y.ravel(), log)
+                reg_grid_search = reg.transformed_fit(self.X, self.y.values.ravel(), log)
 
             m2 = reg_grid_search.best_estimator_
             pickle.dump(m2, open(reg_sav_out  + self.species + '_reg.sav', 'wb'))
 
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-                reg_scores = cross_validate(m2, self.X, self.y.ravel(), cv = self.cv, verbose = self.verbose, scoring=reg_scoring)
+                reg_scores = cross_validate(m2, self.X, self.y.values.ravel(), cv = self.cv, verbose = self.verbose, scoring=reg_scoring)
 
             pickle.dump(reg_scores, open(reg_sav_out + self.species + '_reg.sav', 'wb'))
 
