@@ -82,6 +82,12 @@ class predict:
         else:
             self.cv = ZeroStratifiedKFold(n_splits=model_config['cv'])
 
+        if model_config['scale_X']==True:
+            scaler = StandardScaler()  
+            scaler.fit(X_train)  
+            X_predict = pd.DataFrame(scaler.transform(X_predict))
+            print("scaled X_predict")
+
         self.X_predict = X_predict
         self.ensemble_config = model_config['ensemble_config']
         self.model_config = model_config
@@ -159,7 +165,12 @@ class predict:
     def export_prediction(self, m, ens_model_out):
 
         d = self.X_predict.copy()
-        d[self.species] = m.predict(self.X_predict)
+        if self.model_config['predict_probability'] == True:
+            print("predicting probabilities")
+            d[self.species] = m.predict_proba(self.X_predict)[:, 1]
+
+        else:
+            d[self.species] = m.predict(self.X_predict)
         d = d.to_xarray()
         
         try: #make new dir if needed
