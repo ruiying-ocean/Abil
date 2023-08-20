@@ -4,7 +4,6 @@
 The recommended directory structure is:
 
 ```bash
-
 planktonSDM
 ├── README.md
 ├── model_config.yml
@@ -35,7 +34,6 @@ planktonSDM
 |   └── predict.py
 |   └── tune.py
 
-```
 
 If you want to run the scripts on the cluster you need to create a container using Singularity: https://docs.sylabs.io/guides/3.4/user-guide/
 To compile singularity run:
