@@ -13,7 +13,7 @@ Generally the workflow is as follows:
 3. Merge the predictions into a single netcdf and do post processing using `post.py`
 
 
-Examples for each step is provided in the respective Jupyter notebooks which can be found in `/notebooks`.
+Examples for each step are provided in the respective Jupyter notebooks which can be found in `/notebooks`.
 
 If you would like to reproduce the model output reported in deVries2023 see  `/deVries2023` and `/configuration/deVries2023_model_config.yml`
 
@@ -60,6 +60,6 @@ planktonSDM
 If you want to run the scripts on the cluster you need to create a container using Singularity: https://docs.sylabs.io/guides/3.4/user-guide/
 To compile singularity run:
 
-``` sudo singularity build planktonSDM.sif Singularity.sif  ``
+``` sudo singularity build planktonSDM.sif Singularity.sif  ```
 
 
