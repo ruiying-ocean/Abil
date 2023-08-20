@@ -22,6 +22,7 @@ If you would like to reproduce the model output reported in deVries2023 see  `/d
 
 The recommended directory structure is:
 
+```bash
 planktonSDM
 ├── README.md
 ├── Singularity.sif (optional)
@@ -52,7 +53,7 @@ planktonSDM
 |   └── ens
 |       └── predictions
 |       └── scoring
-
+```
 
 ## Singularity
 
