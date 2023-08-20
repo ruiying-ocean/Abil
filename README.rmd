@@ -3,7 +3,6 @@
 
 The recommended directory structure is:
 
-```bash
 planktonSDM
 ├── README.md
 ├── model_config.yml
