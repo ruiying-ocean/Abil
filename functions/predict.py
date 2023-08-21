@@ -57,6 +57,7 @@ class predict:
             `reg_scoring` :
 
         """
+        self.st = time.time()
 
 
         if model_config['scale_X']==True:
@@ -94,59 +95,76 @@ class predict:
 
         if (self.ensemble_config["classifier"] ==True) and (self.ensemble_config["regressor"] == False):
             self.scoring = model_config['clf_scoring']
+            self.y[self.y > 0] = 1
+
         elif (self.ensemble_config["classifier"] ==False) and (self.ensemble_config["regressor"] == False):
-            print("Both regressor and classifier are defined as false")
+            raise ValueError("classifier and regressor can't both be False")
         else:
             self.scoring = model_config['reg_scoring']
 
 
-    def calculate_weights(self, mae_dict):
+        if (self.ensemble_config["classifier"] !=True) and (self.ensemble_config["classifier"] !=False):
+            raise ValueError("classifier should be True or False")
+        
+        if (self.ensemble_config["regressor"] !=True) and (self.ensemble_config["regressor"] !=False):
+            raise ValueError("regressor should be True or False")
 
-        m_len = len(mae_dict)
+
+    def calculate_weights(self, mae_list, mae):
+
+        m_len = len(mae_list)
 
         if m_len >= 2:
-            mae_sum = sum([-1 * mae for mae in mae_dict])
-            mae_sums_inverse = sum([(mae_sum / mae) for mae in mae_dict])
+            mae_sum = sum([-1 * mae for mae in mae_list])
+        #    print(mae_sum)
+            mae_sums_inverse = sum([(mae_sum / mae) for mae in mae_list])
+        #    print(mae_sums_inverse)
             w = -1 * mae_sum / mae_sums_inverse
         else:
             raise ValueError("mae_dict should contain at least 2 elements")
 
         return w
+    
+
+    def calculate_weights(self, n, mae_list):
+        m_values = [-1 * mae for mae in mae_list]
+        m = mae_list[n]
+        
+        mae_sum_m = sum(m_values)/m
+
+        mae_sum = sum(m_values)
+
+        mae_sums_inverse = sum([(mae_sum / mae) for mae in mae_list])
+        w = mae_sum_m / mae_sums_inverse
+        return w
+    
+
+
 
     def def_prediction(self, n):
 
         path_to_scores  = self.path_out + self.ensemble_config["m"+str(n+1)] + "/scoring/"
         path_to_param  = self.path_out +  self.ensemble_config["m"+str(n+1)] + "/model/"
 
-        print(path_to_scores)
-        print(path_to_param)
 
         if (self.ensemble_config["classifier"] ==True) and (self.ensemble_config["regressor"] == False):
             print("predicting classifier")
-
             m = pickle.load(open(path_to_param + self.species + '_clf.sav', 'rb'))
             scoring =  pickle.load(open(path_to_scores + self.species + '_clf.sav', 'rb'))    
-
-            scoring = 1
+            scores = 1-np.mean(scoring['test_accuracy']) #subtract 1 since lower is better
 
         elif (self.ensemble_config["classifier"] ==False) and (self.ensemble_config["regressor"] == True):
-
-            print("not implemented yet :/")
-
+            print("predicting regressor")
             m = pickle.load(open(path_to_param + self.species + '_reg.sav', 'rb'))
-            scoring =  pickle.load(open(path_to_scores + self.species + '_reg.sav', 'rb'))    
-
-            scoring = 1
-
+            scoring =  pickle.load(open(path_to_scores + self.species + '_reg.sav', 'rb'))   
+            scores = np.mean(scoring['test_MAE'])
+ 
 
         elif (self.ensemble_config["classifier"] ==True) and (self.ensemble_config["regressor"] == True):
-
-            print("not implemented yet :/")
-
+            print("predicting zero-inflated regressor")
             m = pickle.load(open(path_to_param + self.species + '_zir.sav', 'rb'))
             scoring =  pickle.load(open(path_to_scores + self.species + '_zir.sav', 'rb'))    
-
-            scoring = 1
+            scores = np.mean(scoring['test_MAE'])
 
 
         elif (self.ensemble_config["classifier"] ==False) and (self.ensemble_config["regressor"] == False):
@@ -154,30 +172,8 @@ class predict:
             print("Both regressor and classifier are defined as false")
 
 
-        # if self.model_config[list(self.model_config)[n]]['config'] == "zir":
-        #     regr_zir_scores = pickle.load(open(path_to_scores + self.species + '_zir.sav', 'rb'))
-        #     regr_reg_scores = pickle.load(open(path_to_scores + self.species + '_reg.sav', 'rb'))
 
-        #     regr_zir_mae = np.mean(regr_zir_scores['test_MAE'])
-        #     regr_reg_mae = np.mean(regr_reg_scores['test_MAE'])
-
-        #     if (regr_zir_mae > regr_reg_mae):
-        #         m = pickle.load(open(path_to_param + self.species + '_zir.sav', 'rb'))
-        #         mae = regr_zir_mae
-        #     elif (regr_zir_mae < regr_reg_mae):
-        #         m = pickle.load(open(path_to_param + self.species + '_reg.sav', 'rb'))
-        #         mae = regr_reg_mae
-        #     else:
-        #         m = pickle.load(open(path_to_param + self.species + '_reg.sav', 'rb'))
-        #         mae = regr_reg_mae
-        # elif self.model_config[list(self.model_config)[n]]['config'] == "reg":
-        #     m = pickle.load(open(path_to_param + self.species + '_reg.sav', 'rb'))
-        #     regr_reg_scores = pickle.load(open(path_to_scores + self.species + '_reg.sav', 'rb'))            
-        #     mae = np.mean(regr_reg_scores['test_MAE'])
-
-        # else:
-        #     print("model config invalid, should be zir or reg")
-        return(m, scoring)
+        return(m, scores)
     
     def export_prediction(self, m, ens_model_out):
 
@@ -208,47 +204,68 @@ class predict:
 
     def make_prediction(self):
 
-        st = time.time()
-        print("number of models in ensemble:" + str(len(self.ensemble_config)))
+        number_of_models = len(self.ensemble_config) -2
+        print("number of models in ensemble:" + str(number_of_models))
 
-        if len(self.ensemble_config)==1:
+        if number_of_models==1:
 
             m, mae1 = self.def_prediction(0)
             model_out = self.path_out + self.ensemble_config["m"+str(1)]["model"] + "/predictions/"
             self.export_prediction(m, model_out)
 
-        elif len(self.ensemble_config>=2):
+        elif number_of_models >=2:
                     
             # iteratively make prediction for each model
             models = []
-            mae_dict = {}
+            mae_list = []
+            w = []
 
-            for i in range(len(self.ensemble_config)):
+            for i in range(number_of_models):
                 m, mae = self.def_prediction(i)
-                model_name = self.ensemble_config["m" + str(i + 1)]["model"]
+                model_name = self.ensemble_config["m" + str(i + 1)]
                 model_out = self.path_out + model_name + "/predictions/"
                 self.export_prediction(m, model_out)
+                print("exporting " + model_name + " prediction to: " + model_out)
 
                 models.append((model_name, m))
-                mae_dict[model_name] = mae
+                mae_list.append(mae)
 
-            w = self.calculate_weights(mae_dict)
-
+        
+            w = [self.calculate_weights(i, mae_list) for i in range(len(mae_list))]
 
             if self.ensemble_config["regressor"] ==True:
-                m = VotingRegressor(estimators=models, weights=w)
+                m = VotingRegressor(estimators=models, weights=w).fit(self.X_train, self.y)
             else:
-                m= VotingClassifier(estimators=models, weights=w)
+                m= VotingClassifier(estimators=models, weights=w).fit(self.X_train, self.y)
             scores = self.score_model(m)
 
             model_out = self.path_out + "ens/predictions/"
+            try: #make new dir if needed
+                os.makedirs(model_out)
+            except:
+                None
+
+            print("predicting ensemble model")
+
             self.export_prediction(m, model_out)
+            print("exporting ensemble prediction to: " + model_out)
+
 
             model_out_scores = self.path_out + "ens/scoring/"
-            pickle.dump(scores, open(model_out_scores + self.species + '.sav', 'wb'))            
+
+            try: #make new dir if needed
+                os.makedirs(model_out_scores)
+            except:
+                None
+
+            pickle.dump(scores, open(model_out_scores + self.species + '.sav', 'wb'))   
+            
+
+            print("exporting ensemble scores to: " + model_out_scores)
+
 
         et = time.time()
-        elapsed_time = et-st
+        elapsed_time = et-self.st
         print("finished")
         print("execution time:", elapsed_time, "seconds")
 
