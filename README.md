@@ -33,10 +33,13 @@ planktonSDM
 |   └── traits.csv
 |   └── abundances_environment.csv (optional)
 |   └── envdata.csv (optional)
-├── functions
-|   └── post.py
-|   └── predict.py
-|   └── tune.py
+├── src
+|   └── planktonsdm
+|       └── __init__.py
+|       └── functions.py
+|       └── post.py
+|       └── predict.py
+|       └── tune.py
 ├── ModelOutput
 |   └── rf
 |       └── model
