@@ -10,6 +10,7 @@ import pandas as pd
 from matplotlib import scale as mscale
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib as mpl
+from scipy import stats
 
 # sns.set(rc={'figure.figsize':(11.7,8.27)})
 
@@ -38,6 +39,25 @@ class plot_stats:
     def niche_kernel_plot(self):
         print("")
 
+
+
+    def area_diversity(self, ax=None, x='area', y='shannon'):
+        if ax==None:
+            ax= plt.axes()
+        df = self.d.copy()
+        df.reset_index(inplace=True)
+
+        def gridsize(lat):
+            grid=np.cos(np.radians(abs(lat)))*(111.1*111.1*1000*1000 )## 
+            return grid
+
+        df['area'] = gridsize(df['lat'])
+#        ax.plot(x=df['area'], y=df['shannon'])
+#        sns.regplot(data=df, y='shannon', x='area', ax=ax,  n_boot=100, scatter=True)
+        ax.hist2d(x=df[x], y=df[y], bins=50, norm=mpl.colors.LogNorm())
+        ax.set_xlabel(x)
+        ax.set_ylabel(y)
+
     def logit_reg_plot(self, region, ax=None, x='total_log', y='simpson'):
 
 
@@ -47,15 +67,15 @@ class plot_stats:
         if region!="Global":
             d = self.d[self.d["FID"] == region].copy()
         else:
-            d = self.d.sample(100000).copy()
+            d = self.d.sample(1000000).copy()
 
         ax.hist2d(x=d[x], y=d[y], bins=100, norm=mpl.colors.LogNorm())
 
-        sns.regplot(data=d, y=y, x=x, ax=ax, logistic=True, n_boot=100, scatter=False).set(title=region)
+        sns.regplot(data=d, y=y, x=x, ax=ax,  order=3, n_boot=100, scatter=False).set(title=region)
 
 
 
-    def reg_plot(self, region, ax=None, x='total_log', y='simpson'):
+    def reg_plot(self, region, ax=None, x='total_log', y='simpson', reg=True, sample=False, order=1):
 
 
         if ax==None:
@@ -64,13 +84,17 @@ class plot_stats:
         if region!="Global":
             d = self.d[self.d["FID"] == region].copy()
         else:
-            d = self.d.sample(100000).copy()
+            if sample==True:
+                d = self.d.sample(100000).copy()
+            else:
+                d = self.d.copy()
 
         ax.hist2d(x=d[x], y=d[y], bins=100, norm=mpl.colors.LogNorm())
-        ax.set(title=region)
-    #    sns.regplot(data=d, y=y, x=x, ax=ax,  n_boot=100, scatter=False).set(title=region)
-        ax.set_xlabel('biomass')
-        ax.set_ylabel('diversity')
+        ax.set(title=x)
+        if reg==True:
+            sns.regplot(data=d, y=y, x=x, ax=ax,  order=order, n_boot=100, scatter=False).set(title=region)
+        ax.set_xlabel(x)
+        ax.set_ylabel(y)
 
 
 
@@ -191,7 +215,7 @@ class plot_xy:
         self.ds = ds
 
 
-    def latlon(self, variable, ax=None, fig=None, log=False, cmap=cm.viridis, vmin=None, vmax=None):
+    def latlon_notime(self, variable, ax=None, fig=None, log=False, cmap=cm.viridis, vmin=None, vmax=None, title=None):
 
         if fig==None:
             fig = plt.figure(figsize=(20, 10))
@@ -199,7 +223,7 @@ class plot_xy:
             projection = ccrs.Robinson(central_longitude=-160)
             ax= plt.axes(projection=projection)
            
-        cocco_plot = self.ds[variable].clip(min=0).mean(dim=["depth", "time"])
+        cocco_plot = self.ds[variable].mean(dim=["depth"])
         if log==True:
             cocco_plot = np.log(cocco_plot+1)
 
@@ -216,9 +240,58 @@ class plot_xy:
                         vmin = vmin,
                         vmax = vmax,
                         ax = ax)
-        cax = fig.add_axes([ax.get_position().x1+0.01,ax.get_position().y0,0.02,ax.get_position().height])#
-        ax.set_title(variable)
-        plt.colorbar(p, cax=cax)
+        
+        #cax = fig.add_axes([ax.get_position().x1+0.01,ax.get_position().y0,0.02,ax.get_position().height])#
+        if title==None:
+            ax.set_title(variable)
+        else:
+            ax.set_title(title)
+#        plt.colorbar(p, cax=cax)
+
+
+
+    def latlon(self, variable, ax=None, fig=None, add_contour=True, log=False, add_colorbar=True, cmap=cm.viridis, vmin=None, vmax=None, title=None, clip=True):
+
+        if fig==None:
+            fig = plt.figure(figsize=(20, 10))
+        if ax==None:
+            projection = ccrs.Robinson(central_longitude=-160)
+            ax= plt.axes(projection=projection)
+        
+        if clip==True:
+            cocco_plot = self.ds[variable].clip(min=0).mean(dim=["depth", "time"])
+        else:
+            cocco_plot = self.ds[variable].mean(dim=["depth", "time"])
+
+
+        if log==True:
+            cocco_plot = np.log(cocco_plot+1)
+
+        ax.coastlines()
+        ax.add_feature(cart.feature.LAND, zorder=100, edgecolor='k', facecolor="gray")
+        ax.gridlines(draw_labels=True,)
+
+        p = cocco_plot.plot(
+                        x='lon', y='lat',
+                        cmap=cmap,
+                        transform=ccrs.PlateCarree(),
+                        robust=True,
+                        add_colorbar=add_colorbar,
+                        vmin = vmin,
+                        vmax = vmax,
+                        ax = ax)
+        
+        if add_contour == True:
+
+            cocco_plot.plot.contour(x='lon', y='lat',
+                            ax = ax)
+
+        #cax = fig.add_axes([ax.get_position().x1+0.01,ax.get_position().y0,0.02,ax.get_position().height])#
+        if title==None:
+            ax.set_title(variable)
+        else:
+            ax.set_title(title)
+#        plt.colorbar(p)
 
 
 
@@ -275,10 +348,34 @@ class plot_xy:
 
         return(ani)
 
+    def latdepth_notime(self, variable, ax=None, fig=None, log=False, cmap=cm.viridis, vmin=None, vmax=None, title=None):
+
+        if fig==None:
+            fig = plt.figure(figsize=(20, 10))
+        if ax==None:
+            ax= plt.axes()
+
+        cocco_plot = self.ds[variable].clip(min=0).mean(dim=["lon"])
+        if log==True:
+            cocco_plot = np.log(cocco_plot+1)
+        
+        p = cocco_plot.plot(
+                        x='lat', y='depth',
+                        robust=True,
+                        vmax=vmax,
+                        vmin=vmin,
+                        add_colorbar=False,
+                        cmap=cmap,
+                        ax = ax)
+        if title==None:
+            ax.set_title(variable)
+        else:
+            ax.set_title(title)
+        ax.invert_yaxis()
 
 
 
-    def latdepth(self, variable, ax=None, fig=None, log=False):
+    def latdepth(self, variable, cmap=cm.viridis, ax=None, fig=None, log=False, vmin=None, vmax=None, title=None):
 
         if fig==None:
             fig = plt.figure(figsize=(20, 10))
@@ -291,16 +388,27 @@ class plot_xy:
         
         p = cocco_plot.plot(
                         x='lat', y='depth',
-                        cmap=cm.viridis,
+                        cmap=cmap,
                         robust=True,
-                        add_colorbar=True,
+                        vmax=vmax,
+                        vmin=vmin,
+                        add_colorbar=False,
                         ax = ax)
         
-        ax.set_title(variable)
+
+        cocco_plot.plot.contour(x='lat', y='depth',
+                           ax = ax)
+
+
+        if title==None:
+            ax.set_title(variable)
+        else:
+            ax.set_title(title)
         ax.invert_yaxis()
 
 
-    def lattime(self, variable, ax=None, fig=None, log=False):
+    def lattime(self, variable, ax=None, fig=None, log=False, vmin=None, vmax=None, title=None):
+
 
         if fig==None:
             fig = plt.figure(figsize=(20, 10))
@@ -317,12 +425,45 @@ class plot_xy:
                         x='time', y='lat',
                         cmap=cm.viridis,
                         robust=True,
-                        add_colorbar=True,
+                        add_colorbar=False,
+                        vmin=vmin,
+                        vmax=vmax,
                         ax = ax)
         
-        ax.set_title(variable)
+        if title==None:
+            ax.set_title(variable)
+        else:
+            ax.set_title(title)
 
-    def training_latlon(self, d, variable, ax=None, fig=None):
+    def depthtime(self, variable, lat, lon, ax=None, fig=None, log=False, vmax=None, vmin=None, title=None):
+
+        if fig==None:
+            fig = plt.figure(figsize=(20, 10))
+        if ax==None:
+            ax= plt.axes()
+           
+
+        cocco_plot = self.ds[variable].sel(lat=lat, lon=lon) #.fillna(0)
+        if log==True:
+            cocco_plot = np.log(cocco_plot+1)
+        
+        p = cocco_plot.plot(
+                        x='time', y='depth',
+                        cmap=cm.viridis,
+                        robust=True,
+                        add_colorbar=False,
+                        vmin = vmin,
+                        vmax=vmax,
+
+                        ax = ax)
+
+        if title==None:
+            ax.set_title(variable)
+        else:
+            ax.set_title(title)
+        ax.invert_yaxis()
+
+    def training_latlon(self, d, fill=None, ax=None, fig=None, log=False, title=""):
 
 
 
@@ -334,16 +475,58 @@ class plot_xy:
            
 
         ax.coastlines()
-        ax.add_feature(cart.feature.LAND, zorder=100, edgecolor='k', facecolor="gray")
+        ax.add_feature(cart.feature.LAND, zorder=100, edgecolor='k', facecolor="lightgrey")
         ax.gridlines(draw_labels=True,)
+
+        if fill==None:
+            color="dodgerblue"
+        else:
+            if log==False:
+                color=d[fill]
+            else:
+                color=np.log(d[fill])
+        
+
 
 
         plt.scatter(x=d['Longitude'], y=d['Latitude'],
-                    color="dodgerblue",
-                    s=50,
-                    alpha=0.5,
+                    c=color,
+                    s=100,
+                    alpha=0.75,
                     transform=ccrs.PlateCarree()) ## Important
 
     #    cax = fig.add_axes([ax.get_position().x1+0.01,ax.get_position().y0,0.02,ax.get_position().height])#
-        ax.set_title(variable)
+        ax.set_title(title)
     #    plt.colorbar(p, cax=cax)
+
+
+    def training_depthtime(self, d, ax=None, fig=None, log=False):
+
+        if fig==None:
+            fig = plt.figure(figsize=(20, 10))
+        if ax==None:
+            ax= plt.axes()
+
+
+        # values = np.vstack([d['Month'], d['Depth']])
+        # kernel = stats.gaussian_kde(values)(values)
+
+        # plt.scatter(
+        #             x=d['Month'], y=d['Depth'],
+        #             s=100,
+        #             c=kernel,
+        #             cmap="viridis",
+
+        #             alpha=0.75)
+        
+        p = sns.jointplot(data=d, x="months since winter solstice", 
+                      y="Depth", kind="hist", bins=12, hue=None)
+
+        #add kde for surface
+
+        p.fig.axes[0].invert_yaxis()
+        
+        p.fig.set_figwidth(20)
+        p.fig.set_figheight(4)
+#        ax.set_title("observations")
+#        ax.invert_yaxis()
