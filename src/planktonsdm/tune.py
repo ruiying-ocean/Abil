@@ -29,7 +29,7 @@ from inspect import signature
 import logging
 
 
-from functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
+from planktonsdm.functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
 
 class tune:
 
@@ -50,20 +50,29 @@ class tune:
             The target values (class labels in classification, real numbers in
             regression).
 
-        model config: dictionary, default=None
+        model_config: dictionary, default=None
             A dictionary containing:
 
             `seed` : int, used to create random numbers
+            
             `root`: string, path to folder
+            
             `path_out`: string, where predictions are saved
+            
             `path_in`: string, where to find tuned models
+            
             `traits`: string, file name of your trait file
+            
             `verbose`: int, to set verbosity (0-3)
+            
             `n_threads`: int, number of threads to use
+            
             `cv` : int, number of cross-folds
                         
             `ensemble_config` : 
+            
             `clf_scoring` :
+            
             `reg_scoring` :
 
             
@@ -121,9 +130,11 @@ class tune:
         regressor : bool, default=False
 
         log : string, default="no"
-            If "yes", log transformation is applied to y
-            If "no", y is not transformed
-            If "both", both log and no-log transformations are fitted by 
+            If `"yes"`, log transformation is applied to y
+            
+            If `"no"`, y is not transformed
+            
+            If `"both"`, both log and no-log transformations are fitted by 
                 running the model two times.
 
         Notes

@@ -20,7 +20,7 @@ import time
 from sklearn.ensemble import VotingRegressor, VotingClassifier
 import csv
 from sklearn.preprocessing import OneHotEncoder
-from functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
+from planktonsdm.functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
 from numpy.random import rand
 
 class predict:
@@ -33,27 +33,39 @@ class predict:
         Parameters
         ----------
 
-        X_train : should be the same as the X used for tuning
+        X_train : {array-like, sparse matrix} of shape (n_samples, n_features)
+            should be the same as the X used for tuning
 
-        y : only used to define species name, should be the same as the y used for tuning
+        y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+            should be the same as the y used for tuning
 
-        X_predict : X to predict on. 
+        X_predict : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Features to predict on (i.e. gridded environmental data). 
 
                 
-        model config: dictionary, default=None
+        model_config: dictionary, default=None
             A dictionary containing:
 
             `seed` : int, used to create random numbers
+
             `root`: string, path to folder
+            
             `path_out`: string, where predictions are saved
+            
             `path_in`: string, where to find tuned models
+            
             `traits`: string, file name of your trait file
+            
             `verbose`: int, to set verbosity (0-3)
+            
             `n_threads`: int, number of threads to use
+            
             `cv` : int, number of cross-folds
                         
             `ensemble_config` : 
+            
             `clf_scoring` :
+            
             `reg_scoring` :
 
         """

@@ -16,7 +16,9 @@ class post:
         
         if model_config['remote']==False:
             self.path_out = model_config['local_root'] + model_config['path_out'] 
-            self.ds = merge_netcdf("/home/phyto/CoccoML/ModelOutput/test/ens/predictions/" )
+        #    self.ds = merge_netcdf("/home/phyto/CoccoML/ModelOutput/test/ens/predictions/" )
+            self.ds = merge_netcdf("/home/phyto/CoccoML/ModelOutput/ENS_test/" )
+
             self.traits = pd.read_csv("/home/phyto/CoccoML/data/traits.csv")
 
         else:
@@ -28,6 +30,12 @@ class post:
         self.d = self.d.dropna()
         self.ds = None
         self.species = self.d.columns.values
+
+    def merge_performance(self):
+
+        
+        print("finished merging performance")
+
 
     def estimate_carbon(self, variable):
         w = self.traits.query('species in @self.species')
@@ -58,7 +66,20 @@ class post:
 
     def total(self):
         self.d['total'] = self.d[self.species].sum( axis='columns')
+        self.d['total_log'] = np.log(self.d['total'])
         print("finished calculating total")
+
+    def merge_env(self):
+        env_data = pd.read_csv("/home/phyto/CoccoML/data/envdata_final.csv")
+        env_data.set_index(["time", "depth", "lat", "lon"], inplace=True)
+        print(self.d.head())
+        self.d.reset_index(inplace=True)
+        self.d.set_index(["time", "depth", "lat", "lon"], inplace=True)
+
+        self.d = pd.concat([self.d, env_data], axis=1)
+
+    def return_d(self):
+        return(self.d)
 
     def export_ds(self, file_name):
         try: #make new dir if needed
