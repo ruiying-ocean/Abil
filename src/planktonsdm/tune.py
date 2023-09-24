@@ -31,53 +31,62 @@ import logging
 
 from planktonsdm.functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
 
-class tune:
 
+"""
+
+Test text
+"""
+
+class tune:
+    """
+
+    Parameters
+    ----------
+
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        The training input samples. Internally, its dtype will be converted
+        to ``dtype=np.float32``. If a sparse matrix is provided, it will be
+        converted into a sparse ``csc_matrix``.
+
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        The target values (class labels in classification, real numbers in
+        regression).
+
+    scale : bool, default=False
+        If True, normalize X before training
+
+    model_config: dictionary, default=None
+        A dictionary containing:
+
+        `seed` : int, used to create random numbers
+        
+        `root`: string, path to folder
+        
+        `path_out`: string, where predictions are saved
+        
+        `path_in`: string, where to find tuned models
+        
+        `traits`: string, file name of your trait file
+        
+        `verbose`: int, to set verbosity (0-3)
+        
+        `n_threads`: int, number of threads to use
+        
+        `cv` : int, number of cross-folds
+                    
+        `ensemble_config` : 
+        
+        `clf_scoring` :
+        
+        `reg_scoring` :
+
+    
+        
+    
+    """
     def __init__(self, X, y, model_config, scale=True):
 
         """
-        Tuning function
-
-        Parameters
-        ----------
-
-        X : {array-like, sparse matrix} of shape (n_samples, n_features)
-            The training input samples. Internally, its dtype will be converted
-            to ``dtype=np.float32``. If a sparse matrix is provided, it will be
-            converted into a sparse ``csc_matrix``.
-
-        y : array-like of shape (n_samples,) or (n_samples, n_outputs)
-            The target values (class labels in classification, real numbers in
-            regression).
-
-        model_config: dictionary, default=None
-            A dictionary containing:
-
-            `seed` : int, used to create random numbers
-            
-            `root`: string, path to folder
-            
-            `path_out`: string, where predictions are saved
-            
-            `path_in`: string, where to find tuned models
-            
-            `traits`: string, file name of your trait file
-            
-            `verbose`: int, to set verbosity (0-3)
-            
-            `n_threads`: int, number of threads to use
-            
-            `cv` : int, number of cross-folds
-                        
-            `ensemble_config` : 
-            
-            `clf_scoring` :
-            
-            `reg_scoring` :
-
-            
-        scale : bool, default=False
-            If True, normalize X before training
 
         """
 
@@ -114,7 +123,6 @@ class tune:
     def train(self, model, classifier=False, regressor=False, log="no"):
 
         """
-        Training function
 
         Parameters
         ----------
@@ -137,9 +145,23 @@ class tune:
             If `"both"`, both log and no-log transformations are fitted by 
                 running the model two times.
 
-        Notes
-        -----
-        Requires `tune` to be initialized
+
+
+        Examples
+        --------
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from sklearn.datasets import make_classification
+        >>> with open('/home/phyto/planktonSDM/configuration/example_model_config.yml', 'r') as f:
+        ...    model_config = load(f, Loader=Loader)
+        
+        >>> X, y = example_data(y_name =  "Coccolithus pelagicus",
+        ...                            n_samples=500, n_features=5, noise=20, 
+        ...                            random_state=model_config['seed'])
+
+        >>> m = tune(X, y, model_config)
+        >>> m.train(model="rf", regressor=True)
+
+        
         """
 
         if model =="xgb":
@@ -303,3 +325,7 @@ class tune:
         elapsed_time = et-st
 
         print("execution time:", elapsed_time, "seconds")        
+
+    """
+
+    """
