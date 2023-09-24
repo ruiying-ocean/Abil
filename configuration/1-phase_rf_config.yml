@@ -1,0 +1,32 @@
+---
+  root: /home/phyto/CoccoML/
+
+  path_out: ModelOutput/
+
+  traits: /home/phyto/CoccoML/data/traits.csv
+  
+  scale_X: True
+
+  verbose: 1
+  seed : 1 # random seed
+  n_threads : 2 # how many cpu threads to use
+  cv : 3
+  predict_probability: False 
+
+  ensemble_config: 
+    regressor: False
+    classifier: True
+    m1: "rf"
+     
+  upsample: False
+  clf_scoring:
+   accuracy: balanced_accuracy
+
+  param_grid:
+    rf_param_grid:
+      clf_param_grid:
+        n_estimators: [100]
+        max_features: [3, 4]
+        max_depth: [50, 100]
+        min_samples_leaf: [0.5, 1]
+        max_samples: [0.5, 1]   
