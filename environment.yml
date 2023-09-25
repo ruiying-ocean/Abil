@@ -4,22 +4,15 @@ channels:
   - conda-forge
 dependencies:
   - cartopy
-  - datashader
-  - dcor
-  - fiona
-  - geopandas
   - libgdal
   - matplotlib
   - netcdf4
   - numpy
   - pandas
   - pyyaml
-  - rasterio
-  - regionmask
-  - scikit-bio
   - seaborn
   - xarray
-  - xesmf
   - xgboost
   - ipykernel
-  - rpy2
+  - scikit-learn
+  - scipy
