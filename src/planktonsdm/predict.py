@@ -19,7 +19,7 @@ import time
 from sklearn.ensemble import VotingRegressor, VotingClassifier
 import csv
 from sklearn.preprocessing import OneHotEncoder
-from planktonsdm.functions import calculate_weights, score_model, def_prediction, do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
+from planktonsdm.functions import calculate_weights, score_model, def_prediction, export_prediction, do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
 
 
 class predict:
@@ -138,7 +138,7 @@ class predict:
             m, mae1 = def_prediction(self.path_out, self.ensemble_config, 0, self.species)
 
             model_out = self.path_out + self.ensemble_config["m"+str(1)]["model"] + "/predictions/"
-            self.export_prediction(m, model_out)
+            export_prediction(m, self.species, self.X_predict, self.model_config, self.ensemble_config, model_out)
 
         elif number_of_models >=2:
                     
@@ -151,7 +151,8 @@ class predict:
                 m, mae = def_prediction(self.path_out, self.ensemble_config, i, self.species)
                 model_name = self.ensemble_config["m" + str(i + 1)]
                 model_out = self.path_out + model_name + "/predictions/"
-                self.export_prediction(m, model_out)
+                export_prediction(m, self.species, self.X_predict, self.model_config, self.ensemble_config, model_out)
+
                 print("exporting " + model_name + " prediction to: " + model_out)
 
                 models.append((model_name, m))
@@ -174,8 +175,8 @@ class predict:
                 None
 
             print("predicting ensemble model")
+            export_prediction(m, self.species, self.X_predict, self.model_config, self.ensemble_config, model_out)
 
-            self.export_prediction(m, model_out)
             print("exporting ensemble prediction to: " + model_out)
 
 
