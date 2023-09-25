@@ -2,8 +2,6 @@
   root: /home/phyto/CoccoML/
 
   path_out: ModelOutput/
-#  path_in: predictions/ENS/
-#  path_in: predictions/ENS/
 
   traits: /home/phyto/CoccoML/data/traits.csv
   
@@ -16,14 +14,12 @@
   predict_probability: False 
 
   ensemble_config: 
-    m1: 
-      model : "rf"
-      regressor : False
-      classifier : True
-    # m2: 
-    #   model : "xgb"
-    #   regressor : False
-    #   classifier : True      
+    regressor: False
+    classifier: True
+    m1: "rf"
+    m2: "xgb"
+    m3: "knn"
+     
   upsample: False
   clf_scoring:
    accuracy: balanced_accuracy
