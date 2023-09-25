@@ -21,8 +21,7 @@ class post:
         if model_config['remote']==False:
             self.path_out = model_config['local_root'] + model_config['path_out'] 
         #    self.ds = merge_netcdf("/home/phyto/CoccoML/ModelOutput/test/ens/predictions/" )
-            self.ds = merge_netcdf("/home/phyto/CoccoML/ModelOutput/ENS_test/" )
-
+            self.ds = merge_netcdf(model_config['local_root'] + model_config['path_in'] )
             self.traits = pd.read_csv("/home/phyto/CoccoML/data/traits.csv")
 
         else:
@@ -34,6 +33,7 @@ class post:
         self.d = self.d.dropna()
         self.ds = None
         self.species = self.d.columns.values
+        self.env_data_path =  model_config['remote_root']
 
     def merge_performance(self):
 
@@ -128,7 +128,7 @@ class post:
         """
 
 
-        env_data = pd.read_csv("/home/phyto/CoccoML/data/envdata_final.csv")
+        env_data = pd.read_csv(self.env_data_path)
         env_data.set_index(["time", "depth", "lat", "lon"], inplace=True)
         print(self.d.head())
         self.d.reset_index(inplace=True)
