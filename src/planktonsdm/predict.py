@@ -137,7 +137,8 @@ class predict:
 
             m, mae1 = def_prediction(self.path_out, self.ensemble_config, 0, self.species)
 
-            model_out = self.path_out + self.ensemble_config["m"+str(1)]["model"] + "/predictions/"
+            model_name = self.ensemble_config["m" + str(1)]
+            model_out = self.path_out + model_name + "/predictions/" 
             export_prediction(m, self.species, self.X_predict, self.model_config, self.ensemble_config, model_out)
 
         elif number_of_models >=2:
@@ -150,7 +151,7 @@ class predict:
             for i in range(number_of_models):
                 m, mae = def_prediction(self.path_out, self.ensemble_config, i, self.species)
                 model_name = self.ensemble_config["m" + str(i + 1)]
-                model_out = self.path_out + model_name + "/predictions/"
+                model_out = self.path_out + model_name + "/predictions/" 
                 export_prediction(m, self.species, self.X_predict, self.model_config, self.ensemble_config, model_out)
 
                 print("exporting " + model_name + " prediction to: " + model_out)
