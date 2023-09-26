@@ -33,7 +33,7 @@ class post:
         self.d = self.d.dropna()
         self.ds = None
         self.species = self.d.columns.values
-        self.env_data_path =  model_config['remote_root']
+        self.env_data_path =  model_config['env_data_path']
 
     def merge_performance(self):
 
