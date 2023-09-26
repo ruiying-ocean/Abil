@@ -28,8 +28,10 @@ from sklearn.exceptions import NotFittedError
 from inspect import signature
 import logging
 
-
-from planktonsdm.functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
+if 'site-packages' in __file__:
+    from planktonsdm.functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
+else:
+    from functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
 
 
 """

@@ -19,7 +19,11 @@ import time
 from sklearn.ensemble import VotingRegressor, VotingClassifier
 import csv
 from sklearn.preprocessing import OneHotEncoder
-from planktonsdm.functions import calculate_weights, score_model, def_prediction, export_prediction, do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
+
+if 'site-packages' in __file__:
+    from planktonsdm.functions import calculate_weights, score_model, def_prediction, export_prediction, do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
+else:
+    from functions import calculate_weights, score_model, def_prediction, export_prediction, do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
 
 
 class predict:
