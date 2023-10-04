@@ -1,9 +1,5 @@
-if __name__ == "__main__":
-	from skbio.diversity import alpha_diversity
 import pandas as pd
-import pickle
 import numpy as np
-
 import glob, os
 import xarray as xr
 

@@ -5,7 +5,6 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.utils.validation import check_is_fitted, check_X_y, check_array
 from sklearn.exceptions import NotFittedError
 from inspect import signature
-import logging
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
 import pandas as pd

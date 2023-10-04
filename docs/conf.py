@@ -9,11 +9,11 @@
 project = 'planktonsdm'
 copyright = '2023, nanophyto'
 author = 'nanophyto'
-release = '0.0.6'
+release = '0.0.7'
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('./src/planktonsdm/'))
+sys.path.insert(0, os.path.abspath('../planktonsdm/'))
 import functions
 
 
