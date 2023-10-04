@@ -4,40 +4,23 @@ os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['MKL_DYNAMIC'] = 'FALSE'
 os.environ["OMP_THREAD_LIMIT"] = "1"
 
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import OneHotEncoder
+import time
 import pickle
+import pandas as pd
+import numpy as np
+from joblib import parallel_backend
+from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier, XGBRegressor
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import cross_validate
-from sklearn.preprocessing import OneHotEncoder
-from joblib import parallel_backend
-import time
-import numpy as np
-from sklearn.model_selection import StratifiedKFold
-from scipy.stats import kendalltau
-from sklearn.compose import TransformedTargetRegressor
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.ensemble import BaggingRegressor, BaggingClassifier
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, BaggingRegressor, BaggingClassifier
 from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
-from sklearn.base import BaseEstimator, RegressorMixin, clone, is_regressor, is_classifier
-from sklearn.utils.validation import check_is_fitted, check_X_y, check_array
-from sklearn.exceptions import NotFittedError
-from inspect import signature
-import logging
 
 if 'site-packages' in __file__:
-    from planktonsdm.functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
+    from planktonsdm.functions import ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold
 else:
-    from functions import do_log, do_exp,  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold, tau_scoring, tau_scoring_p
-
-
-"""
-
-Test text
-"""
+    from functions import  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold
 
 class tune:
     """
@@ -205,7 +188,6 @@ class tune:
                 os.makedirs(clf_sav_out_model)
             except:
                 None
-
 
 
             clf = GridSearchCV(

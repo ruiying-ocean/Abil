@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "planktonsdm"
-version = "0.0.6"
+version = "0.0.7"
 authors = [
   { name="nanophyto", email="joost.devries@bristol.ac.uk" },
 ]
