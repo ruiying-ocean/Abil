@@ -15,8 +15,6 @@ Generally the workflow is as follows:
 
 Examples for each step are provided in the respective Jupyter notebooks which can be found in `/notebooks`.
 
-If you would like to reproduce the model output reported in deVries2023 see  `/deVries2023` and `/configuration/deVries2023_model_config.yml`
-
 
 ## Directory structure
 
@@ -25,21 +23,18 @@ The recommended directory structure is:
 ```bash
 planktonSDM
 ├── README.md
-├── Singularity.sif (optional)
-├── planktonSDM.sif (optional)
 ├── configuration
 |   └── model_config.yml
 ├── data
 |   └── traits.csv
 |   └── abundances_environment.csv (optional)
 |   └── envdata.csv (optional)
-├── src
-|   └── planktonsdm
-|       └── __init__.py
-|       └── functions.py
-|       └── post.py
-|       └── predict.py
-|       └── tune.py
+├── planktonsdm
+|   └── __init__.py
+|   └── functions.py
+|   └── post.py
+|   └── predict.py
+|   └── tune.py
 ├── ModelOutput
 |   └── rf
 |       └── model
@@ -56,6 +51,10 @@ planktonSDM
 |   └── ens
 |       └── predictions
 |       └── scoring
+├── singularity
+|   └── Singularity.sif (optional)
+|   └── planktonSDM.sif (optional)
+
 ```
 
 ## Singularity
