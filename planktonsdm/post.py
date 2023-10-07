@@ -14,22 +14,27 @@ class post:
             ds = xr.merge([xr.open_dataset(f) for f in glob.glob(os.path.join(path_in, "*.nc"))])
             return(ds)
         
-        if model_config['remote']==False:
+        if model_config['hpc']==False:
             self.path_out = model_config['local_root'] + model_config['path_out'] 
-        #    self.ds = merge_netcdf("/home/phyto/CoccoML/ModelOutput/test/ens/predictions/" )
             self.ds = merge_netcdf(model_config['local_root'] + model_config['path_in'] )
-            self.traits = pd.read_csv("/home/phyto/CoccoML/data/traits.csv")
+            self.traits = pd.read_csv(model_config['local_root'] + model_config['traits'])
+            self.env_data_path =  model_config['local_root'] + model_config['env_data_path']
+
+        elif model_config['hpc']==True:
+            self.path_out = model_config['hpc_root'] + model_config['path_out'] 
+            self.ds = merge_netcdf(model_config['hpc_root'] + model_config['path_in'] )   
+            self.traits = pd.read_csv(model_config['hpc_root'] + model_config['traits'])
+            self.env_data_path =  model_config['hpc_root'] + model_config['env_data_path']
 
         else:
-            self.path_out = model_config['remote_root'] + model_config['path_out'] 
-            self.ds = merge_netcdf(model_config['remote_root'] + model_config['path_in'] )   
-            self.traits = pd.read_csv(model_config['traits'])
+            raise ValueError("hpc True or False not defined in yml")
+            
+
 
         self.d = self.ds.to_dataframe()
         self.d = self.d.dropna()
         self.ds = None
         self.species = self.d.columns.values
-        self.env_data_path =  model_config['env_data_path']
 
     def merge_performance(self):
 

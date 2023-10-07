@@ -1,16 +1,15 @@
 ---
-  root: /home/phyto/CoccoML/
-  
+  hpc: False
   local_root: /home/phyto/CoccoML/
-  remote_root: /user/work/ba18321/planktonSDM/
+  hpc_root: /user/work/ba18321/planktonSDM/
 
-  env_data_path: "/home/phyto/CoccoML/data/envdata_final.csv"
+  path_out: ModelOutput/ #root + folder
+  path_in: ModelOutput/ens/predictions/ #root + folder
 
-  path_out: ModelOutput/
-  path_in: ModelOutput/ens/predictions/
+  env_data_path: data/envdata_final.csv #root + folder
+  traits: data/traits.csv #root + folder
 
-  traits: /home/phyto/CoccoML/data/traits.csv
-  
+
   scale_X: True
 
   verbose: 1

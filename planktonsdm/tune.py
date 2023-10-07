@@ -75,7 +75,6 @@ class tune:
 
         """
 
-
         self.y = y.sample(frac=1, random_state=model_config['seed']) #shuffle
         if scale==True:
             scaler = StandardScaler()  
@@ -91,7 +90,14 @@ class tune:
         self.species = y.name
         self.n_jobs = model_config['n_threads']
         self.verbose = model_config['verbose'] 
-        self.path_out =  model_config['root'] + model_config['path_out']
+
+        if model_config['hpc']==False:
+            self.path_out = model_config['local_root'] + model_config['path_out'] 
+        elif model_config['hpc']==True:
+            self.path_out = model_config['hpc_root'] + model_config['path_out'] 
+        else:
+            raise ValueError("hpc True or False not defined in yml")
+
 
         if model_config['upsample']==True:
             self.cv = UpsampledZeroStratifiedKFold(n_splits=model_config['cv'])
