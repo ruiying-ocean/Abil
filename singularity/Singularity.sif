@@ -1,13 +1,22 @@
-BootStrap: docker
-From: python:3.11.2-bullseye
+Bootstrap: docker
+From: continuumio/miniconda3
 
-#pyogrio #geopandas #regionmask
-%help
-   This Singularity definition contains all coccoML dependencies
+%files
+    ../environment.yml
+    ../dist/planktonsdm-0.0.7.tar.gz
 
 %post
-   pip install numpy==1.23.5 pandas==1.5.3 scikit-learn==1.2.1 joblib==1.2.0 xgboost==1.7.3 xarray==2023.2.0 mapie==0.6.1 geopandas==0.12.2 shapely==2.0.1 scikit-bio==0.5.8 pyyaml==6.0
-%environment
-   export LC_ALL=C
+    echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc
+    . /opt/conda/etc/profile.d/conda.sh
+    conda install -n base conda-libmamba-solver
+    conda config --set solver libmamba
+    conda config --set channel_priority true
+    conda config --add channels conda-forge
+
+    conda env create -f environment.yml
 
 %runscript
+    . /opt/conda/etc/profile.d/conda.sh
+    conda activate planktonsdm-env
+    pip install planktonsdm-0.0.7.tar.gz
+    exec "$@"
