@@ -35,3 +35,8 @@ Submit cluster job:
 Check if the job is running:
 
 ``` sacct ``` 
+
+
+Delete error output files:
+
+``` rm *.out ```
