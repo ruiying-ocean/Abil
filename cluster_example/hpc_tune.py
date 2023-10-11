@@ -17,6 +17,7 @@ try:
     root = model_config['hpc_root']
     model_config['cv'] = 10
     model = sys.argv[3]
+    predictors = model_config['predictors']
 
 except:
     with open('/home/phyto/planktonSDM/configuration/2-phase_ensemble_cluster.yml', 'r') as f:
@@ -39,7 +40,6 @@ model_config['n_threads'] = n_jobs
 traits = pd.read_csv(root + model_config['traits'])
 d = pd.read_csv(root + model_config['training'])
 species =  traits['species'][n_spp]
-predictors = model_config['predictors']
 d = d.dropna(subset=[species])
 
 y = d[species]
@@ -48,4 +48,4 @@ X = d[predictors]
 #setup model:
 m = tune(X, y, model_config)
 #run model:
-m.train(model=model, zir=True, log="both")
+m.train(model=model, classifier=True, regressor=True)
