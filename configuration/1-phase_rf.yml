@@ -1,0 +1,36 @@
+---
+  hpc: False
+  local_root: /home/phyto/CoccoML/
+  hpc_root: /user/work/ba18321/planktonSDM/
+
+  path_out: ModelOutput/ #root + folder
+  path_in: ModelOutput/ens/predictions/ #root + folder
+
+  env_data_path: data/envdata_final.csv #root + folder
+  traits: data/traits.csv #root + folder
+
+  scale_X: True
+
+  verbose: 1
+  seed : 1 # random seed
+  n_threads : 2 # how many cpu threads to use
+  cv : 3
+  predict_probability: False 
+
+  ensemble_config: 
+    classifier: True
+    regressor: False
+    m1: "rf"
+     
+  upsample: False
+  clf_scoring:
+   accuracy: balanced_accuracy
+
+  param_grid:
+    rf_param_grid:
+      clf_param_grid:
+        n_estimators: [100]
+        max_features: [3, 4]
+        max_depth: [50, 100]
+        min_samples_leaf: [0.5, 1]
+        max_samples: [0.5, 1]   

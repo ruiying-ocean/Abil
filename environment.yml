@@ -3,14 +3,10 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - cartopy
-  - libgdal
-  - matplotlib
   - netcdf4
   - numpy
   - pandas
   - pyyaml
-  - seaborn
   - xarray
   - xgboost
   - ipykernel

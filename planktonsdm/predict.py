@@ -188,6 +188,9 @@ class predict:
             
 
             print("exporting ensemble scores to: " + model_out_scores)
+        
+        else:
+            raise ValueError("at least one model should be defined in the ensemble")
 
 
         et = time.time()
