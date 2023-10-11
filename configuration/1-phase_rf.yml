@@ -9,7 +9,6 @@
   env_data_path: data/envdata_final.csv #root + folder
   traits: data/traits.csv #root + folder
 
-
   scale_X: True
 
   verbose: 1
@@ -19,8 +18,8 @@
   predict_probability: False 
 
   ensemble_config: 
-    regressor: False
     classifier: True
+    regressor: False
     m1: "rf"
      
   upsample: False
