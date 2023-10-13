@@ -11,7 +11,7 @@ try:
     with open('/user/work/ba18321/planktonSDM/configuration/2-phase_ensemble_cluster.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
 
-    model_config['remote'] = True
+    model_config['hpc'] = True
     n_jobs = pd.to_numeric(sys.argv[1])
     n_spp = pd.to_numeric(sys.argv[2])
     root = model_config['hpc_root']
@@ -20,7 +20,7 @@ try:
 except:
     with open('/user/work/ba18321/planktonSDM/configuration/2-phase_ensemble_cluster.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
-    model_config['remote'] = False
+    model_config['hpc'] = False
     n_jobs = 8
     n_spp = 1
     root = model_config['local_root']
