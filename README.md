@@ -55,36 +55,12 @@ planktonSDM
 |   └── ens
 |       └── predictions
 |       └── scoring
-├── singularity
+└── singularity
     └── Singularity.sif (optional)
     └── planktonSDM.sif (optional)
 
 ```
 
-## Singularity
+## Running the model on a hpc cluster
 
-If you want to run the scripts on the cluster you need to create a container using Singularity: https://docs.sylabs.io/guides/3.4/user-guide/
-To compile singularity run:
-
-``` sudo singularity build planktonSDM.sif Singularity.sif  ```
-
-## Transferring files to remote server
-
-There are a few files in the distribution that are not needed to run the code on the cluster.
-
-To upload only relevant files with scp there is a `to-bp.sh` bash script.
-
-To run the script, cd to the planktonSDM directory:
-``` cd path_to_planktonSDM ```
-
-Set the bash script executable permission by running chmod command in Linux:
-
-``` sudo chmod +x to-bp.sh ```
-
-Then execute it:
-
-``` sudo ./to-bp.sh ``` 
-
-The script will ask for your cluster login information and then transfer the files.
-
-
+See: `cluster_example/README.md`
