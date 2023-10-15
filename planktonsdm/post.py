@@ -3,6 +3,11 @@ import numpy as np
 import glob, os
 import xarray as xr
 
+if 'site-packages' in __file__:
+    from planktonsdm.diversity import diversity_functions
+else:
+    from diversity import diversity
+
 class post:
     """
     Post processing of SDM
@@ -29,7 +34,6 @@ class post:
         else:
             raise ValueError("hpc True or False not defined in yml")
             
-
 
         self.d = self.ds.to_dataframe()
         self.d = self.d.dropna()
@@ -103,7 +107,7 @@ class post:
         print("finished calculating CWM " + variable)
 
     def richness(self, metric):
-        measure = alpha_diversity(metric, self.d[self.species].clip(lower=1))
+        measure = diversity(metric, self.d[self.species].clip(lower=1))
         self.d[metric] = measure.values
         print("finished calculating " + metric)
 
@@ -165,4 +169,29 @@ class post:
         print(self.d.head())
         ds.to_netcdf(self.path_out + file_name + ".nc")
         print("exported ds to: " + self.path_out + file_name + ".nc")
+        #add nice metadata
+
+
+    def export_csv(self, file_name):
+        """
+        Export processed dataset to csv.
+
+        Parameters
+        ----------
+        file_name: name csv will be saved as. 
+
+        Notes
+        ----------
+        data export location is defined in the model_config.yml
+
+        """
+    
+        try: #make new dir if needed
+            os.makedirs(self.path_out)
+        except:
+            None
+    
+        print(self.d.head())
+        self.d.to_csv(self.path_out + file_name + ".csv")
+        print("exported d to: " + self.path_out + file_name + ".csv")
         #add nice metadata

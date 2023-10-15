@@ -4,8 +4,8 @@
 #SBATCH --time=0-18:00:00
 #SBATCH --nodes=1
 #SBATCH --mem=10000M
-#SBATCH --cpus-per-task=8q
-#SBATCH --array=0-41
+#SBATCH --cpus-per-task=8
+#SBATCH --array=0-3
 #SBATCH --account=GEOG024542
 
 i=${SLURM_ARRAY_TASK_ID}

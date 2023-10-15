@@ -16,6 +16,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import cross_validate
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, BaggingRegressor, BaggingClassifier
 from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
 
 if 'site-packages' in __file__:
     from planktonsdm.functions import ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold
@@ -36,9 +38,6 @@ class tune:
     y : array-like of shape (n_samples,) or (n_samples, n_outputs)
         The target values (class labels in classification, real numbers in
         regression).
-
-    scale : bool, default=False
-        If True, normalize X before training
 
     model_config: dictionary, default=None
         A dictionary containing:
@@ -69,21 +68,16 @@ class tune:
         
     
     """
-    def __init__(self, X, y, model_config, scale=True):
+    def __init__(self, X_train, y, model_config):
 
         """
 
         """
 
         self.y = y.sample(frac=1, random_state=model_config['seed']) #shuffle
-        if scale==True:
-            scaler = StandardScaler()  
-            scaler.fit(X)  
-            self.X = pd.DataFrame(scaler.transform(X))
-            print("scale X = True")
+        
+        self.X = X_train
 
-        else:
-            self.X = X
         self.X = self.X.sample(frac=1, random_state=model_config['seed']) #shuffle
         self.model_config = model_config
         self.seed = model_config['seed']
@@ -97,7 +91,6 @@ class tune:
             self.path_out = model_config['hpc_root'] + model_config['path_out'] 
         else:
             raise ValueError("hpc True or False not defined in yml")
-
 
         if model_config['upsample']==True:
             self.cv = UpsampledZeroStratifiedKFold(n_splits=model_config['cv'])
@@ -160,7 +153,7 @@ class tune:
             reg_estimator = XGBRegressor(nthread=1)
         elif model=="knn":
             if self.bagging_estimators ==None:
-                print("you forgot to define the number of bagging estimators")
+                raise ValueError("number of bagging estimators not defined")
             else:
                 clf_estimator = BaggingClassifier(estimator=KNeighborsClassifier(), n_estimators=self.bagging_estimators)
                 reg_estimator = BaggingRegressor(estimator=KNeighborsRegressor(), n_estimators=self.bagging_estimators)
@@ -168,12 +161,10 @@ class tune:
             clf_estimator = RandomForestClassifier(random_state=self.seed, oob_score=True)
             reg_estimator = RandomForestRegressor(random_state=self.seed, oob_score=True)
         else:
-            print("invalid model")
-
+            raise ValueError("invalid model")
 
         if classifier == False and regressor ==False:
-            print("both classifier defined as False")
-            print("no model was trained")
+            raise ValueError("both classifier and regressor defined as False")
 
         if classifier ==True:
             print("training classifier")
@@ -189,15 +180,28 @@ class tune:
             except:
                 None
 
-
             try: #make new dir if needed
                 os.makedirs(clf_sav_out_model)
             except:
                 None
 
+            #numeric_features = self.X.select_dtypes(include=np.number).columns
+            numeric_features =  self.X.columns.get_indexer(self.X.select_dtypes(include=np.number).columns)
+
+            print(numeric_features)
+
+            numeric_transformer = Pipeline(steps=[
+                ('scaler', StandardScaler())])
+
+            preprocessor = ColumnTransformer(
+                transformers=[
+                    ('num', numeric_transformer, numeric_features)])
+
+            clf_pipe = Pipeline(steps=[('preprocessor', preprocessor),
+                      ('estimator', clf_estimator)])
 
             clf = GridSearchCV(
-                estimator=clf_estimator,
+                estimator=clf_pipe,
                 param_grid= clf_param_grid,
                 scoring= 'balanced_accuracy',
                 cv = self.cv,
@@ -231,12 +235,8 @@ class tune:
             reg_scoring = self.model_config['reg_scoring']
             reg_param_grid = self.model_config['param_grid'][model + '_param_grid']['reg_param_grid']
 
-
-
             reg_sav_out_scores = self.path_out + model + "/scoring/"
             reg_sav_out_model = self.path_out + model + "/model/"
-
-
 
             try: #make new dir if needed
                 os.makedirs(reg_sav_out_scores)
@@ -293,6 +293,7 @@ class tune:
             except:
                 None           
 
+            zir.fit(self.X, self.y)
             pickle.dump(zir, open(zir_sav_out_model + self.species + '_zir.sav', 'wb'))
             print("exported model to: " + zir_sav_out_model + self.species + '_zir.sav')
 

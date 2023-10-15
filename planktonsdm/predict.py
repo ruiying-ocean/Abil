@@ -3,7 +3,6 @@ import pickle
 import os
 import time
 from sklearn.ensemble import VotingRegressor, VotingClassifier
-from sklearn.preprocessing import StandardScaler
 
 if 'site-packages' in __file__:
     from planktonsdm.functions import calculate_weights, score_model, def_prediction, export_prediction, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold
@@ -51,16 +50,8 @@ class predict:
 
     """
     def __init__(self, X_train, y, X_predict, model_config):
-
         
         self.st = time.time()
-
-
-        if model_config['scale_X']==True:
-            scaler = StandardScaler()  
-            scaler.fit(X_train)  
-            X_train = pd.DataFrame(scaler.transform(X_train))
-            print("scale X = True")
 
         self.y = y.sample(frac=1, random_state=model_config['seed']) #shuffle
 
@@ -85,12 +76,6 @@ class predict:
 
         else:
             self.cv = ZeroStratifiedKFold(n_splits=model_config['cv'])
-
-        if model_config['scale_X']==True:
-            scaler = StandardScaler()  
-            scaler.fit(X_train)  
-            X_predict = pd.DataFrame(scaler.transform(X_predict))
-            print("scaled X_predict")
 
         self.X_predict = X_predict
         self.ensemble_config = model_config['ensemble_config']
