@@ -4,7 +4,7 @@ import functools
 
 
 
-class diversity_functions:
+class diversity:
         
 
     def __init__(self, metric, counts, validate=True, **kwargs):
@@ -60,7 +60,7 @@ class diversity_functions:
 
         # kwargs is provided here so an error is raised on extra kwargs
         results = [metric(c, **kwargs) for c in counts]
-        return pd.Series(results, index=ids)
+        return pd.Series(results)
 
 
     def _get_alpha_diversity_metric_map(self):

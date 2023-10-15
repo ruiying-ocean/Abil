@@ -13,6 +13,11 @@ from sklearn.datasets import make_regression
 from sklearn.model_selection import cross_validate
 import pickle
 import os
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler
+
+
 
 def tau_scoring(y, y_pred):
     tau, p_value = kendalltau(y, y_pred)
@@ -160,28 +165,40 @@ class LogGridSearch:
     
     def transformed_fit(self, X, y, log):
 
+        numeric_features =  X.columns.get_indexer(X.select_dtypes(include=np.number).columns)
+
+        numeric_transformer = Pipeline(steps=[
+            ('scaler', StandardScaler())])
+
+        preprocessor = ColumnTransformer(
+            transformers=[
+                ('num', numeric_transformer, numeric_features)])
+
+        reg_pipe = Pipeline(steps=[('preprocessor', preprocessor),
+                    ('estimator', self.m)])
+
         if log=="yes":
 
-            model = TransformedTargetRegressor(self.m, func = self.do_log, inverse_func=self.do_exp)
+            model = TransformedTargetRegressor(reg_pipe, func = self.do_log, inverse_func=self.do_exp)
             grid_search = GridSearchCV(model, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search.fit(X, y)
         
         elif log=="no":
 
-            model = TransformedTargetRegressor(self.m, func = None, inverse_func=None)
+            model = TransformedTargetRegressor(reg_pipe, func = None, inverse_func=None)
             grid_search = GridSearchCV(model, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search.fit(X, y)
 
         elif log =="both":
 
-            normal_m = TransformedTargetRegressor(self.m, func = None, inverse_func=None)
+            normal_m = TransformedTargetRegressor(reg_pipe, func = None, inverse_func=None)
             grid_search1 = GridSearchCV(normal_m, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search1.fit(X, y)
 
-            log_m = TransformedTargetRegressor(self.m, func = self.do_log, inverse_func=self.do_exp)
+            log_m = TransformedTargetRegressor(reg_pipe, func = self.do_log, inverse_func=self.do_exp)
             grid_search2 = GridSearchCV(log_m, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search2.fit(X, y)
