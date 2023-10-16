@@ -23,6 +23,8 @@ Set the bash script executable permission by running chmod command in Linux:
 
 ``` sudo chmod +x to-bp.sh ```
 
+Edit the file to your own username.
+
 Then execute it:
 
 ``` sudo ./to-bp.sh ``` 
