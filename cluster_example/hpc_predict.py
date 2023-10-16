@@ -33,18 +33,22 @@ d = pd.read_csv(root + model_config['training'])
 species =  traits['species'][n_spp]
 predictors = model_config['predictors']
 d = d.dropna(subset=[species])
+d = d.dropna(subset=['FID'])
+
 X_predict =  pd.read_csv(root + model_config['env_data_path'])
     
 y = d[species]
 X_train = d[predictors]
 
 try:
-    X_train.drop(columns=['FID'], inplace=True)
-    enc = OneHotEncoder()
+    #drop rows with FIDs not found in original dataset:
+    X_predict = X_predict[X_predict['FID'].isin(X_train['FID'])]
 
-    regions  = enc.fit_transform(d[['FID']])
+    enc = OneHotEncoder()
+    regions  = enc.fit_transform(X_train[['FID']])
     X_train[enc.categories_[0]] = regions.toarray()
     X_train.columns = X_train.columns.astype(str)
+    X_train.drop(columns=['FID'], inplace=True)
 
     regions  = enc.fit_transform(X_predict[['FID']])
     X_predict[enc.categories_[0]] = regions.toarray()

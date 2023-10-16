@@ -42,6 +42,7 @@ traits = pd.read_csv(root + model_config['traits'])
 d = pd.read_csv(root + model_config['training'])
 species =  traits['species'][n_spp]
 d = d.dropna(subset=[species])
+d = d.dropna(subset=['FID'])
 
 y = d[species]
 X_train = d[predictors]
