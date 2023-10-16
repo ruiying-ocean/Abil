@@ -61,23 +61,17 @@ planktonSDM
 
 ```
 
+## Installing the package:
 
-
-
-## Building and installing the package:
-
-
-``` cd path_to_planktonSDM ```
-
-
-``` python3 -m build ```
-
+Install the dependencies in a new environment: 
 
 ``` conda env create -f package_save_path/environment.yml ``` 
 
+Activate the new environment and install planktonSDM:
 
-``` /home/phyto/anaconda3/envs/planktonSDM/bin/pip install /home/phyto/planktonSDM/ ``` 
+``` conda activate planktonsdm-env ``` 
 
+``` python -m pip install package_save_path  ``` 
 
 
 ## Running the model on a hpc cluster
