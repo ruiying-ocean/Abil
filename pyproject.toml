@@ -20,3 +20,12 @@ classifiers = [
 
 [project.urls]
 "Homepage" = "https://github.com/nanophyto/planktonSDM"
+
+[tool.hatch.build]
+exclude = [
+  "/.git",
+  "/singularity",
+]
+
+
+
