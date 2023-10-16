@@ -5,6 +5,7 @@ import sys
 from yaml import load
 from yaml import CLoader as Loader
 from planktonsdm.tune import tune 
+from sklearn.preprocessing import OneHotEncoder
 
 try:
     print(sys.argv[1])
@@ -43,9 +44,19 @@ species =  traits['species'][n_spp]
 d = d.dropna(subset=[species])
 
 y = d[species]
-X = d[predictors]
+X_train = d[predictors]
+
+try:
+    X_train.drop(columns=['FID'], inplace=True)
+    enc = OneHotEncoder()
+    regions  = enc.fit_transform(d[['FID']])
+    X_train[enc.categories_[0]] = regions.toarray()
+    X_train.columns = X_train.columns.astype(str)
+    
+except:
+    print("FID not part of predictors")
 
 #setup model:
-m = tune(X, y, model_config)
+m = tune(X_train, y, model_config)
 #run model:
 m.train(model=model, classifier=True, regressor=True)

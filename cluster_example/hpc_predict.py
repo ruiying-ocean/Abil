@@ -5,6 +5,7 @@ import sys
 from yaml import load
 from yaml import CLoader as Loader
 from planktonsdm.predict import predict
+from sklearn.preprocessing import OneHotEncoder
 
 try:
     print(sys.argv[1])
@@ -32,15 +33,27 @@ d = pd.read_csv(root + model_config['training'])
 species =  traits['species'][n_spp]
 predictors = model_config['predictors']
 d = d.dropna(subset=[species])
-envdata =  pd.read_csv(root + model_config['env_data_path'])
+X_predict =  pd.read_csv(root + model_config['env_data_path'])
     
 y = d[species]
-X = d[predictors]
+X_train = d[predictors]
 
+try:
+    X_train.drop(columns=['FID'], inplace=True)
+    enc = OneHotEncoder()
 
+    regions  = enc.fit_transform(d[['FID']])
+    X_train[enc.categories_[0]] = regions.toarray()
+    X_train.columns = X_train.columns.astype(str)
 
+    regions  = enc.fit_transform(X_predict[['FID']])
+    X_predict[enc.categories_[0]] = regions.toarray()
+    X_predict.columns = X_predict.columns.astype(str)
+    X_predict.drop(columns=['FID'], inplace=True)
 
+except:
+    print("FID not part of predictors")
 
 #setup model:
-m = predict(X, y, envdata, model_config)
+m = predict(X_train, y, X_predict, model_config)
 m.make_prediction()
