@@ -5,7 +5,7 @@ import xarray as xr
 import pickle
 
 if 'site-packages' in __file__:
-    from planktonsdm.diversity import diversity_functions
+    from planktonsdm.diversity import diversity
 else:
     from diversity import diversity
 
@@ -115,17 +115,10 @@ class post:
                                            })
                 all_parameters.append(parameters)    
 
-        #     R2 = np.mean(m['test_R2'])
-        #     RMSE = np.mean(m['test_RMSE'])
-        #     MAE = np.mean(m['test_MAE'])
-        #     species = self.d.columns[i]
-        #     performance = pd.DataFrame({'species':[species], 'R2':[R2], 'RMSE':[RMSE], 'MAE':[MAE]})
-        #     all_performance.append(performance)
-
         all_parameters= pd.concat(all_parameters)
         all_parameters.to_csv(self.root + self.model_config['path_out'] + model + "_parameters.csv", index=False)
         
-        print("finished merging performance")
+        print("finished merging parameters")
 
 
 
@@ -212,15 +205,11 @@ class post:
     def merge_env(self):
         """
         Merge model output with environmental data 
-
         """
-
 
         env_data = pd.read_csv(self.env_data_path)
         env_data.set_index(["time", "depth", "lat", "lon"], inplace=True)
         print(self.d.head())
-        self.d.reset_index(inplace=True)
-        self.d.set_index(["time", "depth", "lat", "lon"], inplace=True)
 
         self.d = pd.concat([self.d, env_data], axis=1)
 

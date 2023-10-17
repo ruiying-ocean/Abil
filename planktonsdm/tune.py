@@ -188,8 +188,6 @@ class tune:
             #numeric_features = self.X.select_dtypes(include=np.number).columns
             numeric_features =  self.X.columns.get_indexer(self.X.select_dtypes(include=np.number).columns)
 
-            print(numeric_features)
-
             numeric_transformer = Pipeline(steps=[
                 ('scaler', StandardScaler())])
 
