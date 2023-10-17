@@ -36,7 +36,7 @@ d = d.dropna(subset=[species])
 d = d.dropna(subset=['FID'])
 
 X_predict =  pd.read_csv(root + model_config['env_data_path'])
-    
+X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
 y = d[species]
 X_train = d[predictors]
 
