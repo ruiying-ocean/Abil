@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import glob, os
 import xarray as xr
+import pickle
 
 if 'site-packages' in __file__:
     from planktonsdm.diversity import diversity_functions
@@ -24,12 +25,14 @@ class post:
             self.ds = merge_netcdf(model_config['local_root'] + model_config['path_in'] )
             self.traits = pd.read_csv(model_config['local_root'] + model_config['traits'])
             self.env_data_path =  model_config['local_root'] + model_config['env_data_path']
+            self.root  =  model_config['local_root'] 
 
         elif model_config['hpc']==True:
             self.path_out = model_config['hpc_root'] + model_config['path_out'] 
             self.ds = merge_netcdf(model_config['hpc_root'] + model_config['path_in'] )   
             self.traits = pd.read_csv(model_config['hpc_root'] + model_config['traits'])
             self.env_data_path =  model_config['hpc_root'] + model_config['env_data_path']
+            self.root  =  model_config['hpc_root'] 
 
         else:
             raise ValueError("hpc True or False not defined in yml")
@@ -39,11 +42,91 @@ class post:
         self.d = self.d.dropna()
         self.ds = None
         self.species = self.d.columns.values
+        self.model_config = model_config
 
     def merge_performance(self):
+        
+        all_performance = []
 
+        for i in range(len(self.d.columns)):
+            
+            m = pickle.load(open(self.root + self.model_config['path_out'] + "/ens/scoring/" + self.d.columns[i] + ".sav", 'rb'))
+            print(m)
+            R2 = np.mean(m['test_R2'])
+            RMSE = np.mean(m['test_RMSE'])
+            MAE = np.mean(m['test_MAE'])
+            species = self.d.columns[i]
+            performance = pd.DataFrame({'species':[species], 'R2':[R2], 'RMSE':[RMSE], 'MAE':[MAE]})
+            all_performance.append(performance)
+
+        all_performance = pd.concat(all_performance)
+        all_performance.to_csv(self.root + self.model_config['path_out'] + "ensemble_performance.csv", index=False)
         
         print("finished merging performance")
+
+    def merge_parameters(self, model):
+        
+        all_parameters = []
+
+        for i in range(len(self.d.columns)):
+            
+            species = self.d.columns[i]
+
+            m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/scoring/" + self.d.columns[i] + "_reg.sav", 'rb'))
+            score_reg = np.mean(m['test_MAE'])
+
+            m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/scoring/" + self.d.columns[i] + "_zir.sav", 'rb'))
+            score_zir = np.mean(m['test_MAE'])
+
+            if score_reg > score_zir:
+                m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/model/" + self.d.columns[i] + "_reg.sav", 'rb'))
+            elif score_reg < score_zir:
+                m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/model/" + self.d.columns[i] + "_reg.sav", 'rb'))
+
+            if model == "rf":
+                max_depth = m.regressor_.named_steps.estimator.max_depth
+                max_features = m.regressor_.named_steps.estimator.max_features
+                max_samples = m.regressor_.named_steps.estimator.max_samples
+                parameters = pd.DataFrame({'species':[species], 'max_depth':[max_depth], 'max_features':[max_features], 'max_samples':[max_samples]})
+                all_parameters.append(parameters)
+            elif model == "xgb":
+                max_depth = m.regressor_.named_steps.estimator.max_depth
+                subsample = m.regressor_.named_steps.estimator.subsample
+                colsample_bytree = m.regressor_.named_steps.estimator.colsample_bytree
+
+                learning_rate = m.regressor_.named_steps.estimator.learning_rate
+                alpha = m.regressor_.named_steps.estimator.reg_alpha
+
+                parameters = pd.DataFrame({'species':[species], 'max_depth':[max_depth], 'subsample':[subsample], 'colsample_bytree':[colsample_bytree],
+                                           'learning_rate':[learning_rate], 'alpha':[alpha]                                           
+                                           })
+                all_parameters.append(parameters)
+            elif model == "knn":
+                max_features = m.regressor_.named_steps.estimator.max_features
+                max_samples = m.regressor_.named_steps.estimator.max_samples
+
+                leaf_size = m.regressor_.named_steps.estimator.estimator.leaf_size
+                n_neighbors = m.regressor_.named_steps.estimator.estimator.n_neighbors
+                p = m.regressor_.named_steps.estimator.estimator.p
+                weights = m.regressor_.named_steps.estimator.estimator.weights
+
+                parameters = pd.DataFrame({'species':[species], 'max_features':[max_features], 'max_samples':[max_samples],
+                                           'leaf_size':[leaf_size], 'p':[p], 'n_neighbors':[n_neighbors], 'weights':[weights]
+                                           })
+                all_parameters.append(parameters)    
+
+        #     R2 = np.mean(m['test_R2'])
+        #     RMSE = np.mean(m['test_RMSE'])
+        #     MAE = np.mean(m['test_MAE'])
+        #     species = self.d.columns[i]
+        #     performance = pd.DataFrame({'species':[species], 'R2':[R2], 'RMSE':[RMSE], 'MAE':[MAE]})
+        #     all_performance.append(performance)
+
+        all_parameters= pd.concat(all_parameters)
+        all_parameters.to_csv(self.root + self.model_config['path_out'] + model + "_parameters.csv", index=False)
+        
+        print("finished merging performance")
+
 
 
     def estimate_carbon(self, variable):
