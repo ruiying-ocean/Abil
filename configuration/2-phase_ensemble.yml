@@ -50,21 +50,21 @@
 
     xgb_param_grid:
       clf_param_grid:  
-        estimator__eta: [0.01]
+        estimator__learning_rate: [0.01]
         estimator__n_estimators: [100]
         estimator__max_depth: [4]
         estimator__subsample: [0.6]  
         estimator__colsample_bytree: [0.6]
         estimator__gamma: [1] 
-        estimator__alpha: [1]   
+        estimator__reg_alpha: [1]   
       reg_param_grid:  
-        regressor__estimator__eta: [0.01]
+        regressor__estimator__learning_rate: [0.01]
         regressor__estimator__n_estimators: [100]
         regressor__estimator__max_depth: [4]
         regressor__estimator__subsample: [0.6]  
         regressor__estimator__colsample_bytree: [0.6]
         regressor__estimator__gamma: [1] 
-        regressor__estimator__alpha: [1]   
+        regressor__estimator__reg_alpha: [1]   
 
     knn_param_grid:
       clf_param_grid:  
