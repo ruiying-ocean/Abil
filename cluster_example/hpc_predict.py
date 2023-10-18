@@ -40,26 +40,6 @@ X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
 y = d[species]
 X_train = d[predictors]
 
-try:
-    #drop rows with FIDs not found in original dataset:
-    X_predict = X_predict[X_predict['FID'].isin(X_train['FID'])]
-
-    enc = OneHotEncoder()
-    regions  = enc.fit_transform(X_train[['FID']])
-    X_train.loc[:, enc.categories_[0]]  = regions.toarray()
-
-    X_train.columns = X_train.columns.astype(str)
-    X_train = X_train.drop(columns=['FID'])
-
-    regions  = enc.fit_transform(X_predict[['FID']])
-    X_predict[enc.categories_[0]] = regions.toarray()
-    X_predict.columns = X_predict.columns.astype(str)
-    X_predict.loc[:, enc.categories_[0]]  = regions.toarray()
-    X_predict = X_predict.drop(columns=['FID'])
-
-except:
-    print("FID not part of predictors")
-
 #setup model:
 m = predict(X_train, y, X_predict, model_config)
 m.make_prediction()

@@ -47,17 +47,7 @@ d = d.dropna(subset=['FID'])
 y = d[species]
 X_train = d[predictors]
 
-try:
-    X_train = X_train.drop(columns=['FID'])
-    enc = OneHotEncoder()
-    regions  = enc.fit_transform(d[['FID']])
-    X_train.loc[:, enc.categories_[0]]  = regions.toarray()
-    X_train.columns = X_train.columns.astype(str)
-    
-except:
-    print("FID not part of predictors")
-
 #setup model:
-m = tune(X_train, y, model_config)
+m = tune(X_train, y, model_config, regions="FID")
 #run model:
 m.train(model=model, classifier=True, regressor=True)

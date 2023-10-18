@@ -18,6 +18,8 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, Bagg
 from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+
 
 if 'site-packages' in __file__:
     from planktonsdm.functions import ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold
@@ -68,7 +70,7 @@ class tune:
         
     
     """
-    def __init__(self, X_train, y, model_config):
+    def __init__(self, X_train, y, model_config, regions=None):
 
         """
 
@@ -84,6 +86,7 @@ class tune:
         self.species = y.name
         self.n_jobs = model_config['n_threads']
         self.verbose = model_config['verbose'] 
+        self.regions = regions
 
         if model_config['hpc']==False:
             self.path_out = model_config['local_root'] + model_config['path_out'] 
@@ -149,14 +152,14 @@ class tune:
         """
 
         if model =="xgb":
-            clf_estimator = XGBClassifier(nthread=1)
-            reg_estimator = XGBRegressor(nthread=1)
+            clf_estimator = XGBClassifier(nthread=1, random_state=self.seed)
+            reg_estimator = XGBRegressor(nthread=1, random_state=self.seed, objective='reg:tweedie')
         elif model=="knn":
             if self.bagging_estimators ==None:
                 raise ValueError("number of bagging estimators not defined")
             else:
-                clf_estimator = BaggingClassifier(estimator=KNeighborsClassifier(), n_estimators=self.bagging_estimators)
-                reg_estimator = BaggingRegressor(estimator=KNeighborsRegressor(), n_estimators=self.bagging_estimators)
+                clf_estimator = BaggingClassifier(estimator=KNeighborsClassifier(), n_estimators=self.bagging_estimators, random_state=self.seed)
+                reg_estimator = BaggingRegressor(estimator=KNeighborsRegressor(), n_estimators=self.bagging_estimators, random_state=self.seed)
         elif model=="rf":
             clf_estimator = RandomForestClassifier(random_state=self.seed, oob_score=True)
             reg_estimator = RandomForestRegressor(random_state=self.seed, oob_score=True)
@@ -185,15 +188,26 @@ class tune:
             except:
                 None
 
-            #numeric_features = self.X.select_dtypes(include=np.number).columns
-            numeric_features =  self.X.columns.get_indexer(self.X.select_dtypes(include=np.number).columns)
+            predictors = self.model_config['predictors'].copy()
 
+            if self.regions!=None:
+                predictors.remove(self.regions)
+                categorical_features = [self.regions]
+                categorical_transformer = OneHotEncoder(handle_unknown='ignore')
+            
+            numeric_features =  self.X.columns.get_indexer(self.X[predictors].columns)
             numeric_transformer = Pipeline(steps=[
                 ('scaler', StandardScaler())])
 
-            preprocessor = ColumnTransformer(
-                transformers=[
-                    ('num', numeric_transformer, numeric_features)])
+            if self.regions!=None:
+                preprocessor = ColumnTransformer(
+                    transformers=[
+                        ('num', numeric_transformer, numeric_features),
+                        ('cat', categorical_transformer, categorical_features)])
+            else:
+                preprocessor = ColumnTransformer(
+                    transformers=[
+                        ('num', numeric_transformer, numeric_features)])
 
             clf_pipe = Pipeline(steps=[('preprocessor', preprocessor),
                       ('estimator', clf_estimator)])
@@ -246,10 +260,10 @@ class tune:
             except:
                 None
 
-
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-                reg = LogGridSearch(reg_estimator, verbose = self.verbose, cv=self.cv, param_grid=reg_param_grid, scoring="neg_mean_absolute_error")
-                reg_grid_search = reg.transformed_fit(self.X, self.y.values.ravel(), log)
+                reg = LogGridSearch(reg_estimator, verbose = self.verbose, cv=self.cv, 
+                                    param_grid=reg_param_grid, scoring="neg_mean_absolute_error", regions=self.regions)
+                reg_grid_search = reg.transformed_fit(self.X, self.y.values.ravel(), log, self.model_config['predictors'].copy())
 
             m2 = reg_grid_search.best_estimator_
             pickle.dump(m2, open(reg_sav_out_model  + self.species + '_reg.sav', 'wb'))
