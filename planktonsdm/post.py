@@ -44,13 +44,18 @@ class post:
         self.species = self.d.columns.values
         self.model_config = model_config
 
-    def merge_performance(self):
+    def merge_performance(self, model, configuration=None):
         
         all_performance = []
 
+        if model=="ens":
+            extension = ".sav"
+        else:
+            extension = "_" + configuration + ".sav"
+
         for i in range(len(self.d.columns)):
             
-            m = pickle.load(open(self.root + self.model_config['path_out'] + "/ens/scoring/" + self.d.columns[i] + ".sav", 'rb'))
+            m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/scoring/" + self.d.columns[i] + extension, 'rb'))
             print(m)
             R2 = np.mean(m['test_R2'])
             RMSE = np.mean(m['test_RMSE'])
@@ -60,7 +65,11 @@ class post:
             all_performance.append(performance)
 
         all_performance = pd.concat(all_performance)
-        all_performance.to_csv(self.root + self.model_config['path_out'] + "ensemble_performance.csv", index=False)
+
+        if configuration==None:
+            all_performance.to_csv(self.root + self.model_config['path_out'] + model + "_performance.csv", index=False)
+        else:
+            all_performance.to_csv(self.root + self.model_config['path_out'] + model + "_" + configuration + "_performance.csv", index=False)
         
         print("finished merging performance")
 
