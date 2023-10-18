@@ -46,14 +46,16 @@ try:
 
     enc = OneHotEncoder()
     regions  = enc.fit_transform(X_train[['FID']])
-    X_train[enc.categories_[0]] = regions.toarray()
+    X_train.loc[:, enc.categories_[0]]  = regions.toarray()
+
     X_train.columns = X_train.columns.astype(str)
-    X_train.drop(columns=['FID'], inplace=True)
+    X_train = X_train.drop(columns=['FID'])
 
     regions  = enc.fit_transform(X_predict[['FID']])
     X_predict[enc.categories_[0]] = regions.toarray()
     X_predict.columns = X_predict.columns.astype(str)
-    X_predict.drop(columns=['FID'], inplace=True)
+    X_predict.loc[:, enc.categories_[0]]  = regions.toarray()
+    X_predict = X_predict.drop(columns=['FID'])
 
 except:
     print("FID not part of predictors")

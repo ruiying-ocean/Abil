@@ -48,10 +48,10 @@ y = d[species]
 X_train = d[predictors]
 
 try:
-    X_train.drop(columns=['FID'], inplace=True)
+    X_train = X_train.drop(columns=['FID'])
     enc = OneHotEncoder()
     regions  = enc.fit_transform(d[['FID']])
-    X_train[enc.categories_[0]] = regions.toarray()
+    X_train.loc[:, enc.categories_[0]]  = regions.toarray()
     X_train.columns = X_train.columns.astype(str)
     
 except:
