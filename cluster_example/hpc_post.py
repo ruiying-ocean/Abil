@@ -17,7 +17,14 @@ except:
 
 
 m = post(model_config)
-m.merge_performance()
+m.merge_performance(model="ens")
+m.merge_performance(model="xgb", configuration= "reg")
+m.merge_performance(model="xgb", configuration= "zir")
+m.merge_performance(model="rf", configuration= "reg")
+m.merge_performance(model="knn", configuration= "reg")
+m.merge_performance(model="rf", configuration= "zir")
+m.merge_performance(model="knn", configuration= "zir")
+
 m.merge_parameters(model="rf")
 m.merge_parameters(model="xgb")
 m.merge_parameters(model="knn")
