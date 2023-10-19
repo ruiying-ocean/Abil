@@ -16,6 +16,7 @@ import os
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder
 
 
 
@@ -148,12 +149,13 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
 
 
 class LogGridSearch:
-    def __init__(self, m, verbose, cv, param_grid, scoring):
+    def __init__(self, m, verbose, cv, param_grid, scoring, regions=None):
         self.m = m
         self.verbose = verbose
         self.cv = cv
         self.param_grid = param_grid
         self.scoring = scoring
+        self.regions = regions
 
     def do_log(self, x):
         y = np.log(x+1)
@@ -163,17 +165,28 @@ class LogGridSearch:
         y = np.exp(x)-1
         return(y)
     
-    def transformed_fit(self, X, y, log):
+    def transformed_fit(self, X, y, log, predictors):
 
-        numeric_features =  X.columns.get_indexer(X.select_dtypes(include=np.number).columns)
-
+        if self.regions!=None:
+            predictors.remove(self.regions)
+            categorical_features = [self.regions]
+            categorical_transformer = OneHotEncoder(handle_unknown='ignore')
+        
+        numeric_features =  X.columns.get_indexer(X[predictors].columns)
         numeric_transformer = Pipeline(steps=[
             ('scaler', StandardScaler())])
 
-        preprocessor = ColumnTransformer(
-            transformers=[
-                ('num', numeric_transformer, numeric_features)])
-
+        if self.regions!=None:
+            preprocessor = ColumnTransformer(
+                transformers=[
+                    ('num', numeric_transformer, numeric_features),
+                    ('cat', categorical_transformer, categorical_features)])
+            
+        else:
+            preprocessor = ColumnTransformer(
+                transformers=[
+                    ('num', numeric_transformer, numeric_features)])
+            
         reg_pipe = Pipeline(steps=[('preprocessor', preprocessor),
                     ('estimator', self.m)])
 
@@ -206,10 +219,12 @@ class LogGridSearch:
             if (grid_search1.best_score_ > grid_search2.best_score_):
                 grid_search = grid_search1
                 best_transformation = "nolog"
+                print("best = nolog")
         
             elif (grid_search1.best_score_ < grid_search2.best_score_):
                 grid_search = grid_search2
                 best_transformation = "log"
+                print("best = log")
             else:
                 print("same performance for both models")
                 grid_search = grid_search1
@@ -326,7 +341,6 @@ def def_prediction(path_out, ensemble_config, n, species):
         m = pickle.load(open(path_to_param + species + '_zir.sav', 'rb'))
         scoring =  pickle.load(open(path_to_scores + species + '_zir.sav', 'rb'))    
         scores = np.mean(scoring['test_MAE'])
-
 
     elif (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == False):
 
