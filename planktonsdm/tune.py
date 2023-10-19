@@ -77,10 +77,9 @@ class tune:
         """
 
         self.y = y.sample(frac=1, random_state=model_config['seed']) #shuffle
-        
-        self.X = X_train
+        self.X_train = X_train.sample(frac=1, random_state=model_config['seed']) #shuffle
 
-        self.X = self.X.sample(frac=1, random_state=model_config['seed']) #shuffle
+
         self.model_config = model_config
         self.seed = model_config['seed']
         self.species = y.name
@@ -195,7 +194,7 @@ class tune:
                 categorical_features = [self.regions]
                 categorical_transformer = OneHotEncoder(handle_unknown='ignore')
             
-            numeric_features =  self.X.columns.get_indexer(self.X[predictors].columns)
+            numeric_features =  self.X_train.columns.get_indexer(self.X_train[predictors].columns)
             numeric_transformer = Pipeline(steps=[
                 ('scaler', StandardScaler())])
 
@@ -224,14 +223,14 @@ class tune:
             y_clf[y_clf > 0] = 1
 
             with parallel_backend('multiprocessing', self.n_jobs):
-                clf.fit(self.X, y_clf.values.ravel())
+                clf.fit(self.X_train, y_clf.values.ravel())
 
             m1 = clf.best_estimator_
             pickle.dump(m1, open(clf_sav_out_model + self.species + '_clf.sav', 'wb'))
             print("exported model to:" + clf_sav_out_model + self.species + '_clf.sav')
 
 
-            clf_scores = cross_validate(m1, self.X, y_clf.values.ravel(), cv=self.cv, verbose =self.verbose, scoring=clf_scoring)
+            clf_scores = cross_validate(m1, self.X_train, y_clf.values.ravel(), cv=self.cv, verbose =self.verbose, scoring=clf_scoring)
             pickle.dump(clf_scores, open(clf_sav_out_scores + self.species + '_clf.sav', 'wb'))
             print("exported scoring to: " + clf_sav_out_scores + self.species + '_clf.sav')
 
@@ -263,7 +262,7 @@ class tune:
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
                 reg = LogGridSearch(reg_estimator, verbose = self.verbose, cv=self.cv, 
                                     param_grid=reg_param_grid, scoring="neg_mean_absolute_error", regions=self.regions)
-                reg_grid_search = reg.transformed_fit(self.X, self.y.values.ravel(), log, self.model_config['predictors'].copy())
+                reg_grid_search = reg.transformed_fit(self.X_train, self.y.values.ravel(), log, self.model_config['predictors'].copy())
 
             m2 = reg_grid_search.best_estimator_
             pickle.dump(m2, open(reg_sav_out_model  + self.species + '_reg.sav', 'wb'))
@@ -271,7 +270,7 @@ class tune:
             print("exported model to: " + reg_sav_out_model  + self.species + '_reg.sav')
 
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-                reg_scores = cross_validate(m2, self.X, self.y.values.ravel(), cv = self.cv, verbose = self.verbose, scoring=reg_scoring)
+                reg_scores = cross_validate(m2, self.X_train, self.y.values.ravel(), cv = self.cv, verbose = self.verbose, scoring=reg_scoring)
 
             pickle.dump(reg_scores, open(reg_sav_out_scores + self.species + '_reg.sav', 'wb'))
 
@@ -305,13 +304,13 @@ class tune:
             except:
                 None           
 
-            zir.fit(self.X, self.y)
+            zir.fit(self.X_train, self.y)
             pickle.dump(zir, open(zir_sav_out_model + self.species + '_zir.sav', 'wb'))
             print("exported model to: " + zir_sav_out_model + self.species + '_zir.sav')
 
 
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-                zir_scores = cross_validate(zir, self.X, self.y.ravel(), cv=self.cv, verbose =self.verbose, scoring=reg_scoring)
+                zir_scores = cross_validate(zir, self.X_train, self.y.ravel(), cv=self.cv, verbose =self.verbose, scoring=reg_scoring)
 
 
             pickle.dump(zir_scores, open(zir_sav_out_scores + self.species + '_zir.sav', 'wb'))

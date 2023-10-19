@@ -54,8 +54,8 @@ class predict:
         self.st = time.time()
 
         self.y = y.sample(frac=1, random_state=model_config['seed']) #shuffle
+        self.X_train = X_train.sample(frac=1, random_state=model_config['seed']) #shuffle
 
-        self.X_train = X_train
         self.seed = model_config['seed']
         self.species = y.name
         self.n_jobs = model_config['n_threads']
