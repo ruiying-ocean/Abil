@@ -168,6 +168,11 @@ class tune:
         if classifier == False and regressor ==False:
             raise ValueError("both classifier and regressor defined as False")
 
+
+        if (classifier ==True) and (regressor ==True):
+            raise ValueError("2-phase model not supported, choose classifier OR regressor")
+        
+
         if classifier ==True:
             print("training classifier")
             clf_param_grid = self.model_config['param_grid'][model + '_param_grid']['clf_param_grid']
@@ -284,6 +289,8 @@ class tune:
 
 
         if (classifier ==True) and (regressor ==True):
+            raise ValueError("2-phase model not supported, choose classifier OR regressor")
+        
             print("training zero-inflated regressor")
 
             zir = ZeroInflatedRegressor(
@@ -310,7 +317,7 @@ class tune:
 
 
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-                zir_scores = cross_validate(zir, self.X_train, self.y.ravel(), cv=self.cv, verbose =self.verbose, scoring=reg_scoring)
+                zir_scores = cross_validate(zir, self.X_train, self.y, cv=self.cv, verbose =self.verbose, scoring=reg_scoring)
 
 
             pickle.dump(zir_scores, open(zir_sav_out_scores + self.species + '_zir.sav', 'wb'))
