@@ -9,8 +9,10 @@
   env_data_path: data/envdata_final.csv #root + folder
   traits: data/traits.csv #root + folder
 
-  scale_X: True
+  predictors: ["temperature", "si", "phosphate", "din", "o2", "mld", "DIC", "irradiance", "chlor_a", "FID"]
+  training: data/abundances_environment.csv
 
+  
   verbose: 1
   seed : 1 # random seed
   n_threads : 2 # how many cpu threads to use
@@ -22,15 +24,16 @@
     regressor: False
     m1: "rf"
      
-  upsample: False
+  upsample: True
+
   clf_scoring:
    accuracy: balanced_accuracy
 
   param_grid:
-    rf_param_grid:
-      clf_param_grid:
-        n_estimators: [100]
-        max_features: [3, 4]
-        max_depth: [50, 100]
-        min_samples_leaf: [0.5, 1]
-        max_samples: [0.5, 1]   
+    clf_param_grid:
+      reg_param_grid:
+        regressor__estimator__n_estimators: [250]
+        regressor__estimator__max_features:  [8, 10]
+        regressor__estimator__max_depth: [100]
+        regressor__estimator__min_samples_leaf: [ 50]
+        regressor__estimator__max_samples: [1]     
