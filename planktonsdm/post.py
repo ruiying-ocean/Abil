@@ -56,7 +56,6 @@ class post:
         for i in range(len(self.d.columns)):
             
             m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/scoring/" + self.d.columns[i] + extension, 'rb'))
-            print(m)
             R2 = np.mean(m['test_R2'])
             RMSE = np.mean(m['test_RMSE'])
             MAE = np.mean(m['test_MAE'])
@@ -81,16 +80,16 @@ class post:
             
             species = self.d.columns[i]
 
-            m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/scoring/" + self.d.columns[i] + "_reg.sav", 'rb'))
-            score_reg = np.mean(m['test_MAE'])
+            m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/model/" + self.d.columns[i] + "_reg.sav", 'rb'))
+            # score_reg = np.mean(m['test_MAE'])
 
-            m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/scoring/" + self.d.columns[i] + "_zir.sav", 'rb'))
-            score_zir = np.mean(m['test_MAE'])
+            # m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/scoring/" + self.d.columns[i] + "_zir.sav", 'rb'))
+            # score_zir = np.mean(m['test_MAE'])
 
-            if score_reg > score_zir:
-                m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/model/" + self.d.columns[i] + "_reg.sav", 'rb'))
-            elif score_reg < score_zir:
-                m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/model/" + self.d.columns[i] + "_reg.sav", 'rb'))
+            # if score_reg > score_zir:
+            #     m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/model/" + self.d.columns[i] + "_reg.sav", 'rb'))
+            # elif score_reg < score_zir:
+            #     m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/model/" + self.d.columns[i] + "_reg.sav", 'rb'))
 
             if model == "rf":
                 max_depth = m.regressor_.named_steps.estimator.max_depth
@@ -211,16 +210,12 @@ class post:
         self.d['total_log'] = np.log(self.d['total'])
         print("finished calculating total")
 
-    def merge_env(self):
+    def merge_env(self, X_predict):
         """
         Merge model output with environmental data 
         """
 
-        env_data = pd.read_csv(self.env_data_path)
-        env_data.set_index(["time", "depth", "lat", "lon"], inplace=True)
-        print(self.d.head())
-
-        self.d = pd.concat([self.d, env_data], axis=1)
+        self.d = pd.concat([self.d, X_predict], axis=1)
 
     def return_d(self):
         return(self.d)
