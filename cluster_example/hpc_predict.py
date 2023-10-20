@@ -9,7 +9,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 try:
     print(sys.argv[1])
-    with open('/user/work/ba18321/planktonSDM/configuration/2-phase_ensemble_cluster.yml', 'r') as f:
+    with open('/user/work/ba18321/planktonSDM/configuration/ensemble_regressor_cluster.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = True
     n_jobs = pd.to_numeric(sys.argv[1])
@@ -18,7 +18,7 @@ try:
     model_config['cv'] = 10
 
 except:
-    with open('/user/work/ba18321/planktonSDM/configuration/2-phase_ensemble_cluster.yml', 'r') as f:
+    with open('/user/work/ba18321/planktonSDM/configuration/ensemble_regressor_cluster.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = False
     n_jobs = 8
