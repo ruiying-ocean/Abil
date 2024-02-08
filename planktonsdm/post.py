@@ -56,11 +56,15 @@ class post:
         for i in range(len(self.d.columns)):
             
             m = pickle.load(open(self.root + self.model_config['path_out'] + model + "/scoring/" + self.d.columns[i] + extension, 'rb'))
+            mean = np.mean(self.d[self.d.columns[i]])
             R2 = np.mean(m['test_R2'])
-            RMSE = np.mean(m['test_RMSE'])
-            MAE = np.mean(m['test_MAE'])
+            RMSE = -1*np.mean(m['test_RMSE'])
+            MAE = -1*np.mean(m['test_MAE'])
+            rRMSE = -1*np.mean(m['test_RMSE'])/mean
+            rMAE = -1*np.mean(m['test_MAE'])/mean            
             species = self.d.columns[i]
-            performance = pd.DataFrame({'species':[species], 'R2':[R2], 'RMSE':[RMSE], 'MAE':[MAE]})
+            performance = pd.DataFrame({'species':[species], 'R2':[R2], 'RMSE':[RMSE], 'MAE':[MAE],
+                                        'rRMSE':[rRMSE], 'rMAE':[rMAE]})
             all_performance.append(performance)
 
         all_performance = pd.concat(all_performance)
@@ -95,7 +99,9 @@ class post:
                 max_depth = m.regressor_.named_steps.estimator.max_depth
                 max_features = m.regressor_.named_steps.estimator.max_features
                 max_samples = m.regressor_.named_steps.estimator.max_samples
-                parameters = pd.DataFrame({'species':[species], 'max_depth':[max_depth], 'max_features':[max_features], 'max_samples':[max_samples]})
+                min_samples_leaf = m.regressor_.named_steps.estimator.min_samples_leaf
+                parameters = pd.DataFrame({'species':[species], 'max_depth':[max_depth], 'max_features':[max_features], 
+                                           'max_samples':[max_samples], 'min_samples_leaf':[min_samples_leaf]})
                 all_parameters.append(parameters)
             elif model == "xgb":
                 max_depth = m.regressor_.named_steps.estimator.max_depth
@@ -241,6 +247,22 @@ class post:
             None
     
         ds = self.d.to_xarray()
+        '''
+        #define global attributes
+        ds.attrs['description'] = 'My awesome dataset title'
+        ds.attrs['Conventions'] = 'CF-1.5'
+        ds.attrs['creator_name'] = 'Joost de Vries'
+
+        ds['lat'].attrs['units'] = 'degrees_north'
+        ds['lat'].attrs['long_name'] = 'latitude'
+
+        ds['lon'].attrs['units'] = 'degrees_east'
+        ds['lon'].attrs['long_name'] = 'longitude'
+
+        ds['depth'].attrs['units'] = 'm'
+        ds['depth'].attrs['positive'] = 'down'
+        
+        '''
 
         print(self.d.head())
         ds.to_netcdf(self.path_out + file_name + ".nc")
