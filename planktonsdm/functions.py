@@ -18,6 +18,10 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import OneHotEncoder
 
+import pandas as pd
+import geopandas as gpd
+import xarray as xr
+import numpy as np
 
 
 def tau_scoring(y, y_pred):
@@ -37,10 +41,63 @@ def do_exp(self, x):
     y = np.exp(x)-1
     return(y)
 
-import pandas as pd
-import geopandas as gpd
-import xarray as xr
-import numpy as np
+def merge_obs_env(obs_path = "../data/gridded_abundances.csv",
+                  env_vars = ["temperature", "si", 
+                              "phosphate", "din", 
+                              "o2", "mld", "DIC", 
+                              "TA", "irradiance", 
+                              "chlor_a","Rrs_547",
+                              "Rrs_667","CI_2",
+                              "pic","si_star",
+                              "si_n","FID", 
+                              "time", "depth", 
+                              "lat", "lon"],
+                    out_path = "../data/obs_env.csv"):
+
+    d = pd.read_csv(obs_path)
+
+    #regrid
+    depth_bins = np.linspace(0, 205, 62)
+    depth_labels = np.linspace(0, 300, 61)
+    d['Depth'] = pd.cut(d['Depth'], bins=depth_bins, labels=depth_labels).astype(np.float64) 
+
+    lat_bins = np.linspace(-90, 90, 181)
+    lat_labels = np.linspace(-90, 89, 180)
+    d['Latitude'] = pd.cut(d['Latitude'].astype(np.float64), bins=lat_bins, labels=lat_labels).astype(np.float64) 
+
+    lon_bins = np.linspace(-180, 180, 361)
+    lon_labels = np.linspace(-180, 179, 360)
+    d['Longitude'] = pd.cut(d['Longitude'].astype(np.float64), bins=lon_bins, labels=lon_labels).astype(np.float64) 
+
+    d['DateTime'] = pd.to_datetime(d['Date'],dayfirst=True)
+    d['Month'] = pd.DatetimeIndex(d['DateTime']).month
+    d['Year'] = pd.DatetimeIndex(d['DateTime']).year
+
+    d = d.convert_dtypes()
+
+    d = d.groupby(['Latitude', 'Longitude', 'Depth', 'Month']).mean().reset_index()
+    d.rename({'Latitude':'lat','Longitude':'lon','Depth':'depth','Month':'time'},inplace=True,axis=1)
+    d.set_index(['lat', 'lon', 'depth', 'time'], inplace=True)
+    d['dummy'] = 1
+
+    print("loading env")
+
+    ds = xr.open_dataset('/user/work/mv23682/planktonSDM/data/env_data.nc')
+    df = ds.to_dataframe()
+    ds = None 
+    df.reset_index(inplace=True)
+    df = df[env_vars]
+    df.set_index(['lat','lon','depth','time'],inplace=True)
+
+    out = pd.concat([d,df], axis=1)
+    out = out[out["dummy"] == 1]
+    out = out.drop(['dummy'], axis = 1)
+
+    out.to_csv(out_path, index=True)
+
+    print("fin")
+
+
 
 class longhurst_gridding():
     """
@@ -53,10 +110,10 @@ class longhurst_gridding():
     
     """
     def __init__(self, 
-                import_path = "../data/provinces/Longhurst_Biogeographical_Provinces.shp",
-                export_path = "../data/LonghurstProvinces.nc"):
+                import_path = "../data/provinces/Longhurst_Biogeographical_Provinces.shp"):
         self.path_to_shapefile = import_path
         self.export_path = export_path
+        self.d_gridded = self.grid()
 
     def grid(self):    
         df = xr.Dataset({
@@ -93,12 +150,18 @@ class longhurst_gridding():
         dfs = None
 
         final_df.set_index(['time', 'depth', 'lat', 'lon'], inplace=True)
-        ds = final_df.to_xarray()
+        return(final_df)
+    
 
+    def export_netcdf(self, export_path = "../data/LonghurstProvinces.nc"):  
+        ds = self.d_gridded.to_xarray()
         print('saving')
-        ds.to_netcdf(self.export_path)
+        ds.to_netcdf(export_path)
         print('exported netcdf to:')
         print(self.export_path)
+
+    def return_df(self):
+        return(self.d_gridded)
 
 
 class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
