@@ -37,6 +37,69 @@ def do_exp(self, x):
     y = np.exp(x)-1
     return(y)
 
+import pandas as pd
+import geopandas as gpd
+import xarray as xr
+import numpy as np
+
+class longhurst_gridding():
+    """
+    This is a function to convert shapefiles to netcdfs
+
+    Specifically, longhurst provinces from ArcGIS:
+
+    https://hub.arcgis.com/datasets/34f1a9c0e4b74b2887e6b23c584e1f2d
+    
+    
+    """
+    def __init__(self, 
+                import_path = "../data/provinces/Longhurst_Biogeographical_Provinces.shp",
+                export_path = "../data/LonghurstProvinces.nc"):
+        self.path_to_shapefile = import_path
+        self.export_path = export_path
+
+    def grid(self):    
+        df = xr.Dataset({
+            'lat': (['lat'], np.arange(-90, 90, 1)),
+            'lon': (['lon'], np.arange(-180, 180, 1)),
+            'time': (['time'], np.arange(1, 13, 1)),
+            'depth': (['depth'], np.arange(0, 5, 5))
+            })
+        
+        out = df.to_dataframe()
+        out.reset_index(inplace=True)
+
+        # Load the shapefile
+        poly = gpd.read_file(self.path_to_shapefile)
+
+        output_grid = gpd.GeoDataFrame(
+            out,
+            geometry=gpd.points_from_xy(x=out['lon'],y=out['lat'],crs='epsg:4326')
+        )
+        out = None
+
+        output_grid = gpd.sjoin_nearest(
+            output_grid,
+            poly[['ProvCode','geometry']],
+            how='left'
+        )
+        df = pd.DataFrame(output_grid.drop(columns={'geometry','index_right'}))
+        output_grid = None
+
+        depths = list(range(0, 305, 5))
+        dfs = [df.assign(depth=depth) for depth in depths]
+        df = None
+        final_df = pd.concat(dfs)
+        dfs = None
+
+        final_df.set_index(['time', 'depth', 'lat', 'lon'], inplace=True)
+        ds = final_df.to_xarray()
+
+        print('saving')
+        ds.to_netcdf(self.export_path)
+        print('exported netcdf to:')
+        print(self.export_path)
+
 
 class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
     """
@@ -74,8 +137,8 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         ValueError
             If `classifier` is not a classifier or `regressor` is not a regressor.
         """
-        X, y = check_X_y(X, y)
-        self._check_n_features(X, reset=True)
+        # X, y = check_X_y(X, y)
+        # self._check_n_features(X, reset=True)
         if not is_classifier(self.classifier):
             raise ValueError(
                 f"`classifier` has to be a classifier. Received instance of {type(self.classifier)} instead.")
@@ -88,11 +151,7 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         except NotFittedError:
             self.classifier_ = clone(self.classifier)
 
-            if "sample_weight" in signature(self.classifier_.fit).parameters:
-                self.classifier_.fit(X, y != 0, sample_weight=sample_weight)
-            else:
-            #    logging.warning("Classifier ignores sample_weight.")
-                self.classifier_.fit(X, y != 0)
+            self.classifier_.fit(X, y != 0)
 
         non_zero_indices = np.where(self.classifier_.predict(X) == 1)[0]
 
@@ -103,18 +162,10 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
             except NotFittedError:
                 self.regressor_ = clone(self.regressor)
 
-                if "sample_weight" in signature(self.regressor_.fit).parameters:
-                    self.regressor_.fit(
+                self.regressor_.fit(
                         X[non_zero_indices],
                         y[non_zero_indices],
-                        sample_weight=sample_weight[non_zero_indices] if sample_weight is not None else None
-                    )
-                else:
-                #    logging.warning("Regressor ignores sample_weight.")
-                    self.regressor_.fit(
-                        X[non_zero_indices],
-                        y[non_zero_indices],
-                    )
+                )
         else:
             None
 
@@ -136,8 +187,8 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
             The predicted values.
         """
         check_is_fitted(self)
-        X = check_array(X)
-        self._check_n_features(X, reset=False)
+        # X = check_array(X)
+        # self._check_n_features(X, reset=False)
 
         output = np.zeros(len(X))
         non_zero_indices = np.where(self.classifier_.predict(X))[0]
