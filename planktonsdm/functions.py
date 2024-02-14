@@ -78,7 +78,7 @@ class longhurst_gridding():
         )
         out = None
 
-        output_grid = gpd.sjoin_nearest(
+        output_grid = gpd.sjoin(
             output_grid,
             poly[['ProvCode','geometry']],
             how='left'
