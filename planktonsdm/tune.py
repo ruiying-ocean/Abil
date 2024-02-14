@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier, XGBRegressor
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import cross_validate
+from sklearn.model_selection import cross_validate, KFold
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, BaggingRegressor, BaggingClassifier
 from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
 from sklearn.pipeline import Pipeline
@@ -94,12 +94,15 @@ class tune:
         else:
             raise ValueError("hpc True or False not defined in yml")
 
-        if model_config['upsample']==True:
-            self.cv = UpsampledZeroStratifiedKFold(n_splits=model_config['cv'])
-            print("upsampling = True")
+        if model_config['stratify']==True:
+            if model_config['upsample']==True:
+                self.cv = UpsampledZeroStratifiedKFold(n_splits=model_config['cv'])
+                print("upsampling = True")
+            else:
+                self.cv = ZeroStratifiedKFold(n_splits=model_config['cv'])
         else:
-            self.cv = ZeroStratifiedKFold(n_splits=model_config['cv'])
-            
+            self.cv = KFold(n_splits=model_config['cv'])
+             
         try:
             self.bagging_estimators = model_config['knn_bagging_estimators'] 
         except:

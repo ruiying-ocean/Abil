@@ -3,6 +3,7 @@ import pickle
 import os
 import time
 from sklearn.ensemble import VotingRegressor, VotingClassifier
+from sklearn.model_selection import KFold
 
 if 'site-packages' in __file__:
     from planktonsdm.functions import calculate_weights, score_model, def_prediction, export_prediction, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold
@@ -69,13 +70,14 @@ class predict:
         else:
             raise ValueError("hpc True or False not defined in yml")
             
-
-        if model_config['upsample']==True:
-            self.cv = UpsampledZeroStratifiedKFold(n_splits=model_config['cv'])
-            print("upsampling = True")
-
+        if model_config['stratify']==True:
+            if model_config['upsample']==True:
+                self.cv = UpsampledZeroStratifiedKFold(n_splits=model_config['cv'])
+                print("upsampling = True")
+            else:
+                self.cv = ZeroStratifiedKFold(n_splits=model_config['cv'])
         else:
-            self.cv = ZeroStratifiedKFold(n_splits=model_config['cv'])
+            self.cv = KFold(n_splits=model_config['cv'])
 
         self.X_predict = X_predict
         self.ensemble_config = model_config['ensemble_config']

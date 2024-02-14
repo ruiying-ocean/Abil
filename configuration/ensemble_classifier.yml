@@ -26,6 +26,7 @@
     m3: "knn"
      
   upsample: True
+  stratify: False
 
   clf_scoring:
    accuracy: balanced_accuracy

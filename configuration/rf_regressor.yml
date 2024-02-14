@@ -24,6 +24,7 @@
     m1: "rf"
      
   upsample: True
+  stratify: False
 
   reg_scoring:
    R2: r2
