@@ -1,9 +1,13 @@
 import pandas as pd
+import numpy as np
 import pickle
 import os
 import time
 from sklearn.ensemble import VotingRegressor, VotingClassifier
 from sklearn.model_selection import KFold
+from mapie.regression import MapieRegressor
+from mapie.conformity_scores import GammaConformityScore
+
 
 if 'site-packages' in __file__:
     from planktonsdm.functions import calculate_weights, score_model, def_prediction, export_prediction, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold
@@ -151,18 +155,53 @@ class predict:
                 m= VotingClassifier(estimators=models, weights=w).fit(self.X_train, self.y)
             scores = score_model(m, self.X_train, self.y, self.cv, self.verbose, self.scoring)
 
+            regr = VotingRegressor(estimators=models, weights=w)
 
+            print(np.min(self.y))
+
+            alpha = [0.32]
+            mapie = MapieRegressor(regr, 
+                                    cv=self.cv,
+                                    conformity_score=GammaConformityScore())
+            mapie.fit(self.X_train, self.y)
+
+
+            y_pred = []
+            y_pis = []
+            i, chunksize = 0, 1000
+            for idx in range(0, len(self.X_predict), chunksize):
+                pred, pis = mapie.predict(self.X_predict[idx:(i+1)*chunksize], alpha=alpha)
+                y_pred += list(pred)
+                y_pis += list(pis)
+                i += 1
+                
+            y_pred = np.array(y_pred)
+            y_pis = np.array(y_pis)
+
+            y_low  = y_pis[:,0,:].flatten()
+            y_up  = y_pis[:,1,:].flatten()
+
+            print("min: " + str(np.min(y_low)))
             model_out = self.path_out + "ens/predictions/"
             try: #make new dir if needed
                 os.makedirs(model_out)
             except:
                 None
 
-            print("predicting ensemble model")
-            export_prediction(m, self.species, self.X_predict, self.model_config, self.ensemble_config, model_out)
+            d = pd.DataFrame({'species': self.species,
+                              'ci68': y_up,
+                              'ci32': y_low,
+                              'ci50': y_pred,
+                              'time': self.X_predict.reset_index()['time'],
+                              'depth': self.X_predict.reset_index()['depth'],
+                              'lat': self.X_predict.reset_index()['lat'],
+                              'lon': self.X_predict.reset_index()['lon'],
+                              })
+            d = d.set_index(['lat', 'lon']).to_xarray()
+
+            d.to_netcdf(model_out + self.species + ".nc") 
 
             print("exporting ensemble prediction to: " + model_out)
-
 
             model_out_scores = self.path_out + "ens/scoring/"
 
