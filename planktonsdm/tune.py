@@ -19,6 +19,7 @@ from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.neural_network import MLPRegressor, MLPClassifier
 
 
 if 'site-packages' in __file__:
@@ -165,6 +166,9 @@ class tune:
         elif model=="rf":
             clf_estimator = RandomForestClassifier(random_state=self.seed, oob_score=True)
             reg_estimator = RandomForestRegressor(random_state=self.seed, oob_score=True)
+        elif model=="mlp":
+            clf_estimator = MLPClassifier(random_state=self.seed, solver='lbfgs')
+            reg_estimator = MLPRegressor(random_state=self.seed, solver='lbfgs')
         else:
             raise ValueError("invalid model")
 
@@ -254,6 +258,7 @@ class tune:
             reg_scoring = self.model_config['reg_scoring']
             reg_param_grid = self.model_config['param_grid'][model + '_param_grid']['reg_param_grid']
 
+            print(reg_param_grid)
             reg_sav_out_scores = self.path_out + model + "/scoring/"
             reg_sav_out_model = self.path_out + model + "/model/"
 

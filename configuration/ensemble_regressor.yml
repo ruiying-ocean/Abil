@@ -24,9 +24,9 @@
     m1: "rf"
     m2: "xgb"
     m3: "knn"
-     
-  upsample: True
-  stratify: False
+
+  upsample: False
+  stratify: True
 
   reg_scoring:
    R2: r2
@@ -41,7 +41,6 @@
         regressor__estimator__max_depth: [50]
         regressor__estimator__min_samples_leaf: [0.5, 1]
         regressor__estimator__max_samples: [0.5, 1]     
-
 
     xgb_param_grid:
       reg_param_grid:  
