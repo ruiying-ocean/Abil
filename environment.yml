@@ -12,3 +12,4 @@ dependencies:
   - ipykernel
   - scikit-learn
   - scipy
+  - mapie
