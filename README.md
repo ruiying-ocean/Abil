@@ -73,7 +73,18 @@ Activate the new environment and install planktonSDM:
 
 ``` python -m pip install package_save_path  ``` 
 
+## Updating the package:
+
+If you have changed the scripts and want to update the package, a new version can be build.
+
+CD to the planktonSDM directory, then run:
+
+``` python3 -m build  ``` 
+
+Note: if you want to change the version name of the package, this can be changed in:
+
+`planktonSDM/pyproject.toml`
 
 ## Running the model on a hpc cluster
 
-See: `cluster_example/README.md`
+See: `hpc_example/README.md`
