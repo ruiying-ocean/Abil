@@ -155,6 +155,16 @@ class predict:
                 m= VotingClassifier(estimators=models, weights=w).fit(self.X_train, self.y)
             scores = score_model(m, self.X_train, self.y, self.cv, self.verbose, self.scoring)
 
+            model_out_scores = self.path_out + "ens/scoring/"
+            try: #make new dir if needed
+                os.makedirs(model_out_scores)
+            except:
+                None
+            pickle.dump(scores, open(model_out_scores + self.species + '.sav', 'wb'))   
+            print("exporting ensemble scores to: " + model_out_scores)
+        
+
+
             regr = VotingRegressor(estimators=models, weights=w)
 
             print(np.min(self.y))
@@ -182,39 +192,64 @@ class predict:
             y_up  = y_pis[:,1,:].flatten()
 
             print("min: " + str(np.min(y_low)))
-            model_out = self.path_out + "ens/predictions/"
+
+            ci32_model_out = self.path_out + "mapie/predictions/ci32/"
+            ci50_model_out = self.path_out + "mapie/predictions/median/"
+            ci68_model_out = self.path_out + "mapie/predictions/ci68/"
+            
             try: #make new dir if needed
-                os.makedirs(model_out)
+                os.makedirs(ci32_model_out)
+            except:
+                None
+            try: #make new dir if needed
+                os.makedirs(ci50_model_out)
+            except:
+                None
+            try: #make new dir if needed
+                os.makedirs(ci68_model_out)
             except:
                 None
 
-            d = pd.DataFrame({'species': self.species,
-                              'ci68': y_up,
+
+            d_ci32 = pd.DataFrame({'species': self.species,
                               'ci32': y_low,
+                              'time': self.X_predict.reset_index()['time'],
+                              'depth': self.X_predict.reset_index()['depth'],
+                              'lat': self.X_predict.reset_index()['lat'],
+                              'lon': self.X_predict.reset_index()['lon'],
+                              })
+            d_ci32 = d_ci32.set_index(['time', 'depth', 'lat', 'lon']).to_xarray()
+            d_ci32.to_netcdf(ci32_model_out + self.species + ".nc") 
+
+            d_ci32 = None
+            y_low = None
+
+            d_ci50 = pd.DataFrame({'species': self.species,
                               'ci50': y_pred,
                               'time': self.X_predict.reset_index()['time'],
                               'depth': self.X_predict.reset_index()['depth'],
                               'lat': self.X_predict.reset_index()['lat'],
                               'lon': self.X_predict.reset_index()['lon'],
                               })
-            d = d.set_index(['lat', 'lon']).to_xarray()
+            d_ci50 = d_ci50.set_index(['time', 'depth', 'lat', 'lon']).to_xarray()
+            d_ci50.to_netcdf(ci50_model_out + self.species + ".nc") 
 
-            d.to_netcdf(model_out + self.species + ".nc") 
+            d_ci50 = None
+            y_pred = None
+
+
+            d_ci68 = pd.DataFrame({'species': self.species,
+                              'ci68': y_up,
+                              'time': self.X_predict.reset_index()['time'],
+                              'depth': self.X_predict.reset_index()['depth'],
+                              'lat': self.X_predict.reset_index()['lat'],
+                              'lon': self.X_predict.reset_index()['lon'],
+                              })
+            d_ci68 = d_ci68.set_index(['time', 'depth', 'lat', 'lon']).to_xarray()
+            d_ci68.to_netcdf(ci68_model_out + self.species + ".nc") 
 
             print("exporting ensemble prediction to: " + model_out)
 
-            model_out_scores = self.path_out + "ens/scoring/"
-
-            try: #make new dir if needed
-                os.makedirs(model_out_scores)
-            except:
-                None
-
-            pickle.dump(scores, open(model_out_scores + self.species + '.sav', 'wb'))   
-            
-
-            print("exporting ensemble scores to: " + model_out_scores)
-        
         else:
             raise ValueError("at least one model should be defined in the ensemble")
 
