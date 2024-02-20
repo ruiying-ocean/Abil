@@ -220,6 +220,7 @@ class predict:
                               })
             d_ci32 = d_ci32.set_index(['time', 'depth', 'lat', 'lon']).to_xarray()
             d_ci32.to_netcdf(ci32_model_out + self.species + ".nc") 
+            print("exported MAPIE CI32 prediction to: " + ci32_model_out + self.species + ".nc")
 
             d_ci32 = None
             y_low = None
@@ -233,10 +234,10 @@ class predict:
                               })
             d_ci50 = d_ci50.set_index(['time', 'depth', 'lat', 'lon']).to_xarray()
             d_ci50.to_netcdf(ci50_model_out + self.species + ".nc") 
+            print("exported MAPIE CI50 prediction to: " + ci50_model_out + self.species + ".nc")
 
             d_ci50 = None
             y_pred = None
-
 
             d_ci68 = pd.DataFrame({'species': self.species,
                               'ci68': y_up,
@@ -248,11 +249,10 @@ class predict:
             d_ci68 = d_ci68.set_index(['time', 'depth', 'lat', 'lon']).to_xarray()
             d_ci68.to_netcdf(ci68_model_out + self.species + ".nc") 
 
-            print("exporting ensemble prediction to: " + model_out)
+            print("exported MAPIE CI68 prediction to: " + ci68_model_out + self.species + ".nc")
 
         else:
             raise ValueError("at least one model should be defined in the ensemble")
-
 
         et = time.time()
         elapsed_time = et-self.st
