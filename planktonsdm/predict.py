@@ -42,9 +42,7 @@ class predict:
         `traits`: string, file name of your trait file
         
         `verbose`: int, to set verbosity (0-3)
-        
-        `n_threads`: int, number of threads to use
-        
+                
         `cv` : int, number of cross-folds
                     
         `ensemble_config` : 
@@ -63,9 +61,7 @@ class predict:
 
         self.seed = model_config['seed']
         self.species = y.name
-        self.n_jobs = model_config['n_threads']
         self.verbose = model_config['verbose']
-
 
         if model_config['hpc']==False:
             self.path_out = model_config['local_root'] + model_config['path_out'] 
