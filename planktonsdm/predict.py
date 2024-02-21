@@ -5,7 +5,8 @@ import os
 import time
 from sklearn.ensemble import VotingRegressor, VotingClassifier
 from sklearn.model_selection import KFold
-from mapie.regression import MapieRegressor, MapieClassifier
+from mapie.regression import MapieRegressor
+from mapie.classification import  MapieClassifier
 from mapie.conformity_scores import GammaConformityScore
 
 
