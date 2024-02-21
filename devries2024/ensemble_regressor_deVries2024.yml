@@ -6,8 +6,8 @@
   path_out: ModelOutput/ #root + folder
   path_in: ModelOutput/mapie/predictions/ #root + folder
 
-  env_data_path: data/envdata_final.csv #root + folder
-  traits: devries2024/traits.csv #root + folder
+  env_data_path: devries2024/data/envdata_final.csv #root + folder
+  traits: devries2024/data/traits.csv #root + folder
   
   predictors: ["temperature", "si", 
     "phosphate", "din", 
