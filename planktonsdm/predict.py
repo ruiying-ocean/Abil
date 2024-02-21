@@ -5,7 +5,7 @@ import os
 import time
 from sklearn.ensemble import VotingRegressor, VotingClassifier
 from sklearn.model_selection import KFold
-from mapie.regression import MapieRegressor
+from mapie.regression import MapieRegressor, MapieClassifier
 from mapie.conformity_scores import GammaConformityScore
 
 
@@ -44,7 +44,9 @@ class predict:
         `verbose`: int, to set verbosity (0-3)
                 
         `cv` : int, number of cross-folds
-                    
+
+        `n_threads`: int, number of threads to use
+                
         `ensemble_config` : 
         
         `clf_scoring` :
@@ -83,6 +85,7 @@ class predict:
         self.ensemble_config = model_config['ensemble_config']
         self.model_config = model_config
 
+        self.n_jobs = model_config['n_threads']
 
         if (self.ensemble_config["classifier"] ==True) and (self.ensemble_config["regressor"] == False):
             self.scoring = model_config['clf_scoring']
@@ -147,28 +150,21 @@ class predict:
 
             if self.ensemble_config["regressor"] ==True:
                 m = VotingRegressor(estimators=models, weights=w).fit(self.X_train, self.y)
+                mapie = MapieRegressor(m, 
+                                        cv=self.cv,
+                                        conformity_score=GammaConformityScore())            
             else:
                 m= VotingClassifier(estimators=models, weights=w).fit(self.X_train, self.y)
-            scores = score_model(m, self.X_train, self.y, self.cv, self.verbose, self.scoring)
-
-            model_out_scores = self.path_out + "ens/scoring/"
-            try: #make new dir if needed
-                os.makedirs(model_out_scores)
-            except:
-                None
-            pickle.dump(scores, open(model_out_scores + self.species + '.sav', 'wb'))   
-            print("exporting ensemble scores to: " + model_out_scores)
-        
-
+                mapie = MapieClassifier(m, 
+                                        cv=self.cv,
+                                        conformity_score=GammaConformityScore())
 
             regr = VotingRegressor(estimators=models, weights=w)
 
             print(np.min(self.y))
 
             alpha = [0.32]
-            mapie = MapieRegressor(regr, 
-                                    cv=self.cv,
-                                    conformity_score=GammaConformityScore())
+
             mapie.fit(self.X_train, self.y)
 
 
@@ -183,11 +179,6 @@ class predict:
                 
             y_pred = np.array(y_pred)
             y_pis = np.array(y_pis)
-
-            y_low  = y_pis[:,0,:].flatten()
-            y_up  = y_pis[:,1,:].flatten()
-
-            print("min: " + str(np.min(y_low)))
 
             ci32_model_out = self.path_out + "mapie/predictions/ci32/"
             ci50_model_out = self.path_out + "mapie/predictions/median/"
@@ -208,7 +199,7 @@ class predict:
 
 
             d_ci32 = pd.DataFrame({'species': self.species,
-                              'ci32': y_low,
+                              'ci32': y_pis[:,0,:].flatten(),
                               'time': self.X_predict.reset_index()['time'],
                               'depth': self.X_predict.reset_index()['depth'],
                               'lat': self.X_predict.reset_index()['lat'],
@@ -219,7 +210,6 @@ class predict:
             print("exported MAPIE CI32 prediction to: " + ci32_model_out + self.species + ".nc")
 
             d_ci32 = None
-            y_low = None
 
             d_ci50 = pd.DataFrame({'species': self.species,
                               'ci50': y_pred,
@@ -236,7 +226,7 @@ class predict:
             y_pred = None
 
             d_ci68 = pd.DataFrame({'species': self.species,
-                              'ci68': y_up,
+                              'ci68': y_pis[:,1,:].flatten(),
                               'time': self.X_predict.reset_index()['time'],
                               'depth': self.X_predict.reset_index()['depth'],
                               'lat': self.X_predict.reset_index()['lat'],
@@ -246,6 +236,19 @@ class predict:
             d_ci68.to_netcdf(ci68_model_out + self.species + ".nc") 
 
             print("exported MAPIE CI68 prediction to: " + ci68_model_out + self.species + ".nc")
+
+
+            scores = score_model(m, self.X_train, self.y, self.cv, self.verbose, self.scoring, self.n_jobs)
+
+            model_out_scores = self.path_out + "ens/scoring/"
+            try: #make new dir if needed
+                os.makedirs(model_out_scores)
+            except:
+                None
+            pickle.dump(scores, open(model_out_scores + self.species + '.sav', 'wb'))   
+            print("exporting ensemble scores to: " + model_out_scores)
+        
+
 
         else:
             raise ValueError("at least one model should be defined in the ensemble")

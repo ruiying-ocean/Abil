@@ -355,8 +355,9 @@ def calculate_weights(n, mae_list):
     return(w)
 
 
-def score_model(m, X_train, y, cv, verbose, scoring):
-    scores = cross_validate(m, X_train, y, cv=cv, verbose =verbose, scoring=scoring)
+def score_model(m, X_train, y, cv, verbose, scoring, n_jobs):
+    scores = cross_validate(m, X_train, y, cv=cv, n_jobs=n_jobs,
+                            verbose =verbose, scoring=scoring)
     return(scores)
 
 
