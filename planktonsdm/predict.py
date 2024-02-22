@@ -104,6 +104,9 @@ class predict:
         if (self.ensemble_config["regressor"] !=True) and (self.ensemble_config["regressor"] !=False):
             raise ValueError("regressor should be True or False")
 
+
+        print("initialized prediction")
+        
     def make_prediction(self):
 
 
@@ -152,15 +155,13 @@ class predict:
             if self.ensemble_config["regressor"] ==True:
                 m = VotingRegressor(estimators=models, weights=w).fit(self.X_train, self.y)
                 mapie = MapieRegressor(m, 
-                                        cv=self.cv,
+                                        cv=self.cv, n_jobs=self.n_jobs,
                                         conformity_score=GammaConformityScore())            
             else:
                 m= VotingClassifier(estimators=models, weights=w).fit(self.X_train, self.y)
                 mapie = MapieClassifier(m, 
-                                        cv=self.cv,
+                                        cv=self.cv, n_jobs=self.n_jobs,
                                         conformity_score=GammaConformityScore())
-
-            regr = VotingRegressor(estimators=models, weights=w)
 
             print(np.min(self.y))
 

@@ -40,6 +40,7 @@ X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
 y = d[species]
 X_train = d[predictors]
 
+print("finished loading data")
 #setup model:
 m = predict(X_train, y, X_predict, model_config)
 m.make_prediction()
