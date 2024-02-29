@@ -42,5 +42,5 @@ X_train = d[predictors]
 
 print("finished loading data")
 #setup model:
-m = predict(X_train, y, X_predict, model_config)
+m = predict(X_train, y, X_predict, model_config, n_jobs)
 m.make_prediction()
