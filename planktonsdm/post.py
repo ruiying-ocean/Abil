@@ -13,23 +13,25 @@ class post:
     """
     Post processing of SDM
     """
-    def __init__(self, model_config):
+    def __init__(self, model_config, ci=50):
 
         def merge_netcdf(path_in):
             print("merging...")
-            ds = xr.merge([xr.open_dataset(f) for f in glob.glob(os.path.join(path_in, "*.nc"))])
+            #ds = xr.merge([xr.open_dataset(f) for f in glob.glob(os.path.join(path_in, "*.nc"))])
+            ds = xr.open_mfdataset(os.path.join(path_in, "*.nc"))
+
             return(ds)
         
         if model_config['hpc']==False:
-            self.path_out = model_config['local_root'] + model_config['path_out'] 
-            self.ds = merge_netcdf(model_config['local_root'] + model_config['path_in'] )
+            self.path_out = model_config['local_root'] + model_config['path_out']  + str(ci) + "/"
+            self.ds = merge_netcdf(model_config['local_root'] + model_config['path_in'] + str(ci) + "/")
             self.traits = pd.read_csv(model_config['local_root'] + model_config['traits'])
             self.env_data_path =  model_config['local_root'] + model_config['env_data_path']
             self.root  =  model_config['local_root'] 
 
         elif model_config['hpc']==True:
-            self.path_out = model_config['hpc_root'] + model_config['path_out'] 
-            self.ds = merge_netcdf(model_config['hpc_root'] + model_config['path_in'] )   
+            self.path_out = model_config['hpc_root'] + model_config['path_out']  + str(ci) + "/"
+            self.ds = merge_netcdf(model_config['hpc_root'] + model_config['path_in'] + str(ci) + "/")
             self.traits = pd.read_csv(model_config['hpc_root'] + model_config['traits'])
             self.env_data_path =  model_config['hpc_root'] + model_config['env_data_path']
             self.root  =  model_config['hpc_root'] 
@@ -226,20 +228,22 @@ class post:
     def return_d(self):
         return(self.d)
 
-    def export_ds(self, file_name):
+    def export_ds(self, file_name, 
+                  author=None, description=None):
         """
         Export processed dataset to netcdf.
 
         Parameters
         ----------
         file_name: name netcdf will be saved as. 
+        author: author included in netcdf description
+        description: title included in netcdf description
 
         Notes
         ----------
         data export location is defined in the model_config.yml
 
         """
-
     
         try: #make new dir if needed
             os.makedirs(self.path_out)
@@ -247,11 +251,12 @@ class post:
             None
     
         ds = self.d.to_xarray()
-        '''
-        #define global attributes
-        ds.attrs['description'] = 'My awesome dataset title'
+
+        if description is not None:
+            ds.attrs['description'] = description
         ds.attrs['Conventions'] = 'CF-1.5'
-        ds.attrs['creator_name'] = 'Joost de Vries'
+        if author is not None:
+            ds.attrs['creator_name'] = author
 
         ds['lat'].attrs['units'] = 'degrees_north'
         ds['lat'].attrs['long_name'] = 'latitude'
@@ -261,8 +266,8 @@ class post:
 
         ds['depth'].attrs['units'] = 'm'
         ds['depth'].attrs['positive'] = 'down'
-        
-        '''
+
+        #to add loop defining units of variables
 
         print(self.d.head())
         ds.to_netcdf(self.path_out + file_name + ".nc")
