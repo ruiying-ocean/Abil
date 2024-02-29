@@ -1,16 +1,22 @@
 ---
   hpc: False
-  local_root: /home/phyto/CoccoML/
-  hpc_root: /user/work/ba18321/planktonSDM/
+  local_root: /home/phyto/planktonSDM/
+  hpc_root: /user/work/ba18321/abil/
 
   path_out: ModelOutput/ #root + folder
   path_in: ModelOutput/ens/predictions/ #root + folder
 
-  env_data_path: data/envdata_april_surface.csv #root + folder
+  env_data_path: data/envdata_final.csv #root + folder
   traits: data/traits.csv #root + folder
 
-  predictors: ["temperature", "si", "DIC", "irradiance", "chlor_a", "FID"]
-  training: data/abundances_environment.csv
+  predictors: ["temperature", "si", 
+    "phosphate", "din", 
+    "o2", "mld", "DIC", 
+    "TA", "irradiance", 
+    "chlor_a","Rrs_547",
+    "Rrs_667", "pic","FID"]
+    
+  training: data/obs_env.csv
 
   verbose: 3
   seed : 1 # random seed

@@ -14,7 +14,7 @@ module  load apps/singularity/1.1.3 lib/openmpi/4.0.2-gcc.4.8.5
 
 srun singularity exec \
 -B/user/work/$(whoami):/user/work/$(whoami) \
-/user/work/$(whoami)/planktonSDM/singularity/planktonSDM.sif \
-python /user/work/$(whoami)/planktonSDM/cluster_example/hpc_predict.py ${SLURM_CPUS_PER_TASK} ${i}
+/user/work/$(whoami)/abil/singularity/abil.sif \
+python /user/work/$(whoami)/abil/cluster_example/hpc_predict.py ${SLURM_CPUS_PER_TASK} ${i}
 
 export SINGULARITY_CACHEDIR=/user/work/$(whoami)/.singularity

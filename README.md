@@ -46,7 +46,7 @@ planktonSDM
 |   └── traits.csv
 |   └── abundances_environment.csv (optional)
 |   └── envdata.csv (optional)
-├── planktonsdm
+├── abil
 |   └── __init__.py
 |   └── functions.py
 |   └── post.py
@@ -74,7 +74,7 @@ planktonSDM
 |       └── scoring
 └── singularity
     └── Singularity.sif (optional)
-    └── planktonSDM.sif (optional)
+    └── abil.sif (optional)
 
 ```
 

@@ -7,11 +7,11 @@ To run the script on Bristol BluePebble:
 
 Compile singularity on your machine:
 
-``` sudo singularity build planktonSDM.sif Singularity.sif  ```
+``` sudo singularity build abil.sif Singularity.sif  ```
 
 
 
-## Transfer planktonSDM to the cluster.
+## Transfer Abil to the cluster.
 
 To upload only relevant files with scp there is a `to-bp.sh` bash script.
 
@@ -38,9 +38,9 @@ Connect to BluePebble:
 ``` ssh my_username@bp1-login.acrc.bris.ac.uK ``` 
 
 
-Change directory to planktonSDM:
+Change directory to abil:
 
-``` cd /user/work/my_username/planktonSDM ``` 
+``` cd /user/work/my_username/abil ``` 
 
 
 Change directory to folder containing you bash scripts:

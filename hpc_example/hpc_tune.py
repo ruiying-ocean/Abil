@@ -4,12 +4,12 @@ import numpy as np
 import sys
 from yaml import load
 from yaml import CLoader as Loader
-from planktonsdm.tune import tune 
+from abil.tune import tune 
 from sklearn.preprocessing import OneHotEncoder
 
 try:
     print(sys.argv[1])
-    with open('/user/work/ba18321/planktonSDM/configuration/ensemble_regressor_cluster.yml', 'r') as f:
+    with open('/user/work/ba18321/abil/configuration/ensemble_regressor_cluster.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
 
     model_config['hpc'] = True

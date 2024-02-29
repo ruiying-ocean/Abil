@@ -4,12 +4,12 @@ import numpy as np
 import sys
 from yaml import load
 from yaml import CLoader as Loader
-from planktonsdm.predict import predict
+from abil.predict import predict
 from sklearn.preprocessing import OneHotEncoder
 
 try:
     print(sys.argv[1])
-    with open('/user/work/ba18321/planktonSDM/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
+    with open('/user/work/ba18321/abil/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = True
     n_jobs = pd.to_numeric(sys.argv[1])

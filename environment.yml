@@ -1,4 +1,4 @@
-name: planktonsdm-env
+name: abil-env
 channels:
   - defaults
   - conda-forge

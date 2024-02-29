@@ -3,13 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "planktonsdm"
+name = "abil"
 version = "0.0.8"
 authors = [
   { name="nanophyto", email="joost.devries@bristol.ac.uk" },
 ]
 
-description = "A package to build plankton species distribution models"
+description = "Aquatic Biogeochemical Interpolation Library"
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [

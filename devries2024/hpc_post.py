@@ -2,7 +2,7 @@
 import sys
 from yaml import load
 from yaml import CLoader as Loader
-from planktonsdm.post import post
+from abil.post import post
 import pandas as pd
 
 from datetime import datetime
@@ -11,7 +11,7 @@ current_date = datetime.today().strftime('%Y-%m-%d')
 
 try:
     print(sys.argv[0])
-    with open('/user/work/ba18321/planktonSDM/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
+    with open('/user/work/ba18321/abil/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = True
     root = model_config['hpc_root']
