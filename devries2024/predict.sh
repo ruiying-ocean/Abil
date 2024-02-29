@@ -1,10 +1,10 @@
 #!/bin/bash
 #
 #
-#SBATCH --time=0-12:00:00
+#SBATCH --time=0-24:00:00
 #SBATCH --nodes=1
 #SBATCH --mem=30000M
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=1
 #SBATCH --array=0-51
 #SBATCH --account=GEOG024542
 
