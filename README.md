@@ -1,9 +1,10 @@
 
-# ABIL (Aquatic Biogeochemical Interpolation Library)
+# Abil.py
+## (Aquatic Biogeochemical Interpolation Library)
 
 ## Overview
 
-ABIL provides functions to tune, predict, and post-process distributions of biogeochemical observations using Python scikit-learn and MAPIE. The library is optimized to interpolate many predictions in parallel and is thus particularly suited for distribution models of species, genes and transcripts. 
+Abil.py provides functions to tune, predict, and post-process distributions of biogeochemical observations using Python scikit-learn and MAPIE. The library is optimized to interpolate many predictions in parallel and is thus particularly suited for distribution models of species, genes and transcripts. 
 
 Current support (v0.08):
 
@@ -84,9 +85,9 @@ Install the dependencies in a new environment:
 
 ``` conda env create -f package_save_path/environment.yml ``` 
 
-Activate the new environment and install planktonSDM:
+Activate the new environment and install Abil:
 
-``` conda activate planktonsdm-env ``` 
+``` conda activate abil-env ``` 
 
 ``` python -m pip install package_save_path  ``` 
 
