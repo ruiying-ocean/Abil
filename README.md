@@ -1,16 +1,17 @@
 
-# Abil.py
-## (Aquatic Biogeochemical Interpolation Library)
+# Abil.py (Aquatic Biogeochemical Interpolation Library)
 
 ## Overview
 
-Abil.py provides functions to tune, predict, and post-process distributions of biogeochemical observations using Python scikit-learn and MAPIE. The library is optimized to interpolate many predictions in parallel and is thus particularly suited for distribution models of species, genes and transcripts. 
+Abil.py provides functions to interpolate distributions of biogeochemical observations using Machine Learning algorithms in Python. The library is optimized to interpolate many predictions in parallel and is thus particularly suited for distribution models of species, genes and transcripts. The library relies on scikit-learn and MAPIE.
 
 Current support (v0.08):
 
-- Random Forest, XGBoost, Bagged KNN, and MultiLayer Perceptron
+- Random Forest, XGBoost, Bagged KNN, and MultiLayer Perceptrons
 
 - Presence/Absence and continuous data
+
+- Hyperparameter tuning and cross-validation
 
 - Automatic feature scaling and one-hot-encoding
 
