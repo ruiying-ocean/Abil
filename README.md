@@ -1,16 +1,29 @@
 
-# PlanktonSDM
+# ABIL (Aquatic Biogeochemical Interpolation Library)
 
 ## Overview
 
-This repository provides functions to tune, predict, and post-process species distribution models using Python scikit-learn.
+ABIL provides functions to tune, predict, and post-process distributions of biogeochemical observations using Python scikit-learn and MAPIE. The library is optimized to interpolate many predictions in parallel and is thus particularly suited for distribution models of species, genes and transcripts. 
+
+Current support (v0.08):
+
+- Random Forest, XGBoost, Bagged KNN, and MultiLayer Perceptron
+
+- Presence/Absence and continuous data
+
+- Automatic feature scaling and one-hot-encoding
+
+- Model error prediction inference (MAPIE)
+
+- SLURM and Singularity scripts
+
 
 Generally the workflow is as follows:
 
-0. Define the model setup in a model_config.yml file (for an example see `example_model_config`)
-1. Tune the model for the species of interest using `tune.py`
-2. Predict the distribution of each species using `predict.py`
-3. Merge the predictions into a single netcdf and do post processing using `post.py`
+1. Define the model setup in a model_config.yml file (for an example see `example_model_config`)
+2. Tune the model for the species of interest using `tune.py`
+3. Predict the distribution of each species using `predict.py`
+4. Merge the predictions into a single netcdf and do post processing using `post.py`
 
 
 Examples for each step are provided in the respective Jupyter notebooks which can be found in `/notebooks`.
@@ -49,6 +62,10 @@ planktonSDM
 |       └── predictions
 |       └── scoring
 |   └── xgb
+|       └── model
+|       └── predictions
+|       └── scoring
+|   └── mlp
 |       └── model
 |       └── predictions
 |       └── scoring
