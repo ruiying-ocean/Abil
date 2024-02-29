@@ -55,7 +55,7 @@ class predict:
         `reg_scoring` :
 
     """
-    def __init__(self, X_train, y, X_predict, model_config):
+    def __init__(self, X_train, y, X_predict, model_config, n_jobs):
         
         self.st = time.time()
 
@@ -83,10 +83,11 @@ class predict:
             self.cv = KFold(n_splits=model_config['cv'])
 
         self.X_predict = X_predict
+        X_predict = None
         self.ensemble_config = model_config['ensemble_config']
         self.model_config = model_config
 
-        self.n_jobs = model_config['n_threads']
+        self.n_jobs = n_jobs
 
         if (self.ensemble_config["classifier"] ==True) and (self.ensemble_config["regressor"] == False):
             self.scoring = model_config['clf_scoring']
@@ -104,21 +105,51 @@ class predict:
         if (self.ensemble_config["regressor"] !=True) and (self.ensemble_config["regressor"] !=False):
             raise ValueError("regressor should be True or False")
 
-
         print("initialized prediction")
         
-    def make_prediction(self):
-
+    def make_prediction(self, prediction_inference=True, alpha=[0.32],
+                        conformity_score = GammaConformityScore()):
 
         """
         Calculates performance of model(s) and exports prediction(s) to netcdf
 
+        If more than one model is defined an weighted ensemble is generated using 
+        a voting Regressor or Classifier.
+
+        To determine model error Prediction Inference is implemented using MAPIE.
+
+        Parameters
+        ----------
+        prediction_inference: Optional[bool]
+            Whether or not to include prediction inference.
+            
+        alpha: Optional[float]
+            Must be float between ``0`` and ``1``, represents the uncertainty of the
+            confidence interval.
+            Lower ``alpha`` produce larger (more conservative) prediction
+            intervals.
+            ``alpha`` is the complement of the target coverage level.
+
+            By default ``[0.32]`.
+
+        conformity_score: Optional[ConformityScore]
+            ConformityScore instance.
+            It defines the link between the observed values, the predicted ones
+            and the conformity scores. 
+
+            - ConformityScore: any MAPIE ``ConformityScore`` class
+
+            By default ``GammaConformityScore()``.
+
+
         Notes
         -----
-        If more than one model is provided, predictions are made for both invidiual models 
-        and an ensemble of the models. 
-        """
+        If more than one model is provided, predictions are made for both 
+        invidiual models and an ensemble of the models. 
 
+        For MAPIE: A GammaConformityScore assumes there is no zeros or negative values in Y.
+        If this is not the case,  AbsoluteConformityScore() should be used.
+        """
 
         number_of_models = len(self.ensemble_config) -2
         print("number of models in ensemble:" + str(number_of_models))
@@ -154,91 +185,74 @@ class predict:
 
             if self.ensemble_config["regressor"] ==True:
                 m = VotingRegressor(estimators=models, weights=w).fit(self.X_train, self.y)
-                mapie = MapieRegressor(m, 
-                                        cv=self.cv, n_jobs=self.n_jobs,
-                                        conformity_score=GammaConformityScore())            
+                mapie = MapieRegressor(m, conformity_score=GammaConformityScore())            
             else:
                 m= VotingClassifier(estimators=models, weights=w).fit(self.X_train, self.y)
-                mapie = MapieClassifier(m, 
-                                        cv=self.cv, n_jobs=self.n_jobs,
-                                        conformity_score=GammaConformityScore())
+                mapie = MapieClassifier(m, conformity_score=conformity_score)
 
             print(np.min(self.y))
 
-            alpha = [0.32]
+            if prediction_inference==True:
+                print()
+                mapie.fit(self.X_train, self.y)
 
-            mapie.fit(self.X_train, self.y)
+                low_name = str(int(alpha[0]*100))
+                up_name = str(int(np.round((1-alpha[0])*100)))
 
+                print(up_name)
+                y_pred = []
+                y_pis = []
+                i, chunksize = 0, 1000
+                for idx in range(0, len(self.X_predict), chunksize):
+                    pred, pis = mapie.predict(self.X_predict[idx:(i+1)*chunksize], alpha=alpha)
+                    y_pred += list(pred)
+                    y_pis += list(pis)
+                    i += 1
+                    
+                y_pred = np.array(y_pred)
+                y_pis = np.array(y_pis)
 
-            y_pred = []
-            y_pis = []
-            i, chunksize = 0, 1000
-            for idx in range(0, len(self.X_predict), chunksize):
-                pred, pis = mapie.predict(self.X_predict[idx:(i+1)*chunksize], alpha=alpha)
-                y_pred += list(pred)
-                y_pis += list(pis)
-                i += 1
+                low_model_out = self.path_out + "mapie/predictions/" + low_name +"/"
+                ci50_model_out = self.path_out + "mapie/predictions/50/"
+                up_model_out = self.path_out + "mapie/predictions/" + up_name +"/"
                 
-            y_pred = np.array(y_pred)
-            y_pis = np.array(y_pis)
+                try: #make new dir if needed
+                    os.makedirs(low_model_out)
+                except:
+                    None
+                try: #make new dir if needed
+                    os.makedirs(ci50_model_out)
+                except:
+                    None
+                try: #make new dir if needed
+                    os.makedirs(up_model_out)
+                except:
+                    None
 
-            ci32_model_out = self.path_out + "mapie/predictions/ci32/"
-            ci50_model_out = self.path_out + "mapie/predictions/median/"
-            ci68_model_out = self.path_out + "mapie/predictions/ci68/"
-            
-            try: #make new dir if needed
-                os.makedirs(ci32_model_out)
-            except:
-                None
-            try: #make new dir if needed
-                os.makedirs(ci50_model_out)
-            except:
-                None
-            try: #make new dir if needed
-                os.makedirs(ci68_model_out)
-            except:
-                None
+                d_ci50 = self.X_predict.copy()
+                d_ci50[self.species] = y_pred
+                d_ci50 = d_ci50.to_xarray()
+                d_ci50.to_netcdf(ci50_model_out + self.species + ".nc") 
+                print("exported MAPIE CI50 prediction to: " + ci50_model_out + self.species + ".nc")
+                d_ci50 = None
+                y_pred = None
 
+                d_low = self.X_predict.copy()
+                print("min 68 CI:")
+                print(np.mean(y_pis[:,0,:].flatten()))
+                print("min 68 CI (incl NA):")
+                print(np.nanmean(y_pis[:,0,:].flatten()))
 
-            d_ci32 = pd.DataFrame({'species': self.species,
-                              'ci32': y_pis[:,0,:].flatten(),
-                              'time': self.X_predict.reset_index()['time'],
-                              'depth': self.X_predict.reset_index()['depth'],
-                              'lat': self.X_predict.reset_index()['lat'],
-                              'lon': self.X_predict.reset_index()['lon'],
-                              })
-            d_ci32 = d_ci32.set_index(['time', 'depth', 'lat', 'lon']).to_xarray()
-            d_ci32.to_netcdf(ci32_model_out + self.species + ".nc") 
-            print("exported MAPIE CI32 prediction to: " + ci32_model_out + self.species + ".nc")
+                d_low[self.species] = y_pis[:,0,:].flatten()
+                d_low.to_xarray().to_netcdf(low_model_out + self.species + ".nc") 
+                print("exported MAPIE " + low_name + " prediction to: " + low_model_out + self.species + ".nc")
+                d_low = None
 
-            d_ci32 = None
-
-            d_ci50 = pd.DataFrame({'species': self.species,
-                              'ci50': y_pred,
-                              'time': self.X_predict.reset_index()['time'],
-                              'depth': self.X_predict.reset_index()['depth'],
-                              'lat': self.X_predict.reset_index()['lat'],
-                              'lon': self.X_predict.reset_index()['lon'],
-                              })
-            d_ci50 = d_ci50.set_index(['time', 'depth', 'lat', 'lon']).to_xarray()
-            d_ci50.to_netcdf(ci50_model_out + self.species + ".nc") 
-            print("exported MAPIE CI50 prediction to: " + ci50_model_out + self.species + ".nc")
-
-            d_ci50 = None
-            y_pred = None
-
-            d_ci68 = pd.DataFrame({'species': self.species,
-                              'ci68': y_pis[:,1,:].flatten(),
-                              'time': self.X_predict.reset_index()['time'],
-                              'depth': self.X_predict.reset_index()['depth'],
-                              'lat': self.X_predict.reset_index()['lat'],
-                              'lon': self.X_predict.reset_index()['lon'],
-                              })
-            d_ci68 = d_ci68.set_index(['time', 'depth', 'lat', 'lon']).to_xarray()
-            d_ci68.to_netcdf(ci68_model_out + self.species + ".nc") 
-
-            print("exported MAPIE CI68 prediction to: " + ci68_model_out + self.species + ".nc")
-
+                d_up = self.X_predict.copy()
+                d_up[self.species] = y_pis[:,1,:].flatten()
+                d_up.to_xarray().to_netcdf(up_model_out + self.species + ".nc") 
+                print("exported MAPIE " + up_name + " prediction to: " + up_model_out + self.species + ".nc")
+                d_up = None
 
             scores = score_model(m, self.X_train, self.y, self.cv, self.verbose, self.scoring, self.n_jobs)
 
@@ -249,8 +263,6 @@ class predict:
                 None
             pickle.dump(scores, open(model_out_scores + self.species + '.sav', 'wb'))   
             print("exporting ensemble scores to: " + model_out_scores)
-        
-
 
         else:
             raise ValueError("at least one model should be defined in the ensemble")
@@ -259,6 +271,3 @@ class predict:
         elapsed_time = et-self.st
         print("finished")
         print("execution time:", elapsed_time, "seconds")
-
-
-
