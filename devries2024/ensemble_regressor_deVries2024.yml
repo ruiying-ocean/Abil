@@ -1,7 +1,7 @@
 ---
   hpc: False
   local_root: /home/phyto/CoccoML/
-  hpc_root: /user/work/ba18321/abil/
+  hpc_root: /user/work/ba18321/planktonSDM/
 
   path_out: ModelOutput/ #root + folder
   path_in: ModelOutput/mapie/predictions/ #root + folder
