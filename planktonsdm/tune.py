@@ -94,10 +94,6 @@ class tune:
         else:
             raise ValueError("hpc True or False not defined in yml")
 
-        if regions is not None:
-            if regions not in X_train.columns:
-                raise ValueError("Regions defined but not in X_train. Did you mean regions=None?")
-
         if model_config['stratify']==True:
             if model_config['upsample']==True:
                 self.cv = UpsampledZeroStratifiedKFold(n_splits=model_config['cv'])
