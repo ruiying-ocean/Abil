@@ -2,14 +2,21 @@
 
 # Running the scripts on BluePebble
 
-
 To run the script on Bristol BluePebble:
 
 Compile singularity on your machine:
 
+If using apptainer (recommended):
+
 ``` sudo singularity build abil.sif Singularity.sif  ```
 
+If using singularity:
 
+``` sudo singularity build abil.sif Singularity.sif  ```
+
+Note: apptainer is often easier to install than singularity and is backwards compatible with legacy Singularity installs:
+
+https://apptainer.org/docs/admin/1.2/installation.html
 
 ## Transfer Abil to the cluster.
 
