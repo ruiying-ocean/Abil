@@ -17,8 +17,8 @@ class post:
 
         def merge_netcdf(path_in):
             print("merging...")
-            #ds = xr.merge([xr.open_dataset(f) for f in glob.glob(os.path.join(path_in, "*.nc"))])
-            ds = xr.open_mfdataset(os.path.join(path_in, "*.nc"))
+            ds = xr.merge([xr.open_dataset(f) for f in glob.glob(os.path.join(path_in, "*.nc"))])
+            #ds = xr.open_mfdataset(os.path.join(path_in, "*.nc"))
 
             return(ds)
         
