@@ -50,4 +50,4 @@ X_train = d[predictors]
 #setup model:
 m = tune(X_train, y, model_config, regions="FID")
 #run model:
-m.train(model=model, regressor=True)
+m.train(model=model, regressor=True, log="both")
