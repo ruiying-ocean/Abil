@@ -17,9 +17,9 @@ class post:
 
         def merge_netcdf(path_in):
             print("merging...")
-            ds = xr.merge([xr.open_dataset(f) for f in glob.glob(os.path.join(path_in, "*.nc"))])
-            #ds = xr.open_mfdataset(os.path.join(path_in, "*.nc"))
-
+            #ds = xr.merge([xr.open_dataset(f) for f in glob.glob(os.path.join(path_in, "*.nc"))])
+            ds = xr.open_mfdataset(os.path.join(path_in, "*.nc"))
+            print("finished loading netcdf files")
             return(ds)
         
         if model_config['hpc']==False:
@@ -170,9 +170,7 @@ class post:
         dict: dictionary
         A dictionary containing group definitions
 
-
-        """
-                
+        """     
 
         df = self.d[self.species]
         df = (df.rename(columns=dict)
@@ -210,7 +208,8 @@ class post:
         Notes
         ----------
 
-        Total is estimated based on the species list defined in model_config. Other species or groupings are excluded from the summation. 
+        Total is estimated based on the species list defined in model_config. 
+        Other species or groupings are excluded from the summation. 
 
         """
 

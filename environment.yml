@@ -4,6 +4,7 @@ channels:
   - conda-forge
 dependencies:
   - netcdf4
+  - dask
   - numpy
   - pandas
   - pyyaml
