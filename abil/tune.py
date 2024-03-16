@@ -23,9 +23,9 @@ from sklearn.neural_network import MLPRegressor, MLPClassifier
 
 
 if 'site-packages' in __file__:
-    from abil.functions import ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold
+    from abil.functions import ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold, check_tau
 else:
-    from functions import  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold
+    from functions import  ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold, check_tau
 
 class tune:
     """
@@ -254,12 +254,11 @@ class tune:
             print("clf balanced accuracy " + str((round(np.mean(clf_scores['test_accuracy']), 2))))
 
 
-
-
         if regressor ==True:
             print("training regressor")
 
-            reg_scoring = self.model_config['reg_scoring']
+            reg_scoring = check_tau(self.model_config['reg_scoring']) 
+
             reg_param_grid = self.model_config['param_grid'][model + '_param_grid']['reg_param_grid']
 
             print(reg_param_grid)
@@ -291,13 +290,16 @@ class tune:
 
             pickle.dump(reg_scores, open(reg_sav_out_scores + self.species + '_reg.sav', 'wb'))
 
-
             print("exported scoring to: " + reg_sav_out_scores + self.species + '_reg.sav')
 
-            print("reg rRMSE: " + str(int(round(np.mean(reg_scores['test_RMSE'])/np.mean(self.y), 2)*-100))+"%")
-            print("reg rMAE: " + str(int(round(np.mean(reg_scores['test_MAE'])/np.mean(self.y), 2)*-100))+"%")
-            print("reg R2: " + str(round(np.mean(reg_scores['test_R2']), 2)))
-
+            if "RMSE" in reg_scoring:
+                print("reg rRMSE: " + str(int(round(np.mean(reg_scores['test_RMSE'])/np.mean(self.y), 2)*-100))+"%")
+            if "MAE" in reg_scoring:
+                print("reg rMAE: " + str(int(round(np.mean(reg_scores['test_MAE'])/np.mean(self.y), 2)*-100))+"%")
+            if "R2" in reg_scoring:
+                print("reg R2: " + str(round(np.mean(reg_scores['test_R2']), 2)))
+            if "tau" in reg_scoring:
+                print("reg tau: " + str(round(np.mean(reg_scores['test_tau']), 2)))
 
 
         if (classifier ==True) and (regressor ==True):

@@ -20,7 +20,7 @@ from sklearn.preprocessing import OneHotEncoder
 import pandas as pd
 import xarray as xr
 import numpy as np
-
+from sklearn.metrics import make_scorer
 
 def tau_scoring(y, y_pred):
     tau, p_value = kendalltau(y, y_pred)
@@ -29,6 +29,18 @@ def tau_scoring(y, y_pred):
 def tau_scoring_p(y, y_pred):
     tau, p_value = kendalltau(y, y_pred)
     return(p_value)
+
+def check_tau(scoring):
+
+    if 'tau' in scoring:
+        scoring['tau'] = make_scorer(tau_scoring)
+        scoring['tau_p'] = make_scorer(tau_scoring_p)
+        print(scoring)
+
+    else:
+        scoring = scoring
+
+    return scoring
 
 
 def do_log(self, x):

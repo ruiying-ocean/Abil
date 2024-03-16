@@ -10,9 +10,9 @@ from mapie.classification import  MapieClassifier
 from mapie.conformity_scores import GammaConformityScore
 
 if 'site-packages' in __file__:
-    from abil.functions import calculate_weights, score_model, def_prediction, export_prediction, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold
+    from abil.functions import calculate_weights, score_model, def_prediction, export_prediction, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
 else:
-    from functions import calculate_weights, score_model, def_prediction, export_prediction, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold
+    from functions import calculate_weights, score_model, def_prediction, export_prediction, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
 
 class predict:
     """
@@ -95,7 +95,7 @@ class predict:
         elif (self.ensemble_config["classifier"] ==False) and (self.ensemble_config["regressor"] == False):
             raise ValueError("classifier and regressor can't both be False")
         else:
-            self.scoring = model_config['reg_scoring']
+            self.scoring = check_tau(self.model_config['reg_scoring']) 
 
 
         if (self.ensemble_config["classifier"] !=True) and (self.ensemble_config["classifier"] !=False):
