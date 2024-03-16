@@ -54,7 +54,7 @@ class predict:
         `reg_scoring` :
 
     """
-    def __init__(self, X_train, y, X_predict, model_config, n_jobs):
+    def __init__(self, X_train, y, X_predict, model_config, n_jobs=1):
         
         self.st = time.time()
 
