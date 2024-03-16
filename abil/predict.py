@@ -9,7 +9,6 @@ from mapie.regression import MapieRegressor
 from mapie.classification import  MapieClassifier
 from mapie.conformity_scores import GammaConformityScore
 
-
 if 'site-packages' in __file__:
     from abil.functions import calculate_weights, score_model, def_prediction, export_prediction, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold
 else:
@@ -232,7 +231,7 @@ class predict:
                 d_ci50 = self.X_predict.copy()
                 d_ci50[self.species] = y_pred
                 d_ci50 = d_ci50.to_xarray()
-                d_ci50.to_netcdf(ci50_model_out + self.species + ".nc") 
+                d_ci50[self.species].to_netcdf(ci50_model_out + self.species + ".nc") 
                 print("exported MAPIE CI50 prediction to: " + ci50_model_out + self.species + ".nc")
                 d_ci50 = None
                 y_pred = None
@@ -244,13 +243,13 @@ class predict:
                 print(np.nanmean(y_pis[:,0,:].flatten()))
 
                 d_low[self.species] = y_pis[:,0,:].flatten()
-                d_low.to_xarray().to_netcdf(low_model_out + self.species + ".nc") 
+                d_low[self.species].to_xarray().to_netcdf(low_model_out + self.species + ".nc") 
                 print("exported MAPIE " + low_name + " prediction to: " + low_model_out + self.species + ".nc")
                 d_low = None
 
                 d_up = self.X_predict.copy()
                 d_up[self.species] = y_pis[:,1,:].flatten()
-                d_up.to_xarray().to_netcdf(up_model_out + self.species + ".nc") 
+                d_up[self.species].to_xarray().to_netcdf(up_model_out + self.species + ".nc") 
                 print("exported MAPIE " + up_name + " prediction to: " + up_model_out + self.species + ".nc")
                 d_up = None
 
