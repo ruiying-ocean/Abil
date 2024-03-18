@@ -1,10 +1,10 @@
 #!/bin/bash
 
 #make a clean temp folder
-mkdir /tmp/abil
+mkdir /tmp/Abil
 #copy folder but exclude git, docs and dis
-rsync -av --progress /home/phyto/planktonSDM/ /tmp/abil/ --exclude .git --exclude dist --exclude docs --exclude ModelOutput
+rsync -av --progress /home/phyto/Abil/ /tmp/Abil/ --exclude .git --exclude dist --exclude docs --exclude ModelOutput
 #copy temp folder to bp
-scp -r /tmp/abil/ ba18321@bp1-login.acrc.bris.ac.uk:/user/work/ba18321/
+scp -r /tmp/Abil/ ba18321@bp1-login.acrc.bris.ac.uk:/user/work/ba18321/
 #if copy ok, remove temp folder
-rm -rf /tmp/abil
+rm -rf /tmp/Abil

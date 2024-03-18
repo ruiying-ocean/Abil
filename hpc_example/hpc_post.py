@@ -8,13 +8,13 @@ import pandas as pd
 
 try:
     print(sys.argv[0])
-    with open('/user/work/ba18321/planktonSDM/configuration/2-phase_ensemble_cluster.yml', 'r') as f:
+    with open('/user/work/ba18321/Abil/configuration/2-phase_ensemble_cluster.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = True
     root = model_config['hpc_root']
 
 except:
-    with open('/home/phyto/planktonSDM/configuration/2-phase_ensemble_cluster.yml', 'r') as f:
+    with open('/home/phyto/Abil/configuration/2-phase_ensemble_cluster.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = False
     root = model_config['local_root']

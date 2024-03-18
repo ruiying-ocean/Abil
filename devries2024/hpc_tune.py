@@ -9,7 +9,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 try:
     print(sys.argv[1])
-    with open('/user/work/ba18321/planktonSDM/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
+    with open('/user/work/ba18321/Abil/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
 
     model_config['hpc'] = True
@@ -21,7 +21,7 @@ try:
     predictors = model_config['predictors']
 
 except:
-    with open('/home/phyto/planktonSDM/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
+    with open('/home/phyto/Abil/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = False
     n_jobs = 8
@@ -29,7 +29,7 @@ except:
     root = model_config['local_root']
     model_config['cv'] = 3
     
-    with open('/home/phyto/planktonSDM/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
+    with open('/home/phyto/Abil/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
         model_config_local = load(f, Loader=Loader)    
     
     model_config['param_grid'] = model_config_local['param_grid'] 

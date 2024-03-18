@@ -22,9 +22,9 @@ https://apptainer.org/docs/admin/1.2/installation.html
 
 To upload only relevant files with scp there is a `to-bp.sh` bash script.
 
-To run the script, cd to the planktonSDM directory:
+To run the script, cd to the Abil directory:
 
-``` cd path_to_planktonSDM ```
+``` cd path_to_Abil ```
 
 Set the bash script executable permission by running chmod command in Linux:
 

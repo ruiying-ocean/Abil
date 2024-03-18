@@ -15,7 +15,7 @@ module  load apps/singularity/1.1.3 lib/openmpi/4.0.2-gcc.4.8.5
 
 srun singularity exec \
 -B/user/work/$(whoami):/user/work/$(whoami) \
-/user/work/$(whoami)/abil/singularity/abil.sif \
-python /user/work/$(whoami)/abil/hpc_example/hpc_tune.py ${SLURM_CPUS_PER_TASK} ${i} "rf"
+/user/work/$(whoami)/Abil/singularity/abil.sif \
+python /user/work/$(whoami)/Abil/hpc_example/hpc_tune.py ${SLURM_CPUS_PER_TASK} ${i} "rf"
 
 export SINGULARITY_CACHEDIR=/user/work/$(whoami)/.singularity

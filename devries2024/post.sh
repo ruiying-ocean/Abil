@@ -11,7 +11,7 @@ module  load apps/singularity/1.1.3 lib/openmpi/4.0.2-gcc.4.8.5
 
 srun singularity exec \
 -B/user/work/$(whoami):/user/work/$(whoami) \
-/user/work/$(whoami)/planktonSDM/singularity/abil.sif \
-python /user/work/$(whoami)/planktonSDM/devries2024/hpc_post.py 
+/user/work/$(whoami)/Abil/singularity/abil.sif \
+python /user/work/$(whoami)/Abil/devries2024/hpc_post.py 
 
 export SINGULARITY_CACHEDIR=/user/work/$(whoami)/.singularity

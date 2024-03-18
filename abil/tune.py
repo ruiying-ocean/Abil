@@ -145,7 +145,7 @@ class tune:
         --------
         >>> from sklearn.ensemble import RandomForestClassifier
         >>> from sklearn.datasets import make_classification
-        >>> with open('/home/phyto/planktonSDM/configuration/example_model_config.yml', 'r') as f:
+        >>> with open('/home/phyto/Abil/configuration/example_model_config.yml', 'r') as f:
         ...    model_config = load(f, Loader=Loader)
         
         >>> X, y = example_data(y_name =  "Coccolithus pelagicus",
