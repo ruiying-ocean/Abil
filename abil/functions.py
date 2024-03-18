@@ -115,6 +115,7 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         """Initialize."""
         self.classifier = classifier
         self.regressor = regressor
+        
 
     def fit(self, X, y, sample_weight=None):
         """
@@ -141,8 +142,9 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         ValueError
             If `classifier` is not a classifier or `regressor` is not a regressor.
         """
-        # X, y = check_X_y(X, y)
-        # self._check_n_features(X, reset=True)
+        # #X, y = check_X_y(X, y)
+        # #self._check_n_features(X, reset=True)
+
         if not is_classifier(self.classifier):
             raise ValueError(
                 f"`classifier` has to be a classifier. Received instance of {type(self.classifier)} instead.")
@@ -166,13 +168,22 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
             except NotFittedError:
                 self.regressor_ = clone(self.regressor)
 
-                self.regressor_.fit(
-                        X[non_zero_indices],
-                        y[non_zero_indices],
-                )
+                if isinstance(X, pd.DataFrame):
+                    self.regressor_.fit(
+                            X.iloc[non_zero_indices],
+                            y[non_zero_indices],
+                    )
+                else:
+
+                    self.regressor_.fit(
+                            X[non_zero_indices],
+                            y[non_zero_indices],
+                    )
         else:
             None
 
+        #self.classifier_ = self.classifier
+        #self.regressor_ = self.regressor
         return self
 
 
@@ -190,15 +201,19 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         y : np.ndarray, shape (n_samples,)
             The predicted values.
         """
-        check_is_fitted(self)
-        # X = check_array(X)
-        # self._check_n_features(X, reset=False)
+        #check_is_fitted(self)
+#        X = check_array(X)
+#        self._check_n_features(X, reset=False)
 
         output = np.zeros(len(X))
-        non_zero_indices = np.where(self.classifier_.predict(X))[0]
+
+        non_zero_indices = np.where(self.classifier_.predict(X) == 1)[0]
 
         if non_zero_indices.size > 0:
-            output[non_zero_indices] = self.regressor_.predict(X[non_zero_indices]).ravel()
+            if isinstance(X, pd.DataFrame):
+                output[non_zero_indices] = self.regressor_.predict(X.iloc[non_zero_indices])
+            else:
+                output[non_zero_indices] = self.regressor_.predict(X[non_zero_indices])
 
         return output
 
@@ -226,47 +241,29 @@ class LogGridSearch:
             predictors.remove(self.regions)
             categorical_features = [self.regions]
             categorical_transformer = OneHotEncoder(handle_unknown='ignore')
-        
-        numeric_features =  X.columns.get_indexer(X[predictors].columns)
-        numeric_transformer = Pipeline(steps=[
-            ('scaler', StandardScaler())])
-
-        if self.regions!=None:
-            preprocessor = ColumnTransformer(
-                transformers=[
-                    ('num', numeric_transformer, numeric_features),
-                    ('cat', categorical_transformer, categorical_features)])
-            
-        else:
-            preprocessor = ColumnTransformer(
-                transformers=[
-                    ('num', numeric_transformer, numeric_features)])
-            
-        reg_pipe = Pipeline(steps=[('preprocessor', preprocessor),
-                    ('estimator', self.m)])
 
         if log=="yes":
 
-            model = TransformedTargetRegressor(reg_pipe, func = self.do_log, inverse_func=self.do_exp)
+            model = TransformedTargetRegressor(self.m, func = self.do_log, inverse_func=self.do_exp)
             grid_search = GridSearchCV(model, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search.fit(X, y)
         
         elif log=="no":
 
-            model = TransformedTargetRegressor(reg_pipe, func = None, inverse_func=None)
+            model = TransformedTargetRegressor(self.m, func = None, inverse_func=None)
             grid_search = GridSearchCV(model, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search.fit(X, y)
 
         elif log =="both":
 
-            normal_m = TransformedTargetRegressor(reg_pipe, func = None, inverse_func=None)
+            normal_m = TransformedTargetRegressor(self.m, func = None, inverse_func=None)
             grid_search1 = GridSearchCV(normal_m, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search1.fit(X, y)
 
-            log_m = TransformedTargetRegressor(reg_pipe, func = self.do_log, inverse_func=self.do_exp)
+            log_m = TransformedTargetRegressor(self.m, func = self.do_log, inverse_func=self.do_exp)
             grid_search2 = GridSearchCV(log_m, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search2.fit(X, y)
