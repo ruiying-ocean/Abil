@@ -1,0 +1,5 @@
+singularity/
+devries2024/data/
+ModelOutput/
+plotting/
+*.sif

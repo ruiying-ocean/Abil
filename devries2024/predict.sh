@@ -1,11 +1,11 @@
 #!/bin/bash
 #
 #
-#SBATCH --time=0-18:00:00
+#SBATCH --time=0-24:00:00
 #SBATCH --nodes=1
-#SBATCH --mem=10000M
-#SBATCH --cpus-per-task=8
-#SBATCH --array=0-3
+#SBATCH --mem=30000M
+#SBATCH --cpus-per-task=1
+#SBATCH --array=0-51
 #SBATCH --account=GEOG024542
 
 i=${SLURM_ARRAY_TASK_ID}
@@ -14,7 +14,8 @@ module  load apps/singularity/1.1.3 lib/openmpi/4.0.2-gcc.4.8.5
 
 srun singularity exec \
 -B/user/work/$(whoami):/user/work/$(whoami) \
-/user/work/$(whoami)/abil/singularity/abil.sif \
-python /user/work/$(whoami)/abil/cluster_example/hpc_predict.py ${SLURM_CPUS_PER_TASK} ${i}
+/user/work/$(whoami)/planktonSDM/singularity/abil.sif \
+python /user/work/$(whoami)/planktonSDM/devries2024/hpc_predict.py ${SLURM_CPUS_PER_TASK} ${i}
 
 export SINGULARITY_CACHEDIR=/user/work/$(whoami)/.singularity
+

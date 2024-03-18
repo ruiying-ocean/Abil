@@ -4,7 +4,7 @@ import numpy as np
 import sys
 from yaml import load
 from yaml import CLoader as Loader
-from planktonsdm.tune import tune 
+from abil.tune import tune 
 from sklearn.preprocessing import OneHotEncoder
 
 try:

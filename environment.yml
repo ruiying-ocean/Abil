@@ -1,9 +1,10 @@
-name: planktonsdm-env
+name: abil-env
 channels:
   - defaults
   - conda-forge
 dependencies:
   - netcdf4
+  - dask
   - numpy
   - pandas
   - pyyaml
@@ -12,3 +13,4 @@ dependencies:
   - ipykernel
   - scikit-learn
   - scipy
+  - mapie

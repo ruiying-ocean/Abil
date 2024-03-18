@@ -1,14 +1,14 @@
 ---
   hpc: False
-  local_root: /home/phyto/planktonSDM/
-  hpc_root: /user/work/ba18321/abil/
+  local_root: /home/phyto/CoccoML/
+  hpc_root: /user/work/ba18321/planktonSDM/
 
   path_out: ModelOutput/ #root + folder
-  path_in: ModelOutput/ens/predictions/ #root + folder
+  path_in: ModelOutput/mapie/predictions/ #root + folder
 
-  env_data_path: data/envdata_final.csv #root + folder
-  traits: data/traits.csv #root + folder
-
+  env_data_path: devries2024/data/envdata_final.csv #root + folder
+  traits: devries2024/data/traits.csv #root + folder
+  
   predictors: ["temperature", "si", 
     "phosphate", "din", 
     "o2", "mld", "DIC", 
@@ -20,7 +20,7 @@
 
   verbose: 3
   seed : 1 # random seed
-  n_threads : 2 # how many cpu threads to use
+  n_threads : 2 # how many cpu threads to use (local)
   cv : 10
   predict_probability: False 
 
@@ -38,15 +38,16 @@
    R2: r2
    MAE: neg_mean_absolute_error
    RMSE: neg_root_mean_squared_error
-
+   tau: make_scorer(tau_scoring)
+   
   param_grid:
     rf_param_grid:
       reg_param_grid:
         regressor__estimator__n_estimators: [250]
-        regressor__estimator__max_features:  ['sqrt', 1, 2, 4, 6, 8, 10, 12, 14]
+        regressor__estimator__max_features:  ['sqrt', 1, 2, 4, 6, 8, 10]
         regressor__estimator__max_depth: [2, 10, 51, 75, 100, inf]
-        regressor__estimator__min_samples_leaf: [1, 5, 13, 50]
-        regressor__estimator__max_samples: [0.8, 0.85, 0.9, 1]     
+        regressor__estimator__min_samples_leaf: [1, 5, 13, 25, 37, 50]
+        regressor__estimator__max_samples: [0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 1]     
 
     xgb_param_grid:
       reg_param_grid:  
@@ -62,8 +63,8 @@
       reg_param_grid:  
         regressor__estimator__max_samples: [0.6, 0.8, 0.85, 0.9, 1]
         regressor__estimator__max_features: [0.6, 0.8, 0.85, 0.9, 1]
-        regressor__estimator__estimator__leaf_size: [3, 5, 10]
-        regressor__estimator__estimator__n_neighbors: [3, 5, 10]
+        regressor__estimator__estimator__leaf_size: [10, 30, 50]
+        regressor__estimator__estimator__n_neighbors: [3, 5, 8, 10]
         regressor__estimator__estimator__p:  [1,2]        
         regressor__estimator__estimator__weights: ["uniform", "distance"]
 

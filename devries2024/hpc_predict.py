@@ -9,7 +9,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 try:
     print(sys.argv[1])
-    with open('/user/work/ba18321/planktonSDM/configuration/ensemble_regressor_cluster.yml', 'r') as f:
+    with open('/user/work/ba18321/planktonSDM/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = True
     n_jobs = pd.to_numeric(sys.argv[1])
@@ -18,10 +18,10 @@ try:
     model_config['cv'] = 10
 
 except:
-    with open('/home/phyto/planktonSDM/configuration/ensemble_regressor_cluster.yml', 'r') as f:
+    with open('/user/work/ba18321/planktonSDM/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = False
-    n_jobs = 8
+    n_jobs = 1
     n_spp = 1
     root = model_config['local_root']
     model_config['cv'] = 3
@@ -40,6 +40,7 @@ X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
 y = d[species]
 X_train = d[predictors]
 
+print("finished loading data")
 #setup model:
-m = predict(X_train, y, X_predict, model_config)
+m = predict(X_train, y, X_predict, model_config, n_jobs)
 m.make_prediction()
