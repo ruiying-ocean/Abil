@@ -237,11 +237,6 @@ class LogGridSearch:
     
     def transformed_fit(self, X, y, log, predictors):
 
-        if self.regions!=None:
-            predictors.remove(self.regions)
-            categorical_features = [self.regions]
-            categorical_transformer = OneHotEncoder(handle_unknown='ignore')
-
         if log=="yes":
 
             model = TransformedTargetRegressor(self.m, func = self.do_log, inverse_func=self.do_exp)
