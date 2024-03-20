@@ -309,7 +309,7 @@ class tune:
 
 
         if (classifier ==True) and (regressor ==True):
-            raise ValueError("2-phase model not supported, choose classifier OR regressor")
+            #raise ValueError("2-phase model not supported, choose classifier OR regressor")
         
             print("training zero-inflated regressor")
 
