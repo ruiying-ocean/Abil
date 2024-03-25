@@ -6,7 +6,7 @@ from sklearn.utils.validation import check_is_fitted, check_X_y, check_array
 from sklearn.exceptions import NotFittedError
 from inspect import signature
 import numpy as np
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, KFold
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.datasets import make_regression
@@ -29,6 +29,23 @@ def tau_scoring(y, y_pred):
 def tau_scoring_p(y, y_pred):
     tau, p_value = kendalltau(y, y_pred)
     return(p_value)
+
+def upsample(d, target, ratio=10):
+        
+    y_binary = np.where(d[target]!=0, 1, 0)
+
+    nix = np.where(y_binary==0)[0] #absence index
+    pix = np.where(y_binary==1)[0] #presence index
+
+    pixu = d.iloc[pix].sample(pix.shape[0], replace=True)
+    nixu = d.iloc[nix].sample(pix.shape[0], replace=True)
+
+    ix = pd.concat([pixu, nixu], ignore_index=True)
+
+    return(ix)
+
+
+
 
 def check_tau(scoring):
 
@@ -66,23 +83,6 @@ def merge_obs_env(obs_path = "../data/gridded_abundances.csv",
                     out_path = "../data/obs_env.csv"):
 
     d = pd.read_csv(obs_path)
-
-    # #regrid
-    # depth_bins = np.linspace(0, 205, 62)
-    # depth_labels = np.linspace(0, 300, 61)
-    # d['Depth'] = pd.cut(d['Depth'], bins=depth_bins, labels=depth_labels).astype(np.float64) 
-
-    # lat_bins = np.linspace(-90, 90, 181)
-    # lat_labels = np.linspace(-90, 89, 180)
-    # d['Latitude'] = pd.cut(d['Latitude'].astype(np.float64), bins=lat_bins, labels=lat_labels).astype(np.float64) 
-
-    # lon_bins = np.linspace(-180, 180, 361)
-    # lon_labels = np.linspace(-180, 179, 360)
-    # d['Longitude'] = pd.cut(d['Longitude'].astype(np.float64), bins=lon_bins, labels=lon_labels).astype(np.float64) 
-
-    #d['DateTime'] = pd.to_datetime(d['Date'],dayfirst=True)
-    #d['Month'] = pd.DatetimeIndex(d['DateTime']).month
-    #d['Year'] = pd.DatetimeIndex(d['DateTime']).year
 
     d = d.convert_dtypes()
 
@@ -313,8 +313,13 @@ class ZeroStratifiedKFold:
         #convert target variable to binary for stratified sampling
         y_binary = np.where(y!=0, 1, 0)
 
-        for rx, tx in StratifiedKFold(n_splits=self.n_splits).split(X,y_binary):
-            yield rx, tx
+        # Check if there are any zeros in the array
+        if any(element == 0 for element in y_binary):
+            for rx, tx in StratifiedKFold(n_splits=self.n_splits).split(X,y_binary):
+                yield rx, tx
+        else:
+            for rx, tx in KFold(n_splits=self.n_splits).split(X,y_binary):
+                yield rx, tx
 
     def get_n_splits(self, X, y, groups=None):
         return self.n_splits
@@ -341,8 +346,18 @@ def example_data(y_name, n_samples=500, n_features=5, noise=20, random_state=59)
     return(X, y)
 
 
+def abbreviate_species(species_name):
+    words = species_name.split()
+    if len(words) == 1:
+        return species_name
+    abbreviated_name = words[0][0].upper() + '.'
+    abbreviated_name += ' ' + ' '.join(words[1:])
+    return abbreviated_name
 
 def lat_weights(d):
+    '''
+    To define!
+    '''
     d_w = d*10
     return(d_w)
 
