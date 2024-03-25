@@ -5,6 +5,7 @@ import sys
 from yaml import load
 from yaml import CLoader as Loader
 from abil.tune import tune 
+from abil.functions import upsample
 from sklearn.preprocessing import OneHotEncoder
 
 try:
@@ -44,6 +45,7 @@ species =  traits['species'][n_spp]
 d[species] = d[species].fillna(0)
 d = d.dropna(subset=[species])
 d = d.dropna(subset=['FID'])
+d = upsample(d, species, ratio=10)
 
 y = d[species]
 X_train = d[predictors]
