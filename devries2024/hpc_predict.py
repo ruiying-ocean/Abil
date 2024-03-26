@@ -5,6 +5,7 @@ import sys
 from yaml import load
 from yaml import CLoader as Loader
 from abil.predict import predict
+from abil.functions import upsample
 from sklearn.preprocessing import OneHotEncoder
 
 try:
@@ -31,9 +32,12 @@ model_config['n_threads'] = n_jobs
 traits = pd.read_csv(root + model_config['traits'])
 d = pd.read_csv(root + model_config['training'])
 species =  traits['species'][n_spp]
-predictors = model_config['predictors']
+d[species] = d[species].fillna(0)
 d = d.dropna(subset=[species])
 d = d.dropna(subset=['FID'])
+d = upsample(d, species, ratio=10)
+
+predictors = model_config['predictors']
 
 X_predict =  pd.read_csv(root + model_config['env_data_path'])
 X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
@@ -41,6 +45,6 @@ y = d[species]
 X_train = d[predictors]
 
 print("finished loading data")
-#setup model:
-m = predict(X_train, y, X_predict, model_config, n_jobs)
+
+m = predict(X_train, y, X_predict, model_config, n_jobs=1)
 m.make_prediction()
