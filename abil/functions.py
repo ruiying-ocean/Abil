@@ -38,7 +38,7 @@ def upsample(d, target, ratio=10):
     pix = np.where(y_binary==1)[0] #presence index
 
     pixu = d.iloc[pix].sample(pix.shape[0], replace=True)
-    nixu = d.iloc[nix].sample(pix.shape[0], replace=True)
+    nixu = d.iloc[nix].sample(pix.shape[0]*ratio, replace=True)
 
     ix = pd.concat([pixu, nixu], ignore_index=True)
 
