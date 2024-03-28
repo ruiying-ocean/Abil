@@ -184,10 +184,10 @@ class predict:
 
             if self.ensemble_config["regressor"] ==True:
                 m = VotingRegressor(estimators=models, weights=w).fit(self.X_train, self.y)
-                mapie = MapieRegressor(m, conformity_score=GammaConformityScore())            
+                mapie = MapieRegressor(m) #            
             else:
                 m= VotingClassifier(estimators=models, weights=w).fit(self.X_train, self.y)
-                mapie = MapieClassifier(m, conformity_score=conformity_score)
+                mapie = MapieClassifier(m) #, conformity_score=conformity_score
 
             print(np.min(self.y))
 
