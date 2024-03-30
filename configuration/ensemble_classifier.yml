@@ -9,7 +9,11 @@
   env_data_path: data/envdata_final.csv #root + folder
   traits: data/traits.csv #root + folder
 
-  predictors: ["temperature", "si", "phosphate", "din", "o2", "mld", "DIC", "irradiance", "chlor_a", "FID"]
+  predictors: ["temperature", "si", 
+    "phosphate", "din", 
+    "o2", "mld", "DIC", 
+     "irradiance",  "chlor_a", "FID"]
+
   training: data/obs_env.csv
 
   verbose: 1

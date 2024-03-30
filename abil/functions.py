@@ -326,7 +326,7 @@ class ZeroStratifiedKFold:
     
 
 
-def example_data(y_name, n_samples=500, n_features=5, noise=20, random_state=59):
+def example_data(y_name, n_samples=100, n_features=5, noise=20, random_state=59):
 
     #example data:
     X, y = make_regression(n_samples=n_samples, n_features=n_features, noise=noise, random_state=random_state)
@@ -341,8 +341,12 @@ def example_data(y_name, n_samples=500, n_features=5, noise=20, random_state=59)
     y[y <= 0.5] = 0
     y = np.squeeze(y)
     y = pd.Series(y)
-#    y = pd.DataFrame({y_name: y})
+    y = pd.DataFrame({y_name: y})
     y.name = y_name
+    X = pd.DataFrame(X)
+    X = X.add_prefix('Feature_')
+
+
     return(X, y)
 
 
