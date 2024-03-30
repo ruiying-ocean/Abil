@@ -10,7 +10,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 try:
     print(sys.argv[1])
-    with open('/user/work/ba18321/Abil/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
+    with open('/user/work/ba18321/Abil/devries2024/2-phase.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = True
     n_jobs = pd.to_numeric(sys.argv[1])
@@ -19,7 +19,7 @@ try:
     model_config['cv'] = 10
 
 except:
-    with open('/user/work/ba18321/Abil/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
+    with open('/user/work/ba18321/Abil/devries2024/2-phase.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = False
     n_jobs = 1
