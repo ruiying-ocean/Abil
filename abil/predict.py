@@ -7,7 +7,7 @@ from sklearn.ensemble import VotingRegressor, VotingClassifier
 from sklearn.model_selection import KFold
 from mapie.regression import MapieRegressor
 from mapie.classification import  MapieClassifier
-from mapie.conformity_scores import GammaConformityScore
+from mapie.conformity_scores import GammaConformityScore, AbsoluteConformityScore
 
 
 from joblib import Parallel, delayed
@@ -203,8 +203,8 @@ class predict:
 
         print("initialized prediction")
         
-    def make_prediction(self, prediction_inference=True, alpha=[0.32],
-                        conformity_score = GammaConformityScore()):
+    def make_prediction(self, prediction_inference=False, alpha=[0.32],
+                        conformity_score = AbsoluteConformityScore()):
 
         """
         Calculates performance of model(s) and exports prediction(s) to netcdf
@@ -235,7 +235,7 @@ class predict:
 
             - ConformityScore: any MAPIE ``ConformityScore`` class
 
-            By default ``GammaConformityScore()``.
+            By default ``AbsoluteConformityScore()``.
 
 
         Notes
@@ -285,10 +285,10 @@ class predict:
 
             if self.ensemble_config["regressor"] ==True:
                 m = VotingRegressor(estimators=models, weights=w).fit(self.X_train, self.y)
-                mapie = MapieRegressor(m) #            
+                mapie = MapieRegressor(m, conformity_score=conformity_score) #            
             else:
                 m= VotingClassifier(estimators=models, weights=w).fit(self.X_train, self.y)
-                mapie = MapieClassifier(m) #, conformity_score=conformity_score
+                mapie = MapieClassifier(m, conformity_score=conformity_score) #
 
             print(np.min(self.y))
 
