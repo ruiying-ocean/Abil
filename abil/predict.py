@@ -8,16 +8,16 @@ from sklearn.model_selection import KFold
 from mapie.regression import MapieRegressor
 from mapie.classification import  MapieClassifier
 from mapie.conformity_scores import GammaConformityScore, AbsoluteConformityScore
-
+from sklearn.model_selection import cross_validate
 
 from joblib import Parallel, delayed
 
 
 
 if 'site-packages' in __file__:
-    from abil.functions import inverse_weighting, score_model, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
+    from abil.functions import inverse_weighting, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
 else:
-    from functions import inverse_weighting, score_model, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
+    from functions import inverse_weighting, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
 
 def def_prediction(path_out, ensemble_config, n, species):
 
@@ -36,6 +36,7 @@ def def_prediction(path_out, ensemble_config, n, species):
         m = pickle.load(open(path_to_param + species + '_reg.sav', 'rb'))
         scoring =  pickle.load(open(path_to_scores + species + '_reg.sav', 'rb'))   
         scores = abs(np.mean(scoring['test_MAE']))
+
 
     elif (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == True):
         print("predicting zero-inflated regressor")
@@ -355,8 +356,8 @@ class predict:
                 print("exported MAPIE " + up_name + " prediction to: " + up_model_out + self.species + ".nc")
                 d_up = None
 
-            scores = score_model(m, self.X_train, self.y, self.cv, self.verbose, 
-                                 self.scoring, self.n_jobs)
+            scores = cross_validate(m, self.X_train, self.y, cv=self.cv, verbose=self.verbose, 
+                                 scoring=self.scoring, n_jobs=self.n_jobs)
 
             model_out_scores = self.path_out + "ens/scoring/"
             try: #make new dir if needed

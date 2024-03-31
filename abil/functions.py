@@ -10,7 +10,6 @@ from sklearn.model_selection import StratifiedKFold, KFold
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.datasets import make_regression
-from sklearn.model_selection import cross_validate
 import pickle
 import os
 from sklearn.pipeline import Pipeline
@@ -358,23 +357,8 @@ def abbreviate_species(species_name):
     abbreviated_name += ' ' + ' '.join(words[1:])
     return abbreviated_name
 
-def lat_weights(d):
-    '''
-    To define!
-    '''
-    d_w = d*10
-    return(d_w)
-
 def inverse_weighting(values):
     inverse_weights = [1 / value for value in values]
     total_inverse_weight = sum(inverse_weights)
     normalized_weights = [weight / total_inverse_weight for weight in inverse_weights]
     return normalized_weights
-
-def score_model(m, X_train, y, cv, verbose, scoring, n_jobs):
-    scores = cross_validate(m, X_train, y, cv=cv, n_jobs=n_jobs,
-                            verbose =verbose, scoring=scoring)
-    return(scores)
-
-
-
