@@ -9,6 +9,11 @@ from mapie.regression import MapieRegressor
 from mapie.classification import  MapieClassifier
 from mapie.conformity_scores import GammaConformityScore
 
+
+from joblib import Parallel, delayed
+
+
+
 if 'site-packages' in __file__:
     from abil.functions import calculate_weights, score_model, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
 else:
@@ -45,16 +50,56 @@ def def_prediction(path_out, ensemble_config, n, species):
 
     return(m, scores)
 
-def export_prediction(m,species, X_predict, model_config, ensemble_config, ens_model_out):
+
+def parallel_predict(prediction_function, X_predict, n_threads=1):
+
+    df_sections = np.array_split(X_predict,  n_threads)
+
+    predictions = Parallel(n_jobs= n_threads)(delayed(prediction_function)(df_section) for df_section in df_sections)
+
+    combined_predictions = np.concatenate(predictions)
+
+    return(combined_predictions)
+
+
+def parallel_predict_mapie(X_predict, mapie, alpha, chunksize = 1000):
+
+    # Define a function to make predictions and PIs for a chunk of data
+    def predict_chunk(model, X_chunk, alpha):
+        pred, pis = model.predict(X_chunk, alpha=alpha)
+        return pred, pis
+
+    # Define the chunk size
+
+    # Split the data into chunks
+    data_chunks = [X_predict[i:i+chunksize] for i in range(0, len(X_predict), chunksize)]
+
+    # Use parallel processing to make predictions and PIs for each chunk
+    results = Parallel(n_jobs=-1)(delayed(predict_chunk)(mapie, chunk, alpha) for chunk in data_chunks)
+
+    # Combine the results
+    y_pred = []
+    y_pis = []
+    for pred, pis in results:
+        y_pred.extend(pred)
+        y_pis.extend(pis)
+
+    return np.array(y_pred), np.array(y_pis)
+    # Now y_pred contains the predicted values and y_pis contains the prediction intervals
+
+
+
+def export_prediction(m, species, X_predict, model_config, 
+                      ensemble_config, ens_model_out, n_threads=1):
 
     d = X_predict.copy()
     if (model_config['predict_probability'] == True) and (ensemble_config["regressor"] ==False):
         print("predicting probabilities")
-        d[species] = m.predict_proba(X_predict)[:, 1]
+        d[species] = parallel_predict(m.predict_proba, X_predict, n_threads)
     elif (model_config['predict_probability'] == True) and (ensemble_config["regressor"] ==True):
         print("error: can't predict probabilities if the model is a regressor")
     else:
-        d[species] = m.predict(X_predict)
+        d[species] = parallel_predict(m.predict, X_predict, n_threads)
     d = d.to_xarray()
     
     try: #make new dir if needed
@@ -63,6 +108,8 @@ def export_prediction(m,species, X_predict, model_config, ensemble_config, ens_m
         None
 
     d[species].to_netcdf(ens_model_out + species + ".nc") 
+
+
 
 class predict:
     """
@@ -209,7 +256,9 @@ class predict:
 
             model_name = self.ensemble_config["m" + str(1)]
             model_out = self.path_out + model_name + "/predictions/" 
-            export_prediction(m, self.species, self.X_predict, self.model_config, self.ensemble_config, model_out)
+            export_prediction(m, self.species, self.X_predict, 
+                              self.model_config, self.ensemble_config, 
+                              model_out, n_threads=self.n_jobs)
 
         elif number_of_models >=2:
                     
@@ -222,7 +271,9 @@ class predict:
                 m, mae = def_prediction(self.path_out, self.ensemble_config, i, self.species)
                 model_name = self.ensemble_config["m" + str(i + 1)]
                 model_out = self.path_out + model_name + "/predictions/" 
-                export_prediction(m, self.species, self.X_predict, self.model_config, self.ensemble_config, model_out)
+                export_prediction(m, self.species, self.X_predict, 
+                                  self.model_config, self.ensemble_config, 
+                                  model_out, n_threads=self.n_jobs)
 
                 print("exporting " + model_name + " prediction to: " + model_out)
 
@@ -249,17 +300,20 @@ class predict:
                 up_name = str(int(np.round((1-alpha[0])*100)))
 
                 print(up_name)
-                y_pred = []
-                y_pis = []
-                i, chunksize = 0, 1000
-                for idx in range(0, len(self.X_predict), chunksize):
-                    pred, pis = mapie.predict(self.X_predict[idx:(i+1)*chunksize], alpha=alpha)
-                    y_pred += list(pred)
-                    y_pis += list(pis)
-                    i += 1
+                # y_pred = []
+                # y_pis = []
+                # i, chunksize = 0, 1000
+                # for idx in range(0, len(self.X_predict), chunksize):
+                #     pred, pis = mapie.predict(self.X_predict[idx:(i+1)*chunksize], alpha=alpha)
+                #     y_pred += list(pred)
+                #     y_pis += list(pis)
+                #     i += 1
                     
-                y_pred = np.array(y_pred)
-                y_pis = np.array(y_pis)
+                # y_pred = np.array(y_pred)
+                # y_pis = np.array(y_pis)
+
+                y_pred, y_pis = parallel_predict_mapie(self.X_predict, mapie, 
+                                                       alpha, chunksize = 1000)
 
                 low_model_out = self.path_out + "mapie/predictions/" + low_name +"/"
                 ci50_model_out = self.path_out + "mapie/predictions/50/"
@@ -303,7 +357,8 @@ class predict:
                 print("exported MAPIE " + up_name + " prediction to: " + up_model_out + self.species + ".nc")
                 d_up = None
 
-            scores = score_model(m, self.X_train, self.y, self.cv, self.verbose, self.scoring, self.n_jobs)
+            scores = score_model(m, self.X_train, self.y, self.cv, self.verbose, 
+                                 self.scoring, self.n_jobs)
 
             model_out_scores = self.path_out + "ens/scoring/"
             try: #make new dir if needed
