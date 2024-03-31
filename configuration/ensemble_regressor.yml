@@ -13,9 +13,7 @@
 
   predictors: ["temperature", "si", 
     "phosphate", "din", 
-    "o2", "mld", "DIC", 
-     "irradiance",  "chlor_a", "FID"]
-    
+     "irradiance",  "FID"]
     
   verbose: 1
   seed : 1 # random seed

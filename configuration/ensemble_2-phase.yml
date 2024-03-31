@@ -13,8 +13,7 @@
 
   predictors: ["temperature", "si", 
     "phosphate", "din", 
-    "o2", "mld", "DIC", 
-     "irradiance",  "chlor_a", "FID"]
+     "irradiance",  "FID"]
     
     
   verbose: 1
@@ -87,10 +86,10 @@
       clf_param_grid:  
         estimator__max_samples: [0.5]
         estimator__max_features: [0.5]
-        estimator__estimator__leaf_size: [30]
+        estimator__estimator__leaf_size: [1]
         estimator__estimator__n_neighbors: [3]
         estimator__estimator__p:  [1]           
         estimator__estimator__weights: ["uniform"]
 
-  knn_bagging_estimators: 30
+  knn_bagging_estimators: 10
 

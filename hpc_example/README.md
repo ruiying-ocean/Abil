@@ -8,7 +8,7 @@ Compile singularity on your machine:
 
 If using apptainer (recommended):
 
-``` sudo singularity build abil.sif Singularity.sif  ```
+``` sudo apptainer build abil.sif Singularity.sif  ```
 
 If using singularity:
 
