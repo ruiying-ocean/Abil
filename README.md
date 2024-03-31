@@ -15,7 +15,7 @@ Current support (v0.08):
 
 - Automatic feature scaling and one-hot-encoding
 
-- Model error prediction inference (MAPIE)
+- Model prediction intervals (MAPIE)
 
 - SLURM and Singularity scripts
 
@@ -27,27 +27,24 @@ Generally the workflow is as follows:
 3. Predict the distribution of each species using `predict.py`
 4. Merge the predictions into a single netcdf and do post processing using `post.py`
 
-
 Examples for each step are provided in the respective Jupyter notebooks which can be found in `/notebooks`.
-
 
 ## Directory structure
 
 The recommended directory structure is:
 
-
 ```bash
 
-planktonSDM
+Abil
 ├── README.md
 ├── to-bp.sh
 ├── environment.yml
 ├── configuration
 |   └── model_config.yml
 ├── data
-|   └── traits.csv
-|   └── abundances_environment.csv (optional)
-|   └── envdata.csv (optional)
+|   └── variable_list.csv
+|   └── training_data.csv 
+|   └── prediction_data.csv 
 ├── abil
 |   └── __init__.py
 |   └── functions.py
@@ -75,8 +72,8 @@ planktonSDM
 |       └── predictions
 |       └── scoring
 └── singularity
-    └── Singularity.sif (optional)
-    └── abil.sif (optional)
+    └── Singularity.sif
+    └── abil.sif
 
 ```
 
@@ -102,7 +99,7 @@ CD to the planktonSDM directory, then run:
 
 Note: if you want to change the version name of the package, this can be changed in:
 
-`planktonSDM/pyproject.toml`
+`pyproject.toml`
 
 ## Running the model on a hpc cluster
 

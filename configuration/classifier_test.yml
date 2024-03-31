@@ -1,0 +1,72 @@
+---
+  hpc: False
+  local_root: /tmp/Abil/
+  hpc_root: /user/work/ba18321/Abil/
+
+  path_out: ModelOutput/ #root + folder
+  path_in: ModelOutput/ens/predictions/ #root + folder
+
+  env_data_path: data/envdata_final.csv #root + folder
+  traits: data/traits.csv #root + folder
+
+  training: data/obs_env.csv
+
+  predictors: ["Feature_0",  "Feature_1",  
+   "Feature_2",  "Feature_3", "Feature_4"]
+  
+    
+  verbose: 1
+  seed : 1 # random seed
+  n_threads : 1 # how many cpu threads to use
+  cv : 3
+  predict_probability: False 
+
+  ensemble_config: 
+    classifier: True
+    regressor: False
+    m1: "rf"
+    m2: "xgb"
+    m3: "knn"
+
+  upsample: False
+  stratify: True
+
+  reg_scoring:
+   R2: r2
+   MAE: neg_mean_absolute_error
+   RMSE: neg_root_mean_squared_error
+   tau: kendall_tau
+
+  clf_scoring:
+   accuracy: balanced_accuracy
+
+  param_grid:
+    rf_param_grid:  
+      clf_param_grid:
+        estimator__n_estimators: [100]
+        estimator__max_features: [3]
+        estimator__max_depth: [50]
+        estimator__min_samples_leaf: [0.5]
+        estimator__max_samples: [0.5]   
+
+    xgb_param_grid:  
+      clf_param_grid:  
+        estimator__learning_rate: [0.01]
+        estimator__n_estimators: [100]
+        estimator__max_depth: [4]
+        estimator__subsample: [0.6]  
+        estimator__colsample_bytree: [0.6]
+        estimator__gamma: [1] 
+        estimator__reg_alpha: [1]   
+
+    knn_param_grid:
+      clf_param_grid:  
+        estimator__max_samples: [0.5]
+        estimator__max_features: [0.5]
+        estimator__estimator__leaf_size: [30]
+        estimator__estimator__n_neighbors: [3]
+        estimator__estimator__p:  [1]           
+        estimator__estimator__weights: ["uniform"]
+
+  knn_bagging_estimators: 30
+

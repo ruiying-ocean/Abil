@@ -41,6 +41,10 @@ model_config['n_threads'] = n_jobs
 traits = pd.read_csv(root + model_config['traits'])
 d = pd.read_csv(root + model_config['training'])
 species =  traits['species'][n_spp]
+
+# turn NaNs into zeros:
+d[species] = d[species].fillna(0)
+
 d = d.dropna(subset=[species])
 d = d.dropna(subset=['FID'])
 
@@ -50,4 +54,4 @@ X_train = d[predictors]
 #setup model:
 m = tune(X_train, y, model_config, regions="FID")
 #run model:
-m.train(model=model, regressor=True)
+m.train(model=model, regressor=True, classifier=True)

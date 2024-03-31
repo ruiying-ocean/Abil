@@ -153,7 +153,7 @@ class post:
         """
 
 
-        w = self.traits.query('species in @self.species')
+        w = self.traits.query('Target in @self.species')
         var = w[variable].to_numpy()
         print(var)
         self.d = self.d.apply(lambda row : (row[self.species]* var), axis = 1)
@@ -203,19 +203,45 @@ class post:
 
     def total(self):
         """
-        Calculate total
+        Sum target rows to estimate total.
 
         Notes
         ----------
-
-        Total is estimated based on the species list defined in model_config. 
-        Other species or groupings are excluded from the summation. 
+        Useful for estimating total species abundances if targets are continuous.
+        Total is estimated based on the target list defined in model_config. 
 
         """
 
         self.d['total'] = self.d[self.species].sum( axis='columns')
         self.d['total_log'] = np.log(self.d['total'])
         print("finished calculating total")
+
+
+    # work in progress:
+    # def integrated_total(self, variable="total", lat_name="lat", 
+    #                      depth_w =5, conversion=1e6):
+    #     """
+    #     Estimates global integrated values.
+
+    #     Considers latitude and depth bin size.
+
+    #     depth_w should be in meters
+
+    #     conversion should be in cubic meters. 
+    #     e.g. if original unit is cells/ml conversion should be = 1e6
+
+    #     """
+
+    #     if lat_name not in self.d:
+    #         raise ValueError("lat_name not defined in dataframe")
+
+    #     lat_w = (40075000 * np.cos(self.d[lat_name])) / 360
+
+    #     lon_w = 11132
+
+    #     total = np.sum(self.d[variable]*lat_w*depth_w*lon_w*conversion)
+
+
 
     def merge_env(self, X_predict):
         """

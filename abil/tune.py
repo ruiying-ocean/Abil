@@ -21,7 +21,6 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.neural_network import MLPRegressor, MLPClassifier
 
-
 if 'site-packages' in __file__:
     from abil.functions import ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold, check_tau
 else:
@@ -29,7 +28,6 @@ else:
 
 class tune:
     """
-
     Parameters
     ----------
 
@@ -65,21 +63,23 @@ class tune:
         
         `clf_scoring` :
         
-        `reg_scoring` :
-
-    
-        
+        `reg_scoring` :    
     
     """
     def __init__(self, X_train, y, model_config, regions=None):
 
         """
+        simulate-pseudo-absence 
+        if True:
+        1) run two phase model.
+        2) Drop zeros for regression
+        3) Include zeros for 2-phase fitting + validation
 
+        if False, None
         """
-
         self.y = y.sample(frac=1, random_state=model_config['seed']) #shuffle
+        self.y = self.y.values.ravel()
         self.X_train = X_train.sample(frac=1, random_state=model_config['seed']) #shuffle
-
 
         self.model_config = model_config
         self.seed = model_config['seed']
@@ -112,6 +112,30 @@ class tune:
             self.bagging_estimators = model_config['knn_bagging_estimators'] 
         except:
             self.bagging_estimators = None
+
+
+        if regions!=None:
+            model_config['predictors'].remove(regions)
+            categorical_features = [self.regions]
+            categorical_transformer = OneHotEncoder(handle_unknown='ignore')
+        
+        predictors = model_config['predictors'].copy()
+
+        numeric_features =  self.X_train.columns.get_indexer(self.X_train[predictors].columns)
+        numeric_transformer = Pipeline(steps=[
+            ('scaler', StandardScaler())])
+
+        if self.regions!=None:
+            self.preprocessor = ColumnTransformer(
+                transformers=[
+                    ('num', numeric_transformer, numeric_features),
+                    ('cat', categorical_transformer, categorical_features)])
+            
+        else:
+            self.preprocessor = ColumnTransformer(
+                transformers=[
+                    ('num', numeric_transformer, numeric_features)])
+            
 
     
     def train(self, model, classifier=False, regressor=False, log="no"):
@@ -160,13 +184,18 @@ class tune:
 
         if model =="xgb":
             clf_estimator = XGBClassifier(nthread=1, random_state=self.seed)
-            reg_estimator = XGBRegressor(nthread=1, random_state=self.seed, objective='reg:tweedie')
+            reg_estimator = XGBRegressor(nthread=1, random_state=self.seed, 
+                                         objective='reg:tweedie')
         elif model=="knn":
             if self.bagging_estimators ==None:
                 raise ValueError("number of bagging estimators not defined")
             else:
-                clf_estimator = BaggingClassifier(estimator=KNeighborsClassifier(), n_estimators=self.bagging_estimators, random_state=self.seed)
-                reg_estimator = BaggingRegressor(estimator=KNeighborsRegressor(), n_estimators=self.bagging_estimators, random_state=self.seed)
+                clf_estimator = BaggingClassifier(estimator=KNeighborsClassifier(), 
+                                                  n_estimators=self.bagging_estimators, 
+                                                  random_state=self.seed)
+                reg_estimator = BaggingRegressor(estimator=KNeighborsRegressor(), 
+                                                 n_estimators=self.bagging_estimators, 
+                                                 random_state=self.seed)
         elif model=="rf":
             clf_estimator = RandomForestClassifier(random_state=self.seed, oob_score=True)
             reg_estimator = RandomForestRegressor(random_state=self.seed, oob_score=True)
@@ -180,9 +209,8 @@ class tune:
             raise ValueError("both classifier and regressor defined as False")
 
 
-        if (classifier ==True) and (regressor ==True):
-            raise ValueError("2-phase model not supported, choose classifier OR regressor")
-        
+        #if (classifier ==True) and (regressor ==True):
+        #    raise ValueError("2-phase model not supported, choose classifier OR regressor")
 
         if classifier ==True:
             print("training classifier")
@@ -203,28 +231,7 @@ class tune:
             except:
                 None
 
-            predictors = self.model_config['predictors'].copy()
-
-            if self.regions!=None:
-                predictors.remove(self.regions)
-                categorical_features = [self.regions]
-                categorical_transformer = OneHotEncoder(handle_unknown='ignore')
-            
-            numeric_features =  self.X_train.columns.get_indexer(self.X_train[predictors].columns)
-            numeric_transformer = Pipeline(steps=[
-                ('scaler', StandardScaler())])
-
-            if self.regions!=None:
-                preprocessor = ColumnTransformer(
-                    transformers=[
-                        ('num', numeric_transformer, numeric_features),
-                        ('cat', categorical_transformer, categorical_features)])
-            else:
-                preprocessor = ColumnTransformer(
-                    transformers=[
-                        ('num', numeric_transformer, numeric_features)])
-
-            clf_pipe = Pipeline(steps=[('preprocessor', preprocessor),
+            clf_pipe = Pipeline(steps=[('preprocessor', self.preprocessor),
                       ('estimator', clf_estimator)])
 
             clf = GridSearchCV(
@@ -237,16 +244,15 @@ class tune:
 
             y_clf =  self.y.copy()
             y_clf[y_clf > 0] = 1
-
+            print(y_clf)
             with parallel_backend('multiprocessing', self.n_jobs):
-                clf.fit(self.X_train, y_clf.values.ravel())
+                clf.fit(self.X_train, y_clf)
 
             m1 = clf.best_estimator_
             pickle.dump(m1, open(clf_sav_out_model + self.species + '_clf.sav', 'wb'))
             print("exported model to:" + clf_sav_out_model + self.species + '_clf.sav')
 
-
-            clf_scores = cross_validate(m1, self.X_train, y_clf.values.ravel(), cv=self.cv, verbose =self.verbose, scoring=clf_scoring)
+            clf_scores = cross_validate(m1, self.X_train, y_clf, cv=self.cv, verbose =self.verbose, scoring=clf_scoring)
             pickle.dump(clf_scores, open(clf_sav_out_scores + self.species + '_clf.sav', 'wb'))
             print("exported scoring to: " + clf_sav_out_scores + self.species + '_clf.sav')
 
@@ -255,6 +261,15 @@ class tune:
 
 
         if regressor ==True:
+            if classifier==True:
+                y = self.y[self.y > 0]
+                X_train = self.X_train[self.y > 0].reset_index(drop=True)
+                cv = ZeroStratifiedKFold(n_splits=self.model_config['cv'])
+            else:
+                y = self.y
+                X_train = self.X_train
+                cv = self.cv
+
             print("training regressor")
 
             reg_scoring = check_tau(self.model_config['reg_scoring']) 
@@ -273,12 +288,15 @@ class tune:
             try: #make new dir if needed
                 os.makedirs(reg_sav_out_model)
             except:
-                None
-
+                None            
+                
+            reg_pipe = Pipeline(steps=[('preprocessor', self.preprocessor),
+                        ('estimator', reg_estimator)])
+            
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-                reg = LogGridSearch(reg_estimator, verbose = self.verbose, cv=self.cv, 
+                reg = LogGridSearch(reg_pipe, verbose = self.verbose, cv=cv, 
                                     param_grid=reg_param_grid, scoring='r2', regions=self.regions)
-                reg_grid_search = reg.transformed_fit(self.X_train, self.y.values.ravel(), log, self.model_config['predictors'].copy())
+                reg_grid_search = reg.transformed_fit(X_train, y, log, self.model_config['predictors'].copy())
 
             m2 = reg_grid_search.best_estimator_
             pickle.dump(m2, open(reg_sav_out_model  + self.species + '_reg.sav', 'wb'))
@@ -286,7 +304,7 @@ class tune:
             print("exported model to: " + reg_sav_out_model  + self.species + '_reg.sav')
 
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
-                reg_scores = cross_validate(m2, self.X_train, self.y.values.ravel(), cv = self.cv, verbose = self.verbose, scoring=reg_scoring)
+                reg_scores = cross_validate(m2, X_train, y, cv = cv, verbose = self.verbose, scoring=reg_scoring)
 
             pickle.dump(reg_scores, open(reg_sav_out_scores + self.species + '_reg.sav', 'wb'))
 
@@ -303,7 +321,7 @@ class tune:
 
 
         if (classifier ==True) and (regressor ==True):
-            raise ValueError("2-phase model not supported, choose classifier OR regressor")
+            #raise ValueError("2-phase model not supported, choose classifier OR regressor")
         
             print("training zero-inflated regressor")
 
@@ -340,8 +358,6 @@ class tune:
             print("zir rRMSE: " + str(int(round(np.mean(zir_scores['test_RMSE'])/np.mean(self.y), 2)*-100))+"%")
             print("zir rMAE: " + str(int(round(np.mean(zir_scores['test_MAE'])/np.mean(self.y), 2)*-100))+"%")
             print("zir R2: " + str(round(np.mean(zir_scores['test_R2']), 2)))
-
-
 
         st = time.time()
         et = time.time()

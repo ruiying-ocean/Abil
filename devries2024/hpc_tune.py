@@ -5,11 +5,12 @@ import sys
 from yaml import load
 from yaml import CLoader as Loader
 from abil.tune import tune 
+from abil.functions import upsample
 from sklearn.preprocessing import OneHotEncoder
 
 try:
     print(sys.argv[1])
-    with open('/user/work/ba18321/Abil/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
+    with open('/user/work/ba18321/Abil/devries2024/2-phase.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
 
     model_config['hpc'] = True
@@ -21,7 +22,7 @@ try:
     predictors = model_config['predictors']
 
 except:
-    with open('/home/phyto/Abil/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
+    with open('/home/phyto/Abil/devries2024/2-phase.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = False
     n_jobs = 8
@@ -29,7 +30,7 @@ except:
     root = model_config['local_root']
     model_config['cv'] = 3
     
-    with open('/home/phyto/Abil/devries2024/ensemble_regressor_deVries2024.yml', 'r') as f:
+    with open('/home/phyto/Abil/devries2024/2-phase.yml', 'r') as f:
         model_config_local = load(f, Loader=Loader)    
     
     model_config['param_grid'] = model_config_local['param_grid'] 
@@ -41,8 +42,10 @@ model_config['n_threads'] = n_jobs
 traits = pd.read_csv(root + model_config['traits'])
 d = pd.read_csv(root + model_config['training'])
 species =  traits['species'][n_spp]
+d[species] = d[species].fillna(0)
 d = d.dropna(subset=[species])
 d = d.dropna(subset=['FID'])
+d = upsample(d, species, ratio=10)
 
 y = d[species]
 X_train = d[predictors]
@@ -50,4 +53,4 @@ X_train = d[predictors]
 #setup model:
 m = tune(X_train, y, model_config, regions="FID")
 #run model:
-m.train(model=model, regressor=True, log="both")
+m.train(model=model, regressor=True, classifier=True, log="both")

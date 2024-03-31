@@ -13,9 +13,7 @@
 
   predictors: ["temperature", "si", 
     "phosphate", "din", 
-    "o2", "mld", "DIC", 
-     "irradiance",  "chlor_a", "FID"]
-    
+     "irradiance",  "FID"]
     
   verbose: 1
   seed : 1 # random seed
@@ -30,7 +28,7 @@
     m2: "xgb"
     m3: "knn"
 
-  upsample: False
+  upsample: True
   stratify: True
 
   reg_scoring:
@@ -45,8 +43,8 @@
         regressor__estimator__n_estimators: [100]
         regressor__estimator__max_features: [4]
         regressor__estimator__max_depth: [50]
-        regressor__estimator__min_samples_leaf: [0.5, 1]
-        regressor__estimator__max_samples: [0.5, 1]     
+        regressor__estimator__min_samples_leaf: [0.5]
+        regressor__estimator__max_samples: [0.5]     
 
     xgb_param_grid:
       reg_param_grid:  
@@ -60,12 +58,12 @@
 
     knn_param_grid:
       reg_param_grid:  
-        regressor__estimator__max_samples: [0.6, 0.8, 0.85, 0.9, 1]
-        regressor__estimator__max_features: [0.6, 0.8, 0.85, 0.9, 1]
-        regressor__estimator__estimator__leaf_size: [3, 5, 10]
-        regressor__estimator__estimator__n_neighbors: [3, 5, 10]
-        regressor__estimator__estimator__p:  [1,2]        
-        regressor__estimator__estimator__weights: ["uniform", "distance"]
+        regressor__estimator__max_samples: [0.85]
+        regressor__estimator__max_features: [0.85]
+        regressor__estimator__estimator__leaf_size: [5]
+        regressor__estimator__estimator__n_neighbors: [5]
+        regressor__estimator__estimator__p:  [1]        
+        regressor__estimator__estimator__weights: ["uniform"]
 
   knn_bagging_estimators: 30
 

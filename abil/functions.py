@@ -6,7 +6,7 @@ from sklearn.utils.validation import check_is_fitted, check_X_y, check_array
 from sklearn.exceptions import NotFittedError
 from inspect import signature
 import numpy as np
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, KFold
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.datasets import make_regression
@@ -29,6 +29,23 @@ def tau_scoring(y, y_pred):
 def tau_scoring_p(y, y_pred):
     tau, p_value = kendalltau(y, y_pred)
     return(p_value)
+
+def upsample(d, target, ratio=10):
+        
+    y_binary = np.where(d[target]!=0, 1, 0)
+
+    nix = np.where(y_binary==0)[0] #absence index
+    pix = np.where(y_binary==1)[0] #presence index
+
+    pixu = d.iloc[pix].sample(pix.shape[0], replace=True)
+    nixu = d.iloc[nix].sample(pix.shape[0]*ratio, replace=True)
+
+    ix = pd.concat([pixu, nixu], ignore_index=True)
+
+    return(ix)
+
+
+
 
 def check_tau(scoring):
 
@@ -67,23 +84,6 @@ def merge_obs_env(obs_path = "../data/gridded_abundances.csv",
 
     d = pd.read_csv(obs_path)
 
-    # #regrid
-    # depth_bins = np.linspace(0, 205, 62)
-    # depth_labels = np.linspace(0, 300, 61)
-    # d['Depth'] = pd.cut(d['Depth'], bins=depth_bins, labels=depth_labels).astype(np.float64) 
-
-    # lat_bins = np.linspace(-90, 90, 181)
-    # lat_labels = np.linspace(-90, 89, 180)
-    # d['Latitude'] = pd.cut(d['Latitude'].astype(np.float64), bins=lat_bins, labels=lat_labels).astype(np.float64) 
-
-    # lon_bins = np.linspace(-180, 180, 361)
-    # lon_labels = np.linspace(-180, 179, 360)
-    # d['Longitude'] = pd.cut(d['Longitude'].astype(np.float64), bins=lon_bins, labels=lon_labels).astype(np.float64) 
-
-    #d['DateTime'] = pd.to_datetime(d['Date'],dayfirst=True)
-    #d['Month'] = pd.DatetimeIndex(d['DateTime']).month
-    #d['Year'] = pd.DatetimeIndex(d['DateTime']).year
-
     d = d.convert_dtypes()
 
     d = d.groupby(['Latitude', 'Longitude', 'Depth', 'Month']).mean().reset_index()
@@ -115,6 +115,7 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         """Initialize."""
         self.classifier = classifier
         self.regressor = regressor
+        
 
     def fit(self, X, y, sample_weight=None):
         """
@@ -141,8 +142,9 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         ValueError
             If `classifier` is not a classifier or `regressor` is not a regressor.
         """
-        # X, y = check_X_y(X, y)
-        # self._check_n_features(X, reset=True)
+        # #X, y = check_X_y(X, y)
+        # #self._check_n_features(X, reset=True)
+
         if not is_classifier(self.classifier):
             raise ValueError(
                 f"`classifier` has to be a classifier. Received instance of {type(self.classifier)} instead.")
@@ -166,13 +168,22 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
             except NotFittedError:
                 self.regressor_ = clone(self.regressor)
 
-                self.regressor_.fit(
-                        X[non_zero_indices],
-                        y[non_zero_indices],
-                )
+                if isinstance(X, pd.DataFrame):
+                    self.regressor_.fit(
+                            X.iloc[non_zero_indices],
+                            y[non_zero_indices],
+                    )
+                else:
+
+                    self.regressor_.fit(
+                            X[non_zero_indices],
+                            y[non_zero_indices],
+                    )
         else:
             None
 
+        #self.classifier_ = self.classifier
+        #self.regressor_ = self.regressor
         return self
 
 
@@ -190,15 +201,19 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         y : np.ndarray, shape (n_samples,)
             The predicted values.
         """
-        check_is_fitted(self)
-        # X = check_array(X)
-        # self._check_n_features(X, reset=False)
+        #check_is_fitted(self)
+#        X = check_array(X)
+#        self._check_n_features(X, reset=False)
 
         output = np.zeros(len(X))
-        non_zero_indices = np.where(self.classifier_.predict(X))[0]
+
+        non_zero_indices = np.where(self.classifier_.predict(X) == 1)[0]
 
         if non_zero_indices.size > 0:
-            output[non_zero_indices] = self.regressor_.predict(X[non_zero_indices]).ravel()
+            if isinstance(X, pd.DataFrame):
+                output[non_zero_indices] = self.regressor_.predict(X.iloc[non_zero_indices])
+            else:
+                output[non_zero_indices] = self.regressor_.predict(X[non_zero_indices])
 
         return output
 
@@ -222,51 +237,28 @@ class LogGridSearch:
     
     def transformed_fit(self, X, y, log, predictors):
 
-        if self.regions!=None:
-            predictors.remove(self.regions)
-            categorical_features = [self.regions]
-            categorical_transformer = OneHotEncoder(handle_unknown='ignore')
-        
-        numeric_features =  X.columns.get_indexer(X[predictors].columns)
-        numeric_transformer = Pipeline(steps=[
-            ('scaler', StandardScaler())])
-
-        if self.regions!=None:
-            preprocessor = ColumnTransformer(
-                transformers=[
-                    ('num', numeric_transformer, numeric_features),
-                    ('cat', categorical_transformer, categorical_features)])
-            
-        else:
-            preprocessor = ColumnTransformer(
-                transformers=[
-                    ('num', numeric_transformer, numeric_features)])
-            
-        reg_pipe = Pipeline(steps=[('preprocessor', preprocessor),
-                    ('estimator', self.m)])
-
         if log=="yes":
 
-            model = TransformedTargetRegressor(reg_pipe, func = self.do_log, inverse_func=self.do_exp)
+            model = TransformedTargetRegressor(self.m, func = self.do_log, inverse_func=self.do_exp)
             grid_search = GridSearchCV(model, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search.fit(X, y)
         
         elif log=="no":
 
-            model = TransformedTargetRegressor(reg_pipe, func = None, inverse_func=None)
+            model = TransformedTargetRegressor(self.m, func = None, inverse_func=None)
             grid_search = GridSearchCV(model, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search.fit(X, y)
 
         elif log =="both":
 
-            normal_m = TransformedTargetRegressor(reg_pipe, func = None, inverse_func=None)
+            normal_m = TransformedTargetRegressor(self.m, func = None, inverse_func=None)
             grid_search1 = GridSearchCV(normal_m, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search1.fit(X, y)
 
-            log_m = TransformedTargetRegressor(reg_pipe, func = self.do_log, inverse_func=self.do_exp)
+            log_m = TransformedTargetRegressor(self.m, func = self.do_log, inverse_func=self.do_exp)
             grid_search2 = GridSearchCV(log_m, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search2.fit(X, y)
@@ -321,15 +313,20 @@ class ZeroStratifiedKFold:
         #convert target variable to binary for stratified sampling
         y_binary = np.where(y!=0, 1, 0)
 
-        for rx, tx in StratifiedKFold(n_splits=self.n_splits).split(X,y_binary):
-            yield rx, tx
+        # Check if there are any zeros in the array
+        if any(element == 0 for element in y_binary):
+            for rx, tx in StratifiedKFold(n_splits=self.n_splits).split(X,y_binary):
+                yield rx, tx
+        else:
+            for rx, tx in KFold(n_splits=self.n_splits).split(X,y_binary):
+                yield rx, tx
 
     def get_n_splits(self, X, y, groups=None):
         return self.n_splits
     
 
 
-def example_data(y_name, n_samples=500, n_features=5, noise=20, random_state=59):
+def example_data(y_name, n_samples=100, n_features=5, noise=20, random_state=59):
 
     #example data:
     X, y = make_regression(n_samples=n_samples, n_features=n_features, noise=noise, random_state=random_state)
@@ -344,13 +341,27 @@ def example_data(y_name, n_samples=500, n_features=5, noise=20, random_state=59)
     y[y <= 0.5] = 0
     y = np.squeeze(y)
     y = pd.Series(y)
-#    y = pd.DataFrame({y_name: y})
+    y = pd.DataFrame({y_name: y})
     y.name = y_name
+    X = pd.DataFrame(X)
+    X = X.add_prefix('Feature_')
+
+
     return(X, y)
 
 
+def abbreviate_species(species_name):
+    words = species_name.split()
+    if len(words) == 1:
+        return species_name
+    abbreviated_name = words[0][0].upper() + '.'
+    abbreviated_name += ' ' + ' '.join(words[1:])
+    return abbreviated_name
 
 def lat_weights(d):
+    '''
+    To define!
+    '''
     d_w = d*10
     return(d_w)
 
