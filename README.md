@@ -42,9 +42,9 @@ Abil
 ├── configuration
 |   └── model_config.yml
 ├── data
-|   └── variable_list.csv
-|   └── training_data.csv 
-|   └── prediction_data.csv 
+|   └── targets.csv
+|   └── training.csv 
+|   └── prediction.csv 
 ├── abil
 |   └── __init__.py
 |   └── functions.py

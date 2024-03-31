@@ -1,24 +1,16 @@
-from sklearn.base import BaseEstimator, RegressorMixin, clone, is_regressor, is_classifier
-from scipy.stats import kendalltau
-from sklearn.compose import TransformedTargetRegressor
-from sklearn.model_selection import GridSearchCV
-from sklearn.utils.validation import check_is_fitted, check_X_y, check_array
-from sklearn.exceptions import NotFittedError
-from inspect import signature
 import numpy as np
-from sklearn.model_selection import StratifiedKFold, KFold
-import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.datasets import make_regression
-import pickle
-import os
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import OneHotEncoder
 import pandas as pd
 import xarray as xr
-import numpy as np
+from inspect import signature
+from scipy.stats import kendalltau
+
+from sklearn.base import BaseEstimator, RegressorMixin, clone, is_regressor, is_classifier
+from sklearn.compose import TransformedTargetRegressor
+from sklearn.utils.validation import check_is_fitted
+from sklearn.exceptions import NotFittedError
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.datasets import make_regression
 from sklearn.metrics import make_scorer
 
 def tau_scoring(y, y_pred):
@@ -28,6 +20,26 @@ def tau_scoring(y, y_pred):
 def tau_scoring_p(y, y_pred):
     tau, p_value = kendalltau(y, y_pred)
     return(p_value)
+
+def check_tau(scoring):
+
+    if 'tau' in scoring:
+        scoring['tau'] = make_scorer(tau_scoring)
+        scoring['tau_p'] = make_scorer(tau_scoring_p)
+        print(scoring)
+
+    else:
+        scoring = scoring
+
+    return scoring
+
+def do_log(self, x):
+    y = np.log(x+1)
+    return(y)
+
+def do_exp(self, x):
+    y = np.exp(x)-1
+    return(y)
 
 def upsample(d, target, ratio=10):
         
@@ -42,30 +54,6 @@ def upsample(d, target, ratio=10):
     ix = pd.concat([pixu, nixu], ignore_index=True)
 
     return(ix)
-
-
-
-
-def check_tau(scoring):
-
-    if 'tau' in scoring:
-        scoring['tau'] = make_scorer(tau_scoring)
-        scoring['tau_p'] = make_scorer(tau_scoring_p)
-        print(scoring)
-
-    else:
-        scoring = scoring
-
-    return scoring
-
-
-def do_log(self, x):
-    y = np.log(x+1)
-    return(y)
-
-def do_exp(self, x):
-    y = np.exp(x)-1
-    return(y)
 
 def merge_obs_env(obs_path = "../data/gridded_abundances.csv",
                   env_path = "../data/env_data.nc",
@@ -105,16 +93,11 @@ def merge_obs_env(obs_path = "../data/gridded_abundances.csv",
     print("fin")
 
 class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
-    """
-    This was cloned from scikit-lego (0.6.14)
-    https://github.com/koaning/scikit-lego
-    """
 
     def __init__(self, classifier, regressor) -> None:
         """Initialize."""
         self.classifier = classifier
         self.regressor = regressor
-        
 
     def fit(self, X, y, sample_weight=None):
         """
@@ -141,9 +124,6 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         ValueError
             If `classifier` is not a classifier or `regressor` is not a regressor.
         """
-        # #X, y = check_X_y(X, y)
-        # #self._check_n_features(X, reset=True)
-
         if not is_classifier(self.classifier):
             raise ValueError(
                 f"`classifier` has to be a classifier. Received instance of {type(self.classifier)} instead.")
@@ -180,9 +160,6 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
                     )
         else:
             None
-
-        #self.classifier_ = self.classifier
-        #self.regressor_ = self.regressor
         return self
 
 
@@ -200,10 +177,6 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         y : np.ndarray, shape (n_samples,)
             The predicted values.
         """
-        #check_is_fitted(self)
-#        X = check_array(X)
-#        self._check_n_features(X, reset=False)
-
         output = np.zeros(len(X))
 
         non_zero_indices = np.where(self.classifier_.predict(X) == 1)[0]
@@ -326,7 +299,6 @@ class ZeroStratifiedKFold:
 
 
 def example_data(y_name, n_samples=100, n_features=5, noise=20, random_state=59):
-
     #example data:
     X, y = make_regression(n_samples=n_samples, n_features=n_features, noise=noise, random_state=random_state)
     # scale so values are strictly positive:
@@ -344,8 +316,6 @@ def example_data(y_name, n_samples=100, n_features=5, noise=20, random_state=59)
     y.name = y_name
     X = pd.DataFrame(X)
     X = X.add_prefix('Feature_')
-
-
     return(X, y)
 
 
