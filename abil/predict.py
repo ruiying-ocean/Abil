@@ -10,9 +10,59 @@ from mapie.classification import  MapieClassifier
 from mapie.conformity_scores import GammaConformityScore
 
 if 'site-packages' in __file__:
-    from abil.functions import calculate_weights, score_model, def_prediction, export_prediction, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
+    from abil.functions import calculate_weights, score_model, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
 else:
-    from functions import calculate_weights, score_model, def_prediction, export_prediction, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
+    from functions import calculate_weights, score_model, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
+
+def def_prediction(path_out, ensemble_config, n, species):
+
+    path_to_scores  = path_out + ensemble_config["m"+str(n+1)] + "/scoring/"
+    path_to_param  = path_out +  ensemble_config["m"+str(n+1)] + "/model/"
+
+
+    if (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == False):
+        print("predicting classifier")
+        m = pickle.load(open(path_to_param + species + '_clf.sav', 'rb'))
+        scoring =  pickle.load(open(path_to_scores + species + '_clf.sav', 'rb'))    
+        scores = 1-np.mean(scoring['test_accuracy']) #subtract 1 since lower is better
+
+    elif (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == True):
+        print("predicting regressor")
+        m = pickle.load(open(path_to_param + species + '_reg.sav', 'rb'))
+        scoring =  pickle.load(open(path_to_scores + species + '_reg.sav', 'rb'))   
+        scores = np.mean(scoring['test_MAE'])
+
+
+    elif (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == True):
+        print("predicting zero-inflated regressor")
+        m = pickle.load(open(path_to_param + species + '_zir.sav', 'rb'))
+        scoring =  pickle.load(open(path_to_scores + species + '_zir.sav', 'rb'))    
+        scores = np.mean(scoring['test_MAE'])
+
+    elif (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == False):
+
+        print("Both regressor and classifier are defined as false")
+
+    return(m, scores)
+
+def export_prediction(m,species, X_predict, model_config, ensemble_config, ens_model_out):
+
+    d = X_predict.copy()
+    if (model_config['predict_probability'] == True) and (ensemble_config["regressor"] ==False):
+        print("predicting probabilities")
+        d[species] = m.predict_proba(X_predict)[:, 1]
+    elif (model_config['predict_probability'] == True) and (ensemble_config["regressor"] ==True):
+        print("error: can't predict probabilities if the model is a regressor")
+    else:
+        d[species] = m.predict(X_predict)
+    d = d.to_xarray()
+    
+    try: #make new dir if needed
+        os.makedirs(ens_model_out)
+    except:
+        None
+
+    d[species].to_netcdf(ens_model_out + species + ".nc") 
 
 class predict:
     """
