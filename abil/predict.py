@@ -15,9 +15,9 @@ from joblib import Parallel, delayed
 
 
 if 'site-packages' in __file__:
-    from abil.functions import calculate_weights, score_model, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
+    from abil.functions import inverse_weighting, score_model, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
 else:
-    from functions import calculate_weights, score_model, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
+    from functions import inverse_weighting, score_model, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
 
 def def_prediction(path_out, ensemble_config, n, species):
 
@@ -29,20 +29,19 @@ def def_prediction(path_out, ensemble_config, n, species):
         print("predicting classifier")
         m = pickle.load(open(path_to_param + species + '_clf.sav', 'rb'))
         scoring =  pickle.load(open(path_to_scores + species + '_clf.sav', 'rb'))    
-        scores = 1-np.mean(scoring['test_accuracy']) #subtract 1 since lower is better
+        scores = np.mean(scoring['test_accuracy'])
 
     elif (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == True):
         print("predicting regressor")
         m = pickle.load(open(path_to_param + species + '_reg.sav', 'rb'))
         scoring =  pickle.load(open(path_to_scores + species + '_reg.sav', 'rb'))   
-        scores = np.mean(scoring['test_MAE'])
-
+        scores = abs(np.mean(scoring['test_MAE']))
 
     elif (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == True):
         print("predicting zero-inflated regressor")
         m = pickle.load(open(path_to_param + species + '_zir.sav', 'rb'))
         scoring =  pickle.load(open(path_to_scores + species + '_zir.sav', 'rb'))    
-        scores = np.mean(scoring['test_MAE'])
+        scores = abs(np.mean(scoring['test_MAE']))
 
     elif (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == False):
 
@@ -264,7 +263,7 @@ class predict:
                     
             # iteratively make prediction for each model
             models = []
-            mae_list = []
+            mae_values = []
             w = []
 
             for i in range(number_of_models):
@@ -278,10 +277,9 @@ class predict:
                 print("exporting " + model_name + " prediction to: " + model_out)
 
                 models.append((model_name, m))
-                mae_list.append(mae)
+                mae_values.append(mae)
 
-        
-            w = [calculate_weights(i, mae_list) for i in range(len(mae_list))]
+            w = inverse_weighting(mae_values) 
 
             if self.ensemble_config["regressor"] ==True:
                 m = VotingRegressor(estimators=models, weights=w).fit(self.X_train, self.y)

@@ -365,18 +365,11 @@ def lat_weights(d):
     d_w = d*10
     return(d_w)
 
-def calculate_weights(n, mae_list):
-    m_values = [-1 * mae for mae in mae_list]
-    m = mae_list[n]
-    
-    mae_sum_m = sum(m_values)/m
-
-    mae_sum = sum(m_values)
-
-    mae_sums_inverse = sum([(mae_sum / mae) for mae in mae_list])
-    w = mae_sum_m / mae_sums_inverse
-    return(w)
-
+def inverse_weighting(values):
+    inverse_weights = [1 / value for value in values]
+    total_inverse_weight = sum(inverse_weights)
+    normalized_weights = [weight / total_inverse_weight for weight in inverse_weights]
+    return normalized_weights
 
 def score_model(m, X_train, y, cv, verbose, scoring, n_jobs):
     scores = cross_validate(m, X_train, y, cv=cv, n_jobs=n_jobs,
