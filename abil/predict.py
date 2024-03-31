@@ -298,19 +298,6 @@ class predict:
                 low_name = str(int(alpha[0]*100))
                 up_name = str(int(np.round((1-alpha[0])*100)))
 
-                print(up_name)
-                # y_pred = []
-                # y_pis = []
-                # i, chunksize = 0, 1000
-                # for idx in range(0, len(self.X_predict), chunksize):
-                #     pred, pis = mapie.predict(self.X_predict[idx:(i+1)*chunksize], alpha=alpha)
-                #     y_pred += list(pred)
-                #     y_pis += list(pis)
-                #     i += 1
-                    
-                # y_pred = np.array(y_pred)
-                # y_pis = np.array(y_pis)
-
                 y_pred, y_pis = parallel_predict_mapie(self.X_predict, mapie, 
                                                        alpha, chunksize = 1000)
 
