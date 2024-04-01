@@ -26,6 +26,9 @@ except:
 X_predict =  pd.read_csv(root + model_config['env_data_path'])
 X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
 
+targets = pd.read_csv(root + model_config['targets'])['Target'].values
+depth_w = 5
+conversion = 1e3 #L-1 to m-3
 
 m = post(model_config)
 m.merge_performance(model="ens")
@@ -36,6 +39,10 @@ m.merge_parameters(model="rf")
 m.merge_parameters(model="xgb")
 m.merge_parameters(model="knn")
 m.total()
+m.integrated_totals(targets, depth_w =depth_w, 
+                    conversion=conversion,
+                    model="abundance_ci50")
+
 m.merge_env(X_predict)
 m.export_ds(current_date + "_abundance_ci50")
 m.export_csv(current_date + "_abundance_ci50")
@@ -44,7 +51,9 @@ m.export_csv(current_date + "_abundance_ci50")
 m.estimate_carbon("POC")
 m.export_ds(current_date + "_POC_ci50")
 m.export_csv(current_date + "_POC_ci50")
-
+m.integrated_totals(targets, depth_w =depth_w, 
+                    conversion=conversion,
+                    model="POC_ci50")
 
 m = post(model_config)
 m.total()
@@ -52,8 +61,9 @@ m.merge_env(X_predict)
 m.estimate_carbon("PIC")
 m.export_ds(current_date + "_PIC_ci50")
 m.export_csv(current_date + "_PIC_ci50")
-
-
+m.integrated_totals(targets, depth_w =depth_w, 
+                    conversion=conversion,
+                    model="PIC_ci50")
 
 
 
@@ -62,10 +72,16 @@ m.total()
 m.merge_env(X_predict)
 m.export_ds(current_date + "_abundance_ci32")
 m.export_csv(current_date + "_abundance_ci32")
+m.integrated_totals(targets, depth_w =depth_w, 
+                    conversion=conversion,
+                    model="abundance_ci32")
 
 m.estimate_carbon("POC")
 m.export_ds(current_date + "_POC_ci32")
 m.export_csv(current_date + "_POC_ci32")
+m.integrated_totals(targets, depth_w =depth_w, 
+                    conversion=conversion,
+                    model="POC_ci32")
 
 m = post(model_config, ci=32)
 m.total()
@@ -73,6 +89,9 @@ m.merge_env(X_predict)
 m.estimate_carbon("PIC")
 m.export_ds(current_date + "_PIC_ci32")
 m.export_csv(current_date + "_PIC_ci32")
+m.integrated_totals(targets, depth_w =depth_w, 
+                    conversion=conversion,
+                    model="PIC_ci32")
 
 
 
@@ -83,11 +102,17 @@ m.merge_env(X_predict)
 
 m.export_ds(current_date + "_abundance_ci68")
 m.export_csv(current_date + "_abundance_ci68")
+m.integrated_totals(targets, depth_w =depth_w, 
+                    conversion=conversion,
+                    model="abundance_ci68")
 
 
 m.estimate_carbon("POC")
 m.export_ds(current_date + "_POC_ci68")
 m.export_csv(current_date + "_POC_ci68")
+m.integrated_totals(targets, depth_w =depth_w, 
+                    conversion=conversion,
+                    model="POC_ci68")
 
 m = post(model_config, ci=68)
 m.total()
@@ -95,3 +120,6 @@ m.merge_env(X_predict)
 m.estimate_carbon("PIC")
 m.export_ds(current_date + "_PIC_ci68")
 m.export_csv(current_date + "_PIC_ci68")
+m.integrated_totals(targets, depth_w =depth_w, 
+                    conversion=conversion,
+                    model="PIC_ci68")
