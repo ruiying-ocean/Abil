@@ -9,16 +9,14 @@ import pickle
 import pandas as pd
 import numpy as np
 from joblib import parallel_backend
-from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier, XGBRegressor
 from sklearn.model_selection import GridSearchCV
-from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import cross_validate, KFold
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, BaggingRegressor, BaggingClassifier
 from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder,  StandardScaler
 from sklearn.neural_network import MLPRegressor, MLPClassifier
 
 if 'site-packages' in __file__:

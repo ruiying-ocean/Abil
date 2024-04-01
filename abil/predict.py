@@ -7,12 +7,109 @@ from sklearn.ensemble import VotingRegressor, VotingClassifier
 from sklearn.model_selection import KFold
 from mapie.regression import MapieRegressor
 from mapie.classification import  MapieClassifier
-from mapie.conformity_scores import GammaConformityScore
+from mapie.conformity_scores import GammaConformityScore, AbsoluteConformityScore
+from sklearn.model_selection import cross_validate
+
+from joblib import Parallel, delayed
+
+
 
 if 'site-packages' in __file__:
-    from abil.functions import calculate_weights, score_model, def_prediction, export_prediction, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
+    from abil.functions import inverse_weighting, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
 else:
-    from functions import calculate_weights, score_model, def_prediction, export_prediction, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
+    from functions import inverse_weighting, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
+
+def def_prediction(path_out, ensemble_config, n, species):
+
+    path_to_scores  = path_out + ensemble_config["m"+str(n+1)] + "/scoring/"
+    path_to_param  = path_out +  ensemble_config["m"+str(n+1)] + "/model/"
+
+
+    if (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == False):
+        print("predicting classifier")
+        m = pickle.load(open(path_to_param + species + '_clf.sav', 'rb'))
+        scoring =  pickle.load(open(path_to_scores + species + '_clf.sav', 'rb'))    
+        scores = np.mean(scoring['test_accuracy'])
+
+    elif (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == True):
+        print("predicting regressor")
+        m = pickle.load(open(path_to_param + species + '_reg.sav', 'rb'))
+        scoring =  pickle.load(open(path_to_scores + species + '_reg.sav', 'rb'))   
+        scores = abs(np.mean(scoring['test_MAE']))
+
+
+    elif (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == True):
+        print("predicting zero-inflated regressor")
+        m = pickle.load(open(path_to_param + species + '_zir.sav', 'rb'))
+        scoring =  pickle.load(open(path_to_scores + species + '_zir.sav', 'rb'))    
+        scores = abs(np.mean(scoring['test_MAE']))
+
+    elif (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == False):
+
+        print("Both regressor and classifier are defined as false")
+
+    return(m, scores)
+
+
+def parallel_predict(prediction_function, X_predict, n_threads=1):
+
+    df_sections = np.array_split(X_predict,  n_threads)
+
+    predictions = Parallel(n_jobs= n_threads)(delayed(prediction_function)(df_section) for df_section in df_sections)
+
+    combined_predictions = np.concatenate(predictions)
+
+    return(combined_predictions)
+
+
+def parallel_predict_mapie(X_predict, mapie, alpha, chunksize = 1000):
+
+    # Define a function to make predictions and PIs for a chunk of data
+    def predict_chunk(model, X_chunk, alpha):
+        pred, pis = model.predict(X_chunk, alpha=alpha)
+        return pred, pis
+
+    # Define the chunk size
+
+    # Split the data into chunks
+    data_chunks = [X_predict[i:i+chunksize] for i in range(0, len(X_predict), chunksize)]
+
+    # Use parallel processing to make predictions and PIs for each chunk
+    results = Parallel(n_jobs=-1)(delayed(predict_chunk)(mapie, chunk, alpha) for chunk in data_chunks)
+
+    # Combine the results
+    y_pred = []
+    y_pis = []
+    for pred, pis in results:
+        y_pred.extend(pred)
+        y_pis.extend(pis)
+
+    return np.array(y_pred), np.array(y_pis)
+    # Now y_pred contains the predicted values and y_pis contains the prediction intervals
+
+
+
+def export_prediction(m, species, X_predict, model_config, 
+                      ensemble_config, ens_model_out, n_threads=1):
+
+    d = X_predict.copy()
+    if (model_config['predict_probability'] == True) and (ensemble_config["regressor"] ==False):
+        print("predicting probabilities")
+        d[species] = parallel_predict(m.predict_proba, X_predict, n_threads)
+    elif (model_config['predict_probability'] == True) and (ensemble_config["regressor"] ==True):
+        print("error: can't predict probabilities if the model is a regressor")
+    else:
+        d[species] = parallel_predict(m.predict, X_predict, n_threads)
+    d = d.to_xarray()
+    
+    try: #make new dir if needed
+        os.makedirs(ens_model_out)
+    except:
+        None
+
+    d[species].to_netcdf(ens_model_out + species + ".nc") 
+
+
 
 class predict:
     """
@@ -106,8 +203,8 @@ class predict:
 
         print("initialized prediction")
         
-    def make_prediction(self, prediction_inference=True, alpha=[0.32],
-                        conformity_score = GammaConformityScore()):
+    def make_prediction(self, prediction_inference=False, alpha=[0.32],
+                        conformity_score = AbsoluteConformityScore()):
 
         """
         Calculates performance of model(s) and exports prediction(s) to netcdf
@@ -138,7 +235,7 @@ class predict:
 
             - ConformityScore: any MAPIE ``ConformityScore`` class
 
-            By default ``GammaConformityScore()``.
+            By default ``AbsoluteConformityScore()``.
 
 
         Notes
@@ -159,35 +256,38 @@ class predict:
 
             model_name = self.ensemble_config["m" + str(1)]
             model_out = self.path_out + model_name + "/predictions/" 
-            export_prediction(m, self.species, self.X_predict, self.model_config, self.ensemble_config, model_out)
+            export_prediction(m, self.species, self.X_predict, 
+                              self.model_config, self.ensemble_config, 
+                              model_out, n_threads=self.n_jobs)
 
         elif number_of_models >=2:
                     
             # iteratively make prediction for each model
             models = []
-            mae_list = []
+            mae_values = []
             w = []
 
             for i in range(number_of_models):
                 m, mae = def_prediction(self.path_out, self.ensemble_config, i, self.species)
                 model_name = self.ensemble_config["m" + str(i + 1)]
                 model_out = self.path_out + model_name + "/predictions/" 
-                export_prediction(m, self.species, self.X_predict, self.model_config, self.ensemble_config, model_out)
+                export_prediction(m, self.species, self.X_predict, 
+                                  self.model_config, self.ensemble_config, 
+                                  model_out, n_threads=self.n_jobs)
 
                 print("exporting " + model_name + " prediction to: " + model_out)
 
                 models.append((model_name, m))
-                mae_list.append(mae)
+                mae_values.append(mae)
 
-        
-            w = [calculate_weights(i, mae_list) for i in range(len(mae_list))]
+            w = inverse_weighting(mae_values) 
 
             if self.ensemble_config["regressor"] ==True:
                 m = VotingRegressor(estimators=models, weights=w).fit(self.X_train, self.y)
-                mapie = MapieRegressor(m) #            
+                mapie = MapieRegressor(m, conformity_score=conformity_score) #            
             else:
                 m= VotingClassifier(estimators=models, weights=w).fit(self.X_train, self.y)
-                mapie = MapieClassifier(m) #, conformity_score=conformity_score
+                mapie = MapieClassifier(m, conformity_score=conformity_score) #
 
             print(np.min(self.y))
 
@@ -198,18 +298,8 @@ class predict:
                 low_name = str(int(alpha[0]*100))
                 up_name = str(int(np.round((1-alpha[0])*100)))
 
-                print(up_name)
-                y_pred = []
-                y_pis = []
-                i, chunksize = 0, 1000
-                for idx in range(0, len(self.X_predict), chunksize):
-                    pred, pis = mapie.predict(self.X_predict[idx:(i+1)*chunksize], alpha=alpha)
-                    y_pred += list(pred)
-                    y_pis += list(pis)
-                    i += 1
-                    
-                y_pred = np.array(y_pred)
-                y_pis = np.array(y_pis)
+                y_pred, y_pis = parallel_predict_mapie(self.X_predict, mapie, 
+                                                       alpha, chunksize = 1000)
 
                 low_model_out = self.path_out + "mapie/predictions/" + low_name +"/"
                 ci50_model_out = self.path_out + "mapie/predictions/50/"
@@ -253,7 +343,8 @@ class predict:
                 print("exported MAPIE " + up_name + " prediction to: " + up_model_out + self.species + ".nc")
                 d_up = None
 
-            scores = score_model(m, self.X_train, self.y, self.cv, self.verbose, self.scoring, self.n_jobs)
+            scores = cross_validate(m, self.X_train, self.y, cv=self.cv, verbose=self.verbose, 
+                                 scoring=self.scoring, n_jobs=self.n_jobs)
 
             model_out_scores = self.path_out + "ens/scoring/"
             try: #make new dir if needed

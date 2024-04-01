@@ -1,25 +1,16 @@
-from sklearn.base import BaseEstimator, RegressorMixin, clone, is_regressor, is_classifier
-from scipy.stats import kendalltau
-from sklearn.compose import TransformedTargetRegressor
-from sklearn.model_selection import GridSearchCV
-from sklearn.utils.validation import check_is_fitted, check_X_y, check_array
-from sklearn.exceptions import NotFittedError
-from inspect import signature
 import numpy as np
-from sklearn.model_selection import StratifiedKFold, KFold
-import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.datasets import make_regression
-from sklearn.model_selection import cross_validate
-import pickle
-import os
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import OneHotEncoder
 import pandas as pd
 import xarray as xr
-import numpy as np
+from inspect import signature
+from scipy.stats import kendalltau
+
+from sklearn.base import BaseEstimator, RegressorMixin, clone, is_regressor, is_classifier
+from sklearn.compose import TransformedTargetRegressor
+from sklearn.utils.validation import check_is_fitted
+from sklearn.exceptions import NotFittedError
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.datasets import make_regression
 from sklearn.metrics import make_scorer
 
 def tau_scoring(y, y_pred):
@@ -29,6 +20,26 @@ def tau_scoring(y, y_pred):
 def tau_scoring_p(y, y_pred):
     tau, p_value = kendalltau(y, y_pred)
     return(p_value)
+
+def check_tau(scoring):
+
+    if 'tau' in scoring:
+        scoring['tau'] = make_scorer(tau_scoring)
+        scoring['tau_p'] = make_scorer(tau_scoring_p)
+        print(scoring)
+
+    else:
+        scoring = scoring
+
+    return scoring
+
+def do_log(self, x):
+    y = np.log(x+1)
+    return(y)
+
+def do_exp(self, x):
+    y = np.exp(x)-1
+    return(y)
 
 def upsample(d, target, ratio=10):
         
@@ -43,30 +54,6 @@ def upsample(d, target, ratio=10):
     ix = pd.concat([pixu, nixu], ignore_index=True)
 
     return(ix)
-
-
-
-
-def check_tau(scoring):
-
-    if 'tau' in scoring:
-        scoring['tau'] = make_scorer(tau_scoring)
-        scoring['tau_p'] = make_scorer(tau_scoring_p)
-        print(scoring)
-
-    else:
-        scoring = scoring
-
-    return scoring
-
-
-def do_log(self, x):
-    y = np.log(x+1)
-    return(y)
-
-def do_exp(self, x):
-    y = np.exp(x)-1
-    return(y)
 
 def merge_obs_env(obs_path = "../data/gridded_abundances.csv",
                   env_path = "../data/env_data.nc",
@@ -106,16 +93,11 @@ def merge_obs_env(obs_path = "../data/gridded_abundances.csv",
     print("fin")
 
 class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
-    """
-    This was cloned from scikit-lego (0.6.14)
-    https://github.com/koaning/scikit-lego
-    """
 
     def __init__(self, classifier, regressor) -> None:
         """Initialize."""
         self.classifier = classifier
         self.regressor = regressor
-        
 
     def fit(self, X, y, sample_weight=None):
         """
@@ -142,9 +124,6 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         ValueError
             If `classifier` is not a classifier or `regressor` is not a regressor.
         """
-        # #X, y = check_X_y(X, y)
-        # #self._check_n_features(X, reset=True)
-
         if not is_classifier(self.classifier):
             raise ValueError(
                 f"`classifier` has to be a classifier. Received instance of {type(self.classifier)} instead.")
@@ -181,9 +160,6 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
                     )
         else:
             None
-
-        #self.classifier_ = self.classifier
-        #self.regressor_ = self.regressor
         return self
 
 
@@ -201,10 +177,6 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
         y : np.ndarray, shape (n_samples,)
             The predicted values.
         """
-        #check_is_fitted(self)
-#        X = check_array(X)
-#        self._check_n_features(X, reset=False)
-
         output = np.zeros(len(X))
 
         non_zero_indices = np.where(self.classifier_.predict(X) == 1)[0]
@@ -327,7 +299,6 @@ class ZeroStratifiedKFold:
 
 
 def example_data(y_name, n_samples=100, n_features=5, noise=20, random_state=59):
-
     #example data:
     X, y = make_regression(n_samples=n_samples, n_features=n_features, noise=noise, random_state=random_state)
     # scale so values are strictly positive:
@@ -345,8 +316,6 @@ def example_data(y_name, n_samples=100, n_features=5, noise=20, random_state=59)
     y.name = y_name
     X = pd.DataFrame(X)
     X = X.add_prefix('Feature_')
-
-
     return(X, y)
 
 
@@ -358,86 +327,8 @@ def abbreviate_species(species_name):
     abbreviated_name += ' ' + ' '.join(words[1:])
     return abbreviated_name
 
-def lat_weights(d):
-    '''
-    To define!
-    '''
-    d_w = d*10
-    return(d_w)
-
-def calculate_weights(n, mae_list):
-    m_values = [-1 * mae for mae in mae_list]
-    m = mae_list[n]
-    
-    mae_sum_m = sum(m_values)/m
-
-    mae_sum = sum(m_values)
-
-    mae_sums_inverse = sum([(mae_sum / mae) for mae in mae_list])
-    w = mae_sum_m / mae_sums_inverse
-    return(w)
-
-
-def score_model(m, X_train, y, cv, verbose, scoring, n_jobs):
-    scores = cross_validate(m, X_train, y, cv=cv, n_jobs=n_jobs,
-                            verbose =verbose, scoring=scoring)
-    return(scores)
-
-
-def def_prediction(path_out, ensemble_config, n, species):
-
-    path_to_scores  = path_out + ensemble_config["m"+str(n+1)] + "/scoring/"
-    path_to_param  = path_out +  ensemble_config["m"+str(n+1)] + "/model/"
-
-
-    if (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == False):
-        print("predicting classifier")
-        m = pickle.load(open(path_to_param + species + '_clf.sav', 'rb'))
-        scoring =  pickle.load(open(path_to_scores + species + '_clf.sav', 'rb'))    
-        scores = 1-np.mean(scoring['test_accuracy']) #subtract 1 since lower is better
-
-    elif (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == True):
-        print("predicting regressor")
-        m = pickle.load(open(path_to_param + species + '_reg.sav', 'rb'))
-        scoring =  pickle.load(open(path_to_scores + species + '_reg.sav', 'rb'))   
-        scores = np.mean(scoring['test_MAE'])
-
-
-    elif (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == True):
-        print("predicting zero-inflated regressor")
-        m = pickle.load(open(path_to_param + species + '_zir.sav', 'rb'))
-        scoring =  pickle.load(open(path_to_scores + species + '_zir.sav', 'rb'))    
-        scores = np.mean(scoring['test_MAE'])
-
-    elif (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == False):
-
-        print("Both regressor and classifier are defined as false")
-
-    return(m, scores)
-
-
-
-
-def export_prediction(m,species, X_predict, model_config, ensemble_config, ens_model_out):
-
-    d = X_predict.copy()
-    if (model_config['predict_probability'] == True) and (ensemble_config["regressor"] ==False):
-        print("predicting probabilities")
-        d[species] = m.predict_proba(X_predict)[:, 1]
-    elif (model_config['predict_probability'] == True) and (ensemble_config["regressor"] ==True):
-        print("error: can't predict probabilities if the model is a regressor")
-    else:
-        d[species] = m.predict(X_predict)
-    d = d.to_xarray()
-    
-    try: #make new dir if needed
-        os.makedirs(ens_model_out)
-    except:
-        None
-
-    d[species].to_netcdf(ens_model_out + species + ".nc") 
-
-
-
-
-
+def inverse_weighting(values):
+    inverse_weights = [1 / value for value in values]
+    total_inverse_weight = sum(inverse_weights)
+    normalized_weights = [weight / total_inverse_weight for weight in inverse_weights]
+    return normalized_weights
