@@ -5,11 +5,13 @@
 
 Abil.py provides functions to interpolate distributions of biogeochemical observations using Machine Learning algorithms in Python. The library is optimized to interpolate many predictions in parallel and is thus particularly suited for distribution models of species, genes and transcripts. The library relies on scikit-learn and MAPIE.
 
-Current support (v0.08):
+Current support (v0.09):
 
 - Random Forest, XGBoost, Bagged KNN, and MultiLayer Perceptrons
 
 - Presence/Absence and continuous data
+
+- 2-phase zero-inflated models
 
 - Hyperparameter tuning and cross-validation
 

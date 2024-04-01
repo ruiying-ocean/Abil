@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "abil"
-version = "0.0.8"
+version = "0.0.9"
 authors = [
   { name="nanophyto", email="joost.devries@bristol.ac.uk" },
 ]
@@ -19,13 +19,17 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/nanophyto/planktonSDM"
+"Homepage" = "https://github.com/nanophyto/Abil"
 
 [tool.hatch.build]
 exclude = [
   "/.git",
+  "/data",
+  "/configuration",
   "/singularity",
-  "/devries2024/data",
+  "/devries2024",
+  "/hpc_example",
+  "/dist",
 ]
 
 
