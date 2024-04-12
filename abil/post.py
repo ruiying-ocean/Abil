@@ -43,7 +43,7 @@ class post:
         self.d = self.ds.to_dataframe()
         self.d = self.d.dropna()
         self.ds = None
-        self.species = self.d.columns.values
+        self.targets = self.d.columns.values
         self.model_config = model_config
 
     def merge_performance(self, model, configuration=None):
@@ -153,10 +153,10 @@ class post:
         """
 
 
-        w = self.traits.query('Target in @self.species')
+        w = self.traits.query('Target in @self.targets')
         var = w[variable].to_numpy()
         print(var)
-        self.d = self.d.apply(lambda row : (row[self.species]* var), axis = 1)
+        self.d = self.d.apply(lambda row : (row[self.targets]* var), axis = 1)
         print("finished estimating " + variable)
 
 
@@ -172,7 +172,7 @@ class post:
 
         """     
 
-        df = self.d[self.species]
+        df = self.d[self.targets]
         df = (df.rename(columns=dict)
             .groupby(level=0, axis=1, dropna=False)).sum( min_count=1)
         self.d = pd.concat([self.d, df], axis=1)
@@ -190,14 +190,14 @@ class post:
 
         """
 
-        w = self.traits.query('species in @self.species')
+        w = self.traits.query('Target in @self.targets')
         var = w[variable].to_numpy()
         var_name = 'cwm ' + variable
-        self.d[var_name] = self.d.apply(lambda row : np.average(var, weights=row[self.species]), axis = 1)
+        self.d[var_name] = self.d.apply(lambda row : np.average(var, weights=row[self.targets]), axis = 1)
         print("finished calculating CWM " + variable)
 
     def richness(self, metric):
-        measure = diversity(metric, self.d[self.species].clip(lower=1))
+        measure = diversity(metric, self.d[self.targets].clip(lower=1))
         self.d[metric] = measure.values
         print("finished calculating " + metric)
 
@@ -212,7 +212,7 @@ class post:
 
         """
 
-        self.d['total'] = self.d[self.species].sum( axis='columns')
+        self.d['total'] = self.d[self.targets].sum( axis='columns')
         self.d['total_log'] = np.log(self.d['total'])
         print("finished calculating total")
 
@@ -234,16 +234,15 @@ class post:
         def asRadians(degrees):
             return degrees * np.pi / 180
 
-        self.d = self.d[self.d[variable]>0]
-        self.d.reset_index(inplace=True)
-        if lat_name not in self.d:
+        df = self.d[self.d[variable]>0].reset_index()[[lat_name, variable]].copy()
+        if lat_name not in df:
             raise ValueError("lat_name not defined in dataframe")
 
         #convert lat and lon to meters:
-        lat_w = (40075000 * np.cos(asRadians(self.d[lat_name]))) / 360
+        lat_w = (40075000 * np.cos(asRadians(df[lat_name]))) / 360
         lon_w = 11132
 
-        total = np.sum(self.d[variable]*lat_w*depth_w*lon_w*conversion)
+        total = np.sum(df[variable]*lat_w*depth_w*lon_w*conversion)
 
         return(total)
 
@@ -263,7 +262,7 @@ class post:
         """
 
         if 'total' in self.d:
-            targets.append('total')
+            targets = np.append(targets, 'total')
 
         totals = []
 
@@ -320,7 +319,10 @@ class post:
             os.makedirs(self.path_out)
         except:
             None
-    
+
+        print("export_ds")
+        print("dataframe: ")
+        print(self.d.head())
         ds = self.d.to_xarray()
 
         if description is not None:
