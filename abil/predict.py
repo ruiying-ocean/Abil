@@ -9,9 +9,7 @@ from mapie.regression import MapieRegressor
 from mapie.classification import  MapieClassifier
 from mapie.conformity_scores import GammaConformityScore, AbsoluteConformityScore
 from sklearn.model_selection import cross_validate
-
 from joblib import Parallel, delayed
-
 
 
 if 'site-packages' in __file__:
@@ -284,10 +282,12 @@ class predict:
 
             if self.ensemble_config["regressor"] ==True:
                 m = VotingRegressor(estimators=models, weights=w).fit(self.X_train, self.y)
-                mapie = MapieRegressor(m, conformity_score=conformity_score) #            
+                if prediction_inference==True:
+                    mapie = MapieRegressor(m, conformity_score=conformity_score) #            
             else:
                 m= VotingClassifier(estimators=models, weights=w).fit(self.X_train, self.y)
-                mapie = MapieClassifier(m, conformity_score=conformity_score) #
+                if prediction_inference==True:
+                    mapie = MapieClassifier(m, conformity_score=conformity_score) #
 
             print(np.min(self.y))
 
