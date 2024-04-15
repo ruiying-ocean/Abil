@@ -159,7 +159,14 @@ class ZeroInflatedRegressor(BaseEstimator, RegressorMixin):
                             y[non_zero_indices],
                     )
         else:
-            None
+            print("all predictions are zero (!)")
+            try:
+                check_is_fitted(self.regressor)
+                self.regressor_ = self.regressor
+            except NotFittedError:
+                print("regressor has also not been fitted (!)")
+                self.regressor_ = clone(self.regressor)
+
         return self
 
 
