@@ -39,18 +39,18 @@ except:
 
 #define model config:
 model_config['n_threads'] = n_jobs
-traits = pd.read_csv(root + model_config['traits'])
+targets = pd.read_csv(root + model_config['targets'])
 d = pd.read_csv(root + model_config['training'])
-species =  traits['species'][n_spp]
-d[species] = d[species].fillna(0)
-d = d.dropna(subset=[species])
+target =  targets['Target'][n_spp]
+d[target] = d[target].fillna(0)
+d = d.dropna(subset=[target])
 d = d.dropna(subset=['FID'])
-d = upsample(d, species, ratio=10)
+d = upsample(d, target, ratio=10)
 
-y = d[species]
+y = d[target]
 X_train = d[predictors]
 
 #setup model:
-m = tune(X_train, y, model_config, regions="FID")
+m = tune(X_train, y, model_config)
 #run model:
 m.train(model=model, regressor=True, classifier=True, log="both")
