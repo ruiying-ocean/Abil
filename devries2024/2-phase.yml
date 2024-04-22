@@ -7,14 +7,13 @@
   path_in: ModelOutput/mapie/predictions/ #root + folder
 
   env_data_path: devries2024/data/envdata_final.csv #root + folder
-  traits: devries2024/data/traits.csv #root + folder
+  targets: devries2024/data/traits.csv #root + folder
   
   predictors: ["temperature", "si", 
     "phosphate", "din", 
     "o2", "mld", "DIC", 
     "TA", "irradiance", 
-    "chlor_a","Rrs_547",
-    "Rrs_667", "pic","FID"]
+    "chlor_a","pic"]
     
   training: data/obs_env.csv
 
