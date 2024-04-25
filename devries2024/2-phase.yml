@@ -7,14 +7,13 @@
   path_in: ModelOutput/mapie/predictions/ #root + folder
 
   env_data_path: devries2024/data/envdata_final.csv #root + folder
-  traits: devries2024/data/traits.csv #root + folder
+  targets: devries2024/data/traits.csv #root + folder
   
   predictors: ["temperature", "si", 
     "phosphate", "din", 
     "o2", "mld", "DIC", 
     "TA", "irradiance", 
-    "chlor_a","Rrs_547",
-    "Rrs_667", "pic","FID"]
+    "chlor_a","pic"]
     
   training: data/obs_env.csv
 
@@ -47,7 +46,7 @@
     rf_param_grid:
       reg_param_grid:
         regressor__estimator__n_estimators: [250]
-        regressor__estimator__max_features:  ['sqrt', 1, 2, 4, 6, 8, 10]
+        regressor__estimator__max_features:  ['sqrt', 0.1, 0.2, 0.4, 0.6, 0.8, 1]
         regressor__estimator__max_depth: [2, 10, 51, 75, 100, inf]
         regressor__estimator__min_samples_leaf: [1, 5, 13, 25, 37, 50]
         regressor__estimator__max_samples: [0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 1]     

@@ -18,6 +18,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder,  StandardScaler
 from sklearn.neural_network import MLPRegressor, MLPClassifier
+from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
+
 
 if 'site-packages' in __file__:
     from abil.functions import ZeroInflatedRegressor, LogGridSearch, ZeroStratifiedKFold, UpsampledZeroStratifiedKFold, check_tau
@@ -76,9 +78,10 @@ class tune:
         if False, None
         """
         self.y = y.sample(frac=1, random_state=model_config['seed']) #shuffle
+        print("length of y:")
+        print(len(self.y))
         self.y = self.y.values.ravel()
         self.X_train = X_train.sample(frac=1, random_state=model_config['seed']) #shuffle
-
         self.model_config = model_config
         self.seed = model_config['seed']
         self.species = y.name
@@ -200,6 +203,14 @@ class tune:
         elif model=="mlp":
             clf_estimator = MLPClassifier(random_state=self.seed, solver='lbfgs')
             reg_estimator = MLPRegressor(random_state=self.seed, solver='lbfgs')
+        elif model=="gp":
+            from sklearn.gaussian_process.kernels import RBF
+
+            kernel = 1 * RBF(length_scale=2.0, length_scale_bounds=(1e-2, 1e2))
+
+            clf_estimator = GaussianProcessClassifier(random_state=self.seed)
+            reg_estimator =  GaussianProcessRegressor(random_state=self.seed, kernel=kernel,
+                                                       normalize_y=True)
         else:
             raise ValueError("invalid model")
 
@@ -241,6 +252,9 @@ class tune:
             )
 
             y_clf =  self.y.copy()
+            print("length of y_clf:")
+            print(len(y_clf))
+
             y_clf[y_clf > 0] = 1
             print(y_clf)
             with parallel_backend('multiprocessing', self.n_jobs):

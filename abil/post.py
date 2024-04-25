@@ -25,14 +25,14 @@ class post:
         if model_config['hpc']==False:
             self.path_out = model_config['local_root'] + model_config['path_out']  + str(ci) + "/"
             self.ds = merge_netcdf(model_config['local_root'] + model_config['path_in'] + str(ci) + "/")
-            self.traits = pd.read_csv(model_config['local_root'] + model_config['traits'])
+            self.traits = pd.read_csv(model_config['local_root'] + model_config['targets'])
             self.env_data_path =  model_config['local_root'] + model_config['env_data_path']
             self.root  =  model_config['local_root'] 
 
         elif model_config['hpc']==True:
             self.path_out = model_config['hpc_root'] + model_config['path_out']  + str(ci) + "/"
             self.ds = merge_netcdf(model_config['hpc_root'] + model_config['path_in'] + str(ci) + "/")
-            self.traits = pd.read_csv(model_config['hpc_root'] + model_config['traits'])
+            self.traits = pd.read_csv(model_config['hpc_root'] + model_config['targets'])
             self.env_data_path =  model_config['hpc_root'] + model_config['env_data_path']
             self.root  =  model_config['hpc_root'] 
 
@@ -43,7 +43,7 @@ class post:
         self.d = self.ds.to_dataframe()
         self.d = self.d.dropna()
         self.ds = None
-        self.species = self.d.columns.values
+        self.targets = self.d.columns.values
         self.model_config = model_config
 
     def merge_performance(self, model, configuration=None):
@@ -153,10 +153,10 @@ class post:
         """
 
 
-        w = self.traits.query('Target in @self.species')
+        w = self.traits.query('Target in @self.targets')
         var = w[variable].to_numpy()
         print(var)
-        self.d = self.d.apply(lambda row : (row[self.species]* var), axis = 1)
+        self.d = self.d.apply(lambda row : (row[self.targets]* var), axis = 1)
         print("finished estimating " + variable)
 
 
@@ -172,7 +172,7 @@ class post:
 
         """     
 
-        df = self.d[self.species]
+        df = self.d[self.targets]
         df = (df.rename(columns=dict)
             .groupby(level=0, axis=1, dropna=False)).sum( min_count=1)
         self.d = pd.concat([self.d, df], axis=1)
@@ -190,14 +190,14 @@ class post:
 
         """
 
-        w = self.traits.query('species in @self.species')
+        w = self.traits.query('Target in @self.targets')
         var = w[variable].to_numpy()
         var_name = 'cwm ' + variable
-        self.d[var_name] = self.d.apply(lambda row : np.average(var, weights=row[self.species]), axis = 1)
+        self.d[var_name] = self.d.apply(lambda row : np.average(var, weights=row[self.targets]), axis = 1)
         print("finished calculating CWM " + variable)
 
     def richness(self, metric):
-        measure = diversity(metric, self.d[self.species].clip(lower=1))
+        measure = diversity(metric, self.d[self.targets].clip(lower=1))
         self.d[metric] = measure.values
         print("finished calculating " + metric)
 
@@ -212,34 +212,79 @@ class post:
 
         """
 
-        self.d['total'] = self.d[self.species].sum( axis='columns')
+        self.d['total'] = self.d[self.targets].sum( axis='columns')
         self.d['total_log'] = np.log(self.d['total'])
         print("finished calculating total")
 
 
     # work in progress:
-    # def integrated_total(self, variable="total", lat_name="lat", 
-    #                      depth_w =5, conversion=1e6):
-    #     """
-    #     Estimates global integrated values.
+    def integrated_total(self, variable="total", lat_name="lat", 
+                         depth_w =5, conversion=1e3):
+        """
+        Estimates global integrated values for a single target.
 
-    #     Considers latitude and depth bin size.
+        Considers latitude and depth bin size.
 
-    #     depth_w should be in meters
+        depth_w should be in meters
 
-    #     conversion should be in cubic meters. 
-    #     e.g. if original unit is cells/ml conversion should be = 1e6
+        conversion should be in cubic meters. 
+        e.g. if original unit is cells/l conversion should be = 1e3
 
-    #     """
+        """
+        def asRadians(degrees):
+            return degrees * np.pi / 180
 
-    #     if lat_name not in self.d:
-    #         raise ValueError("lat_name not defined in dataframe")
+        df = self.d[self.d[variable]>0].reset_index()[[lat_name, variable]].copy()
+        if lat_name not in df:
+            raise ValueError("lat_name not defined in dataframe")
 
-    #     lat_w = (40075000 * np.cos(self.d[lat_name])) / 360
+        #convert lat and lon to meters:
+        lat_w = (40075000 * np.cos(asRadians(df[lat_name]))) / 360
+        lon_w = 11132
 
-    #     lon_w = 11132
+        total = np.sum(df[variable]*lat_w*depth_w*lon_w*conversion)
 
-    #     total = np.sum(self.d[variable]*lat_w*depth_w*lon_w*conversion)
+        return(total)
+
+    def integrated_totals(self, targets, lat_name="lat", 
+                         depth_w =5, conversion=1e3, 
+                         export=True, model="ens"):
+        """
+        Estimates global integrated values for all targets.
+
+        Considers latitude and depth bin size.
+
+        depth_w should be in meters
+
+        conversion should be in cubic meters. 
+        e.g. if original unit is cells/l conversion should be = 1e3
+
+        """
+
+        if 'total' in self.d:
+            targets = np.append(targets, 'total')
+
+        totals = []
+
+        for i in range(0, len(targets)):
+            target = targets[i]
+            
+            try:
+                total = pd.DataFrame({'total': [self.integrated_total(variable=target, lat_name=lat_name, 
+                                depth_w =depth_w, conversion=conversion)], 'variable':target
+                                })
+                
+                totals.append(total)
+            except:
+                print("some targets do not have predictions!")
+                print("missing: " + target)
+
+        totals = pd.concat(totals, ignore_index=True)
+
+        if export:
+            totals.to_csv(self.root + self.model_config['path_out'] + model + "_integrated_totals.csv", index=False)
+            print("exported totals to: " + self.root + self.model_config['path_out'] + model + "_integrated_totals.csv")
+        
 
 
 
@@ -274,7 +319,10 @@ class post:
             os.makedirs(self.path_out)
         except:
             None
-    
+
+        print("export_ds")
+        print("dataframe: ")
+        print(self.d.head())
         ds = self.d.to_xarray()
 
         if description is not None:
