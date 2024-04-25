@@ -4,22 +4,20 @@
   hpc_root: /user/work/ba18321/Abil/
 
   path_out: ModelOutput/ #root + folder
-  path_in: ModelOutput/ens/predictions/ #root + folder
+  path_in: ModelOutput/mapie/predictions/ #root + folder
 
-  env_data_path: data/envdata_final.csv #root + folder
-  traits: data/traits.csv #root + folder
+  env_data_path: data/prediction.csv #root + folder
+  targets: data/targets.csv #root + folder
+  training: data/training.csv
 
-  training: data/obs_env.csv
-
-  predictors: ["temperature", "si", 
-    "phosphate", "din", 
-     "irradiance",  "FID"]
+  predictors: ["temperature", "din", 
+     "irradiance"]
     
     
   verbose: 1
   seed : 1 # random seed
-  n_threads : 10 # how many cpu threads to use
-  cv : 10
+  n_threads : 3 # how many cpu threads to use
+  cv : 3
   predict_probability: False 
 
   ensemble_config: 
@@ -75,21 +73,23 @@
         estimator__gamma: [1] 
         estimator__reg_alpha: [1]   
 
+    gp_param_grid:
+      reg_param_grid:  
+        regressor__estimator__n_restarts_optimizer: [0]  
+      clf_param_grid:  
+        estimator__n_restarts_optimizer: [0]  
+
     knn_param_grid:
       reg_param_grid:  
-        regressor__estimator__max_samples: [0.8]
-        regressor__estimator__max_features: [0.8]
-        regressor__estimator__estimator__leaf_size: [5]
+        regressor__estimator__max_samples: [0.2]
+        regressor__estimator__max_features: [0.2]
+        regressor__estimator__estimator__leaf_size: [25]
         regressor__estimator__estimator__n_neighbors: [5]
-        regressor__estimator__estimator__p:  [1]        
-        regressor__estimator__estimator__weights: ["uniform", "distance"]
       clf_param_grid:  
-        estimator__max_samples: [0.5]
-        estimator__max_features: [0.5]
-        estimator__estimator__leaf_size: [1]
-        estimator__estimator__n_neighbors: [3]
-        estimator__estimator__p:  [1]           
-        estimator__estimator__weights: ["uniform"]
+        estimator__max_samples: [0.2]
+        estimator__max_features: [0.2]
+        estimator__estimator__leaf_size: [25]
+        estimator__estimator__n_neighbors: [5]
 
-  knn_bagging_estimators: 10
+  knn_bagging_estimators: 3
 

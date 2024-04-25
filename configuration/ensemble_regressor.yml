@@ -4,21 +4,19 @@
   hpc_root: /user/work/ba18321/Abil/
 
   path_out: ModelOutput/ #root + folder
-  path_in: ModelOutput/ens/predictions/ #root + folder
+  path_in: ModelOutput/mapie/predictions/ #root + folder
 
-  env_data_path: data/envdata_final.csv #root + folder
-  traits: data/traits.csv #root + folder
+  env_data_path: data/prediction.csv #root + folder
+  targets: data/targets.csv #root + folder
+  training: data/training.csv
 
-  training: data/obs_env.csv
-
-  predictors: ["temperature", "si", 
-    "phosphate", "din", 
-     "irradiance",  "FID"]
+  predictors: ["temperature", "din", 
+     "irradiance"]
     
   verbose: 1
   seed : 1 # random seed
   n_threads : 10 # how many cpu threads to use
-  cv : 10
+  cv : 4
   predict_probability: False 
 
   ensemble_config: 
@@ -28,8 +26,8 @@
     m2: "xgb"
     m3: "knn"
 
-  upsample: True
-  stratify: True
+  upsample: False
+  stratify: False
 
   reg_scoring:
    R2: r2
