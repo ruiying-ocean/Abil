@@ -1,5 +1,6 @@
 singularity/
 devries2024/data/
+wiseman2024/data
 ModelOutput/
 plotting/
 *.sif
