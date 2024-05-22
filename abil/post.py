@@ -154,12 +154,33 @@ class post:
 
         """
 
+        # Define the chunk size
+        chunk_size = 10000  # Adjust this based on your available memory
 
-        w = self.traits.query('Target in @self.targets')
-        var = w[variable].to_numpy()
+        # Filter and convert the necessary column to a NumPy array
+        var = self.traits.loc[self.traits['Target'].isin(self.targets), variable].to_numpy()
         print(var)
-        self.d = self.d.apply(lambda row : (row[self.targets]* var), axis = 1)
-        print("finished estimating " + variable)
+
+        # Process the DataFrame in chunks
+        num_chunks = len(self.d) // chunk_size + 1
+
+        for i in range(num_chunks):
+            start = i * chunk_size
+            end = (i + 1) * chunk_size
+            chunk = self.d.iloc[start:end].copy()  # Create a copy to avoid modifying the original DataFrame in-place
+            
+            chunk[self.targets] = chunk[self.targets].multiply(var[start:end], axis=0)
+            
+            self.d.iloc[start:end, self.d.columns.get_indexer(self.targets)] = chunk[self.targets]
+
+        print(f"finished estimating {variable}")
+
+
+        # w = self.traits.query('Target in @self.targets')
+        # var = w[variable].to_numpy()
+        # print(var)
+        # self.d = self.d.apply(lambda row : (row[self.targets]* var), axis = 1)
+        # print("finished estimating " + variable)
 
 
     def def_groups(self, dict):
@@ -309,7 +330,7 @@ class post:
                 
             return d
 
-        self.d = concat([self.d, X_predict], axis=1)
+        self.d = concat(self.d, X_predict)
 
     def return_d(self):
         return(self.d)
