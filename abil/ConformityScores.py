@@ -62,7 +62,7 @@ class OffsetGammaConformityScore(ConformityScore):
     def _all_non_negative(
         y: ArrayLike,
     ) -> bool:
-        return not np.any(np.less_equal(y, 0))
+        return np.all(np.greater_equal(y, 0))
 
     def get_signed_conformity_scores(
         self,
