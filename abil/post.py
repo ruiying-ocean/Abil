@@ -41,11 +41,11 @@ class post:
         else:
             raise ValueError("hpc True or False not defined in yml")
             
-
         self.d = self.ds.to_dataframe()
         self.d = self.d.dropna()
         self.ds = None
-        self.targets = self.d.columns.values
+        #self.targets = self.d.columns.values
+        self.targets = self.traits['Target']
         self.model_config = model_config
 
     def merge_performance(self, model, configuration=None):
@@ -153,6 +153,29 @@ class post:
             carbon content to estimate
 
         """
+
+        # var = self.traits.loc[self.traits['Target'].isin(self.targets), variable].to_numpy()
+
+        # # Define the function to apply
+        # def apply_function(row, targets, var):
+        #     # Perform element-wise multiplication of the target variables with var
+        #     result = sum(row[target] * v for target, v in zip(targets, var))
+        #     return result
+
+        # # Apply the function using xarray's map_blocks
+        # def process(ds, targets, var):
+        #     result = xr.Dataset()
+        #     for target in targets:
+        #         result[target] = ds[target] * var[self.targets.index(target)]
+        #     return result
+
+        # self.ds = xr.map_blocks(process, self.ds, args=(self.targets, var))
+
+        # print("finished estimating " + variable)
+
+        # # Compute the final result if necessary
+        # self.ds = self.ds.compute()
+
 
         # Define the chunk size
         chunk_size = 10000  # Adjust this based on your available memory
@@ -263,7 +286,7 @@ class post:
 
         #convert lat and lon to meters:
         lat_w = (40075000 * np.cos(asRadians(df[lat_name]))) / 360
-        lon_w = 11132
+        lon_w = 111320
 
         total = np.sum(df[variable]*lat_w*depth_w*lon_w*conversion)
 
