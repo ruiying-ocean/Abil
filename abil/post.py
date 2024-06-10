@@ -263,9 +263,8 @@ class post:
         print("finished calculating total")
 
 
-    # work in progress:
     def integrated_total(self, variable="total", lat_name="lat", 
-                         depth_w =5, conversion=1e3):
+                         depth_w =5, conversion=1e3, subset_depth=None):
         """
         Estimates global integrated values for a single target.
 
@@ -281,6 +280,10 @@ class post:
             return degrees * np.pi / 180
 
         df = self.d[self.d[variable]>0].reset_index()[[lat_name, variable]].copy()
+
+        if subset_depth !=None:
+            df = df.loc[df.index.get_level_values('depth') <= subset_depth]
+
         if lat_name not in df:
             raise ValueError("lat_name not defined in dataframe")
 
@@ -294,7 +297,7 @@ class post:
 
     def integrated_totals(self, targets, lat_name="lat", 
                          depth_w =5, conversion=1e3, 
-                         export=True, model="ens"):
+                         export=True, model="ens", subset_depth=None):
         """
         Estimates global integrated values for all targets.
 
@@ -309,15 +312,18 @@ class post:
 
         if 'total' in self.d:
             targets = np.append(targets, 'total')
-
         totals = []
 
         for i in range(0, len(targets)):
             target = targets[i]
             
             try:
-                total = pd.DataFrame({'total': [self.integrated_total(variable=target, lat_name=lat_name, 
-                                depth_w =depth_w, conversion=conversion)], 'variable':target
+                total = pd.DataFrame({'total': [self.integrated_total(variable=target, 
+                                                    lat_name=lat_name,
+                                                    subset_depth=None, 
+                                                    depth_w =depth_w, 
+                                                    conversion=conversion)], 
+                                            'variable':target
                                 })
                 
                 totals.append(total)
@@ -328,7 +334,11 @@ class post:
         totals = pd.concat(totals, ignore_index=True)
 
         if export:
-            totals.to_csv(self.root + self.model_config['path_out'] + model + "_integrated_totals.csv", index=False)
+            if subset_depth!=None:
+                model_name = model + "_" + str(subset_depth) + "m"
+            else:
+                model_name = model
+            totals.to_csv(self.root + self.model_config['path_out'] + model_name + "_integrated_totals.csv" , index=False)
             print("exported totals to: " + self.root + self.model_config['path_out'] + model + "_integrated_totals.csv")
         
 

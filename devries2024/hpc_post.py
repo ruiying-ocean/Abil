@@ -22,10 +22,6 @@ except:
     model_config['hpc'] = False
     root = model_config['local_root']
 
-
-X_predict =  pd.read_csv(root + model_config['env_data_path'])
-X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
-
 print("path:")
 print(root + model_config['targets'])
 targets = pd.read_csv(root + model_config['targets'])
@@ -35,99 +31,50 @@ targets =  targets['Target'].values
 depth_w = 5
 conversion = 1e3 #L-1 to m-3
 
-m = post(model_config)
-m.merge_performance(model="ens")
-m.merge_performance(model="xgb", configuration= "reg")
-m.merge_performance(model="rf", configuration= "reg")
-m.merge_performance(model="knn", configuration= "reg")
-m.merge_parameters(model="rf")
-m.merge_parameters(model="xgb")
-m.merge_parameters(model="knn")
-m.total()
-m.integrated_totals(targets, depth_w =depth_w, 
-                    conversion=conversion,
-                    model="abundance_ci50")
-
-#m.merge_env(X_predict)
-m.export_ds(current_date + "_abundance_ci50")
-m.export_csv(current_date + "_abundance_ci50")
-
-
-m.estimate_carbon("pg poc")
-m.total()
-m.export_ds(current_date + "_POC_ci50")
-m.export_csv(current_date + "_POC_ci50")
-m.integrated_totals(targets, depth_w =depth_w, 
-                    conversion=conversion,
-                    model="POC_ci50")
-
-m = post(model_config)
-#m.merge_env(X_predict)
-m.estimate_carbon("pg pic")
-m.total()
-m.export_ds(current_date + "_PIC_ci50")
-m.export_csv(current_date + "_PIC_ci50")
-m.integrated_totals(targets, depth_w =depth_w, 
-                    conversion=conversion,
-                    model="PIC_ci50")
-
-
-
-
-
-# m = post(model_config, ci=32)
+# m = post(model_config)
+# m.merge_performance(model="ens")
+# m.merge_performance(model="xgb", configuration= "reg")
+# m.merge_performance(model="rf", configuration= "reg")
+# m.merge_performance(model="knn", configuration= "reg")
+# m.merge_parameters(model="rf")
+# m.merge_parameters(model="xgb")
+# m.merge_parameters(model="knn")
 # m.total()
+# m.integrated_totals(targets, depth_w =depth_w,
+#                     conversion=conversion,
+#                     model="abundance_ci50")
+
 # #m.merge_env(X_predict)
-# m.export_ds(current_date + "_abundance_ci32")
-# m.export_csv(current_date + "_abundance_ci32")
-# m.integrated_totals(targets, depth_w =depth_w, 
-#                     conversion=conversion,
-#                     model="abundance_ci32")
+# m.export_ds(current_date + "_abundance_ci50")
+# m.export_csv(current_date + "_abundance_ci50")
 
-# m.estimate_carbon("pg poc")
-# m.export_ds(current_date + "_POC_ci32")
-# m.export_csv(current_date + "_POC_ci32")
-# m.integrated_totals(targets, depth_w =depth_w, 
-#                     conversion=conversion,
-#                     model="POC_ci32")
+def do_post(dataset="POC_ci50", datatype="pg poc"):
 
-# m = post(model_config, ci=32)
-# m.total()
-# #m.merge_env(X_predict)
-# m.estimate_carbon("pg pic")
-# m.export_ds(current_date + "_PIC_ci32")
-# m.export_csv(current_date + "_PIC_ci32")
-# m.integrated_totals(targets, depth_w =depth_w, 
-#                     conversion=conversion,
-#                     model="PIC_ci32")
+    print("starting " + dataset)
+    m = post(model_config)
+    m.estimate_carbon(datatype)
+    print("finished estimating" + datatype)
+    m.total()
+    print("finished estimating total")
+    m.export_ds(current_date + "_" + dataset)
+    m.export_csv(current_date + "_" + dataset)
+    m.integrated_totals(targets, depth_w =depth_w,
+                        conversion=conversion,
+                        model=dataset)
 
-
-
-
-# m = post(model_config, ci=68)
-# m.total()
-# #m.merge_env(X_predict)
-
-# m.export_ds(current_date + "_abundance_ci68")
-# m.export_csv(current_date + "_abundance_ci68")
-# m.integrated_totals(targets, depth_w =depth_w, 
-#                     conversion=conversion,
-#                     model="abundance_ci68")
+    m.integrated_totals(targets, depth_w =depth_w,
+                        conversion=conversion,
+                        model=dataset, subset_depth=100)
+    
+    m = None
+    print("finished post for: " + dataset)
 
 
-# m.estimate_carbon("pg poc")
-# m.export_ds(current_date + "_POC_ci68")
-# m.export_csv(current_date + "_POC_ci68")
-# m.integrated_totals(targets, depth_w =depth_w, 
-#                     conversion=conversion,
-#                     model="POC_ci68")
+do_post(dataset="POC_ci50", datatype="pg poc")
+do_post(dataset="PIC_ci50", datatype="pg pic")
 
-# m = post(model_config, ci=68)
-# m.total()
-# #m.merge_env(X_predict)
-# m.estimate_carbon("pg pic")
-# m.export_ds(current_date + "_PIC_ci68")
-# m.export_csv(current_date + "_PIC_ci68")
-# m.integrated_totals(targets, depth_w =depth_w, 
-#                     conversion=conversion,
-#                     model="PIC_ci68")
+do_post(dataset="POC_ci5", datatype="pg poc")
+do_post(dataset="PIC_ci5", datatype="pg pic")
+
+do_post(dataset="POC_ci95", datatype="pg poc")
+do_post(dataset="PIC_ci95", datatype="pg pic")
