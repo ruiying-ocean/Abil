@@ -288,8 +288,8 @@ class post:
             raise ValueError("lat_name not defined in dataframe")
 
         #convert lat and lon to meters:
-        lat_w = (40075000 * np.cos(asRadians(df[lat_name]))) / 360
-        lon_w = 111320
+        lon_w = (40075000 * np.cos(asRadians(df[lat_name]))) / 360
+        lat_w = 111320
 
         total = np.sum(df[variable]*lat_w*depth_w*lon_w*conversion)
 
