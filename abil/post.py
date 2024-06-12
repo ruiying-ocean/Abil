@@ -44,8 +44,8 @@ class post:
         self.d = self.ds.to_dataframe()
         self.d = self.d.dropna()
         self.ds = None
-        #self.targets = self.d.columns.values
-        self.targets = self.traits['Target']
+        #list of targets for which there are predictions:
+        self.targets = self.traits['Target'][self.traits['Target'].isin(self.d.columns.values)]
         self.model_config = model_config
 
     def merge_performance(self, model, configuration=None):
