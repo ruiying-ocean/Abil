@@ -1,0 +1,13 @@
+name: abil-plotting-env
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - netcdf4
+  - dask
+  - numpy
+  - pandas
+  - pyyaml
+  - xarray
+  - cartopy
+  - matplotlib
