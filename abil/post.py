@@ -9,6 +9,42 @@ if 'site-packages' in __file__:
 else:
     from diversity import diversity
 
+def volume_function():
+    # Calculate the number of cells in latitude and longitude
+    num_cells_lat = int(ds['lat'].size / resolution_lat)   
+    num_cells_lon = int(ds['lon'].size / resolution_lon)  
+    
+    # Retrieve initial latitude and longitude bound
+    min_lat = ds['lat'].values[0]
+    min_lon = ds['lon'].values[0]
+
+    # Initialize the 2D array to store the areas
+    area = np.zeros((num_cells_lat, num_cells_lon))
+
+    earth_radius = 6371000.0  # Earth's radius in meters
+
+    # Calculate the area of each cell
+    for lat_index in range(num_cells_lat):
+        for lon_index in range(num_cells_lon):
+            # Calculate the latitude range of the cell
+            lat_bottom = min_lat + lat_index * resolution_lat
+            lat_top = lat_bottom + resolution_lat
+
+            # Calculate the longitude range of the cell
+            lon_left = min_lon + lon_index * resolution_lon
+            lon_right = lon_left + resolution_lon
+
+            # Calculate the area of the grid cell
+            areas = earth_radius ** 2 * (np.sin(np.radians(lat_top)) - np.sin(np.radians(lat_bottom))) * \
+                    (np.radians(lon_right) - np.radians(lon_left))
+
+            # Store the area in the array
+            area[lat_index, lon_index] = areas
+
+    volume = area * depth_w
+    ds['volume'] = (('lat', 'lon'), volume)
+    return(ds)
+
 class post:
     """
     Post processing of SDM
@@ -39,13 +75,13 @@ class post:
         else:
             raise ValueError("hpc True or False not defined in yml")
             
-
+        self.ds = volume_function(self.ds)
         self.d = self.ds.to_dataframe()
         self.d = self.d.dropna()
         self.ds = None
         self.targets = self.d.columns.values
         self.model_config = model_config
-
+        
     def merge_performance(self, model, configuration=None):
         
         all_performance = []
@@ -245,6 +281,130 @@ class post:
         total = np.sum(df[variable]*lat_w*depth_w*lon_w*conversion)
 
         return(total)
+    class = integration:
+         def __init__(self, parent, 
+                     resolution_lat=1.0, resolution_lon=1.0, depth_w=5, 
+                     vol_conversion=1, magnitude_conversion=1e-21, molar_mass=1, rate=False):
+            self.parent = parent
+            self.resolution_lat = resolution_lat
+            self.resolution_lon = resolution_lon
+            self.depth_w = depth_w
+            self.vol_conversion = vol_conversion
+            self.magnitude_conversion = magnitude_conversion
+            self.molar_mass = molar_mass
+            self.rate = rate
+            self.calculate_volume()
+
+        def calculate_volume(self):
+            """
+            Calculate the volume for each cell and add it as a new field to the dataset.
+
+            Parameters
+            ----------
+            resolution_lat : float
+                Latitude resolution in degrees, default is 1.0 degree.
+            
+            resolution_lon : float
+                Longitude resolution in degrees, default is 1.0 degree.
+            
+            depth_w : float
+                Bin depth in meters, default is 5m.
+
+            Examples
+            --------
+            >>> m = post(model_config)
+            >>> int = m.Integration(m, resolution_lat=1.0, resolution_lon=1.0, depth_w=5, vol_conversion=1, magnitude_conversion=1e-21, molar_mass=12.01, rate=True)
+            >>> print("Volume calculated:", int.ds['volume'].values)
+
+            """            
+            ds = self.parent.ds
+            resolution_lat = self.resolution_lat
+            resolution_lon = self.resolution_lon
+            depth_w = self.depth_w
+
+            # Calculate the number of cells in latitude and longitude
+            num_cells_lat = int(ds['lat'].size / resolution_lat)
+            num_cells_lon = int(ds['lon'].size / resolution_lon)
+
+            # Retrieve initial latitude and longitude bound
+            min_lat = ds['lat'].values[0]
+            min_lon = ds['lon'].values[0]
+
+            # Initialize the 2D array to store the areas
+            area = np.zeros((num_cells_lat, num_cells_lon))
+
+            earth_radius = 6371000.0  # Earth's radius in meters
+
+            # Calculate the area of each cell
+            for lat_index in range(num_cells_lat):
+                for lon_index in range(num_cells_lon):
+                    # Calculate the latitude range of the cell
+                    lat_bottom = min_lat + lat_index * resolution_lat
+                    lat_top = lat_bottom + resolution_lat
+
+                    # Calculate the longitude range of the cell
+                    lon_left = min_lon + lon_index * resolution_lon
+                    lon_right = lon_left + resolution_lon
+
+                    # Calculate the area of the grid cell
+                    areas = earth_radius ** 2 * (np.sin(np.radians(lat_top)) - np.sin(np.radians(lat_bottom))) * \
+                            (np.radians(lon_right) - np.radians(lon_left))
+
+                    # Store the area in the array
+                    area[lat_index, lon_index] = areas
+
+            volume = area * depth_w
+            ds['volume'] = (('lat', 'lon'), volume)
+            self.parent.ds = ds
+        
+        def integrate_total(self, variable='total'):
+            """
+            Estimates global integrated values for a single target. Returns the depth integrated annual total.
+
+            Parameters
+            ----------
+            ds : xarray.Dataset
+                Dataset containing 4-d data of dimensions lat x lon x depth x time.
+            
+            variable : str
+                The field to be integrated. Default is 'total' from PIC or POC Abil output.
+
+            vol_conversion : float
+                Conversion to m^3, e.g., l to m^3 would be 1e3, default is 1 (no conversion).
+            
+            magnitude_conversion : float
+                Prefix conversion, e.g., umol to Tmol would be 1e-21, default is 1 (no conversion).
+            
+            molar_mass : float
+                Conversion from mol to grams, default is 1 (no conversion). Optional: 12.01 (carbon).
+            
+            rate : bool
+                If input data is in rate per day, integrates over each month to provide an annual rate (yr^-1).
+
+            Examples
+            --------
+            >>> m = post(model_config)
+            >>> int = m.Integration(m, resolution_lat=1.0, resolution_lon=1.0, depth_w=5, vol_conversion=1, magnitude_conversion=1e-21, molar_mass=12.01, rate=True)
+            >>> result = integration.integrate_total(variable='Calcification')
+            >>> print("Final integrated total:", result.values)
+            """
+            
+            ds = self.parent.ds
+            vol_conversion = self.vol_conversion
+            magnitude_conversion = self.magnitude_conversion
+            molar_mass = self.molar_mass
+            rate = self.rate
+
+            days_per_month = 365.25 / 12  # approx days/month
+
+            if rate:
+                total = (ds[variable] * ds['volume'] * days_per_month).sum(dim=['lat', 'lon', 'depth', 'time'])
+                total = (total / molar_mass) * vol_conversion * magnitude_conversion
+            else:
+                total = (ds[variable] * ds['volume']).sum(dim=['lat', 'lon', 'depth', 'time'])
+                total = (total / molar_mass) * vol_conversion * magnitude_conversion
+
+            return total
 
     def integrated_totals(self, targets, lat_name="lat", 
                          depth_w =5, conversion=1e3, 
