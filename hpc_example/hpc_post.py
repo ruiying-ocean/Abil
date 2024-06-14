@@ -36,6 +36,10 @@ m.merge_parameters(model="knn")
 
 m.total()
 
+integ = m.integration(m, vol_conversion=1e-3)
+integ.integrate_total(variable='total')
+
+
 m.merge_env(X_predict)
 
 m.export_ds("17_oct")
