@@ -154,57 +154,11 @@ class post:
 
         """
 
-        # var = self.traits.loc[self.traits['Target'].isin(self.targets), variable].to_numpy()
-
-        # # Define the function to apply
-        # def apply_function(row, targets, var):
-        #     # Perform element-wise multiplication of the target variables with var
-        #     result = sum(row[target] * v for target, v in zip(targets, var))
-        #     return result
-
-        # # Apply the function using xarray's map_blocks
-        # def process(ds, targets, var):
-        #     result = xr.Dataset()
-        #     for target in targets:
-        #         result[target] = ds[target] * var[self.targets.index(target)]
-        #     return result
-
-        # self.ds = xr.map_blocks(process, self.ds, args=(self.targets, var))
-
-        # print("finished estimating " + variable)
-
-        # # Compute the final result if necessary
-        # self.ds = self.ds.compute()
-
-
-        # Define the chunk size
-        chunk_size = 10000  # Adjust this based on your available memory
-
-        # Filter and convert the necessary column to a NumPy array
-        var = self.traits.loc[self.traits['Target'].isin(self.targets), variable].to_numpy()
+        w = self.traits.query('Target in @self.targets')
+        var = w[variable].to_numpy()
         print(var)
-
-        # Process the DataFrame in chunks
-        num_chunks = len(self.d) // chunk_size + 1
-
-        for i in range(num_chunks):
-            start = i * chunk_size
-            end = (i + 1) * chunk_size
-            chunk = self.d.iloc[start:end].copy()  # Create a copy to avoid modifying the original DataFrame in-place
-            
-            chunk[self.targets] = chunk[self.targets].multiply(var[start:end], axis=0)
-            
-            self.d.iloc[start:end, self.d.columns.get_indexer(self.targets)] = chunk[self.targets]
-
-        print(f"finished estimating {variable}")
-
-
-        # w = self.traits.query('Target in @self.targets')
-        # var = w[variable].to_numpy()
-        # print(var)
-        # self.d = self.d.apply(lambda row : (row[self.targets]* var), axis = 1)
-        # print("finished estimating " + variable)
-
+        self.d = self.d.apply(lambda row : (row[self.targets]* var), axis = 1)
+        print("finished estimating " + variable)
 
     def def_groups(self, dict):
         """
