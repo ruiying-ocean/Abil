@@ -403,8 +403,8 @@ class post:
             else:
                 total = (ds[variable] * ds['volume']).sum(dim=['lat', 'lon', 'depth', 'time'])
                 total = (total / molar_mass) * vol_conversion * magnitude_conversion
-
-            return total
+            
+            print("Final integrated total:", total.values)
 
     def integrated_totals(self, targets, lat_name="lat", 
                          depth_w =5, conversion=1e3, 
