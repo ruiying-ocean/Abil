@@ -4,12 +4,7 @@ import glob, os
 import xarray as xr
 import pickle
 import gc
-
-
-if 'site-packages' in __file__:
-    from abil.diversity import diversity
-else:
-    from diversity import diversity
+from skbio.diversity.alpha import shannon
 
 class post:
     """
@@ -47,6 +42,7 @@ class post:
         #list of targets for which there are predictions:
         self.targets = self.traits['Target'][self.traits['Target'].isin(self.d.columns.values)]
         self.model_config = model_config
+        self.ci = ci
 
     def merge_performance(self, model, configuration=None):
         
@@ -196,10 +192,9 @@ class post:
         self.d[var_name] = self.d.apply(lambda row : np.average(var, weights=row[self.targets]), axis = 1)
         print("finished calculating CWM " + variable)
 
-    def richness(self, metric):
-        measure = diversity(metric, self.d[self.targets].clip(lower=1))
-        self.d[metric] = measure.values
-        print("finished calculating " + metric)
+    def diversity(self):
+        self.d['shannon'] = self.d.apply(shannon, axis=1)
+        print("finished calculating shannon diversity")
 
     def total(self):
         """
@@ -251,7 +246,7 @@ class post:
 
     def integrated_totals(self, targets, lat_name="lat", 
                          depth_w =5, conversion=1e3, 
-                         export=True, model="ens", subset_depth=None):
+                         export=True, subset_depth=None):
         """
         Estimates global integrated values for all targets.
 
@@ -289,11 +284,11 @@ class post:
 
         if export:
             if subset_depth!=None:
-                model_name = model + "_" + str(subset_depth) + "m"
+                model_name = "ci" + self.ci + "_" + str(subset_depth) + "m"
             else:
-                model_name = model
+                model_name = "ci" + self.ci
             totals.to_csv(self.root + self.model_config['path_out'] + model_name + "_integrated_totals.csv" , index=False)
-            print("exported totals to: " + self.root + self.model_config['path_out'] + model + "_integrated_totals.csv")
+            print("exported totals to: " + self.root + self.model_config['path_out'] + model_name + "_integrated_totals.csv")
         
 
 

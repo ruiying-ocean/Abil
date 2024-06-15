@@ -48,33 +48,40 @@ conversion = 1e3 #L-1 to m-3
 # m.export_ds(current_date + "_abundance_ci50")
 # m.export_csv(current_date + "_abundance_ci50")
 
-def do_post(dataset="POC_ci50", datatype="pg poc"):
+def do_post(ci=50, datatype="pg poc", diversity=False):
+
+    if datatype=="pg poc":
+        dataset="POC_ci" + str(ci)
+    elif datatype=="pg pic":
+        dataset="PIC_ci" + str(ci)
+    else:
+        raise ValueError("undefined datatype")
 
     print("starting " + dataset)
-    m = post(model_config)
+    m = post(model_config, ci=ci)
     m.estimate_carbon(datatype)
     print("finished estimating" + datatype)
+    if diversity:
+        m.diversity()
     m.total()
     print("finished estimating total")
     m.export_ds(current_date + "_" + dataset)
     m.export_csv(current_date + "_" + dataset)
     m.integrated_totals(targets, depth_w =depth_w,
-                        conversion=conversion,
-                        model=dataset)
+                        conversion=conversion)
 
     m.integrated_totals(targets, depth_w =depth_w,
-                        conversion=conversion,
-                        model=dataset, subset_depth=100)
+                        conversion=conversion, subset_depth=100)
     
     m = None
     print("finished post for: " + dataset)
 
 
-do_post(dataset="POC_ci50", datatype="pg poc")
-do_post(dataset="PIC_ci50", datatype="pg pic")
+do_post(ci=50, datatype="pg poc", diversity=True)
+do_post(ci=50, datatype="pg pic")
 
-do_post(dataset="POC_ci5", datatype="pg poc")
-do_post(dataset="PIC_ci5", datatype="pg pic")
+do_post(ci=5, datatype="pg poc", diversity=True)
+do_post(ci=5, datatype="pg pic")
 
-do_post(dataset="POC_ci95", datatype="pg poc")
-do_post(dataset="PIC_ci95", datatype="pg pic")
+do_post(ci=95, datatype="pg poc", diversity=True)
+do_post(ci=95, datatype="pg pic")
