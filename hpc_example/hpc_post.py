@@ -46,7 +46,7 @@ def do_post(ci=50, datatype="pg poc", diversity=False):
     m.export_ds(current_date + "_" + dataset)
     m.export_csv(current_date + "_" + dataset)
 
-    integ = m.integration(vol_conversion=vol_conversion)
+    integ = m.integration(m,vol_conversion=vol_conversion)
     integ.integrated_totals(targets)
     integ.integrated_totals(targets, subset_depth=100)
     

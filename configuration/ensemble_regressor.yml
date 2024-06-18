@@ -6,10 +6,10 @@
   path_out: ModelOutput/ #root + folder
   path_in: ModelOutput/ens/predictions/ #root + folder
 
-  env_data_path: data/envdata_final.csv #root + folder
-  traits: data/traits.csv #root + folder
+  env_data_path: data/prediction.csv #root + folder
+  targets: data/targets.csv #root + folder
 
-  training: data/obs_env.csv
+  training: data/training.csv
 
   predictors: ["temperature", "si", 
     "phosphate", "din", 

@@ -37,11 +37,8 @@ class post:
 
         else:
             raise ValueError("hpc True or False not defined in yml")
-            
-        self.ds = volume_function(self.ds)
         self.d = self.ds.to_dataframe()
         self.d = self.d.dropna()
-        self.ds = None
         self.targets = self.d.columns.values
         self.model_config = model_config
         
@@ -248,7 +245,7 @@ class post:
         return self.integration_class(self, *args, **kwargs)
 
     class integration:
-         def __init__(self, parent, 
+        def __init__(self, parent, 
                      resolution_lat=1.0, resolution_lon=1.0, depth_w=5, 
                      vol_conversion=1, magnitude_conversion=1, molar_mass=1, rate=False):
             self.parent = parent
