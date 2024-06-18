@@ -19,28 +19,46 @@ except:
     model_config['hpc'] = False
     root = model_config['local_root']
 
+print("path:")
+print(root + model_config['targets'])
+targets = pd.read_csv(root + model_config['targets'])
+targets =  targets['Target'].values
+depth_w = 5
+vol_conversion = 1e3 #L-1 to m-3
 
-X_predict =  pd.read_csv(root + model_config['env_data_path'])
-X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
+def do_post(ci=50, datatype="pg poc", diversity=False):
+
+    if datatype=="pg poc":
+        dataset="POC_ci" + str(ci)
+    elif datatype=="pg pic":
+        dataset="PIC_ci" + str(ci)
+    else:
+        raise ValueError("undefined datatype")
+
+    print("starting " + dataset)
+    m = post(model_config, ci=ci)
+    m.estimate_carbon(datatype)
+    print("finished estimating" + datatype)
+    if diversity:
+        m.diversity()
+    m.total()
+    print("finished estimating total")
+    m.export_ds(current_date + "_" + dataset)
+    m.export_csv(current_date + "_" + dataset)
+
+    integ = m.integration(vol_conversion=vol_conversion)
+    integ.integrated_totals(targets)
+    integ.integrated_totals(targets, subset_depth=100)
+    
+    m = None
+    print("finished post for: " + dataset)
 
 
-m = post(model_config)
-m.merge_performance(model="ens")
-m.merge_performance(model="xgb", configuration= "reg")
-m.merge_performance(model="rf", configuration= "reg")
-m.merge_performance(model="knn", configuration= "reg")
+do_post(ci=50, datatype="pg poc", diversity=True)
+do_post(ci=50, datatype="pg pic")
 
-m.merge_parameters(model="rf")
-m.merge_parameters(model="xgb")
-m.merge_parameters(model="knn")
+do_post(ci=5, datatype="pg poc", diversity=True)
+do_post(ci=5, datatype="pg pic")
 
-m.total()
-
-integ = m.integration(m, vol_conversion=1e-3)
-integ.integrate_total(variable='total')
-
-
-m.merge_env(X_predict)
-
-m.export_ds("17_oct")
-m.export_csv("17_oct")
+do_post(ci=95, datatype="pg poc", diversity=True)
+do_post(ci=95, datatype="pg pic")
