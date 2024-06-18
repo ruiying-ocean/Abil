@@ -27,6 +27,7 @@ print(root + model_config['targets'])
 targets = pd.read_csv(root + model_config['targets'])
 #print("targets: ")
 #print(targets)
+targets = targets[targets['n']>85]
 targets =  targets['Target'].values
 depth_w = 5
 conversion = 1e3 #L-1 to m-3
