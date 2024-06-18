@@ -278,16 +278,13 @@ p.latlon("Calcification",
        end_depth = 200,
        depth_integrated = True,
        vmin=0,
-       vmax=80,
-       log=False)
+       vmax=80)
 
 #%%
 p.latlon("Calcification",  
        title="Annual Mean Calcium Carbonate Production (0-10m)", 
        start_depth = 0,
        end_depth = 10,
-       depth_integrated = False,
-       log=False,
        vmin=0,
        vmax=70)
 
@@ -296,8 +293,6 @@ p.latlon("Calcification",
        title="Annual Mean Calcium Carbonate Production (10-30m)", 
        start_depth = 10,
        end_depth = 30,
-       depth_integrated = False,
-       log=False,
        vmin=0,
        vmax=70)
 
@@ -305,9 +300,6 @@ p.latlon("Calcification",
 p.latlon("Calcification", 
        title="Annual Mean Calcium Carbonate Production (30-75m)", 
        start_depth = 30,
-       end_depth = 75,
-       depth_integrated = False,
-       log=False,
        vmin=0,
        vmax=70)
 
@@ -316,7 +308,6 @@ p.latdepth("Calcification",
            log=True, 
            title="Global Zonal Annual Mean Calcium Carbonate Production",
            norm=matplotlib.colors.LogNorm(),
-           add_contour=True,
            vmin=3,
            vmax=70)
 
@@ -325,7 +316,6 @@ p.latdepth("Calcification",
            log=True, 
            title="Pacific Zonal Annual Mean Calcium Carbonate Production",
            norm=matplotlib.colors.LogNorm(),
-           add_contour=True,
            vmin=3,
            vmax=70,
            region='PAC')
@@ -334,7 +324,6 @@ p.latdepth("Calcification",
            log=True, 
            title="Indian Zonal Annual Mean Calcium Carbonate Production",
            norm=matplotlib.colors.LogNorm(),
-           add_contour=True,
            vmin=3,
            vmax=70,
            region='IND')
@@ -343,84 +332,110 @@ p.latdepth("Calcification",
            log=True, 
            title="Atlantic Zonal Annual Mean Calcium Carbonate Production",
            norm=matplotlib.colors.LogNorm(),
-           add_contour=True,
            vmin=3,
            vmax=70,
            region='ATL')
 
 #%% Plot 1d Depth
 p.depth("Calcification", 
-           title=r"Global Annual Mean Calcium Carbonate Production ($\mathrm{\mu}$mol C m$^{-3}$ d$^{-1}$)",
-           region=None)
-
-
-
-
-
-
+           title=r"Global Annual Mean Calcium Carbonate Production ($\mathrm{\mu}$mol C m$^{-3}$ d$^{-1}$)")
 
 #%%
-# Define the resolution of the grid (in degrees)
-resolution_lat = 1.0  # 1 degree
-resolution_lon = 1.0  # 1 degree
 
-# Calculate the number of cells in latitude and longitude
-num_cells_lat = int(157 / resolution_lat)
-num_cells_lon = int(360 / resolution_lon)
+def integrated_total(ds, variable='total', 
+                     resolution_lat=1.0, resolution_lon=1.0, depth_w=5, 
+                     vol_conversion=1e3, magnitude_conversion=1, molar_mass=1,
+                     rate=False):
+    
+    """
+    Estimates global integrated values for a single target. Returns the depth integrated annual total.
 
-# Initialize the 2D array to store the areas
-area = np.zeros((num_cells_lat, num_cells_lon))
+    Parameters
+    ----------
 
-# Earth's radius in kilometers
-earth_radius = 6371000.0  # Earth's radius in meters
+    PIC data is in pg/l -> currently outputting as monthly average PIC in pg
 
-# Calculate the area of each cell
-for lat_index in range(num_cells_lat):
-    for lon_index in range(num_cells_lon):
-        # Calculate the latitude range of the cell
-        lat_bottom = -77 + lat_index * resolution_lat
-        lat_top = lat_bottom + resolution_lat
+    ds : xarray.Dataset containing 4-d data of dimensions lat x lon x depth x time
+    
+    variable : the field to be integrated. Default is 'total' from PIC or POC Abil output
 
-        # Calculate the longitude range of the cell
-        lon_left = -180 + lon_index * resolution_lon
-        lon_right = lon_left + resolution_lon
+    resolution_lat,resolution_lon : lat/lon resolution in degrees, default is 1 degree
 
-        # Calculate the area of the cell using spherical trigonometry
-        areas = (np.sin(np.radians(lat_top)) - np.sin(np.radians(lat_bottom))) * \
-               (np.radians(lon_right) - np.radians(lon_left)) * earth_radius ** 2
+    depth_w : bin depth in meters, default is 5m
 
-        # Store the area in the array
-        area[lat_index, lon_index] = areas
+    vol_conversion : conversion to m^3, e.g. l to m^3 would be 1e3, default is 1e3 (no conversion)
+    
+    magnitude_conversion : prefix conversion, e.g. umol to Tmol would be 1e-21, default is 1 (no conversion)
 
-volume = area*5
-# Assuming 'latitude' and 'longitude' are dimensions in your dataset
-ds['volume'] = (('lat', 'lon'), volume)
-days_per_month = 365.25/12
-molar_mass_C = 12.01  # Molar mass of Carbon in grams/mol
+    molar_mass : conversion from mol to grams, default is 1 (no conversion). opt: 12.01 (carbon)
 
-#%% 
-# Total PP
-# Convert micromoles C to moles C and then to petagrams
-#global_integrated_total_PP = (ds['Primary_Production'] * ds['volume'] * days_per_month).sum(dim=['lat', 'lon', 'depth', 'time'])
-#global_integrated_total_petagrams_PP = (global_integrated_total_PP * molar_mass_C) / (1e15 * 1e6)
-#print(global_integrated_total_petagrams_PP)
+    rate : if input data is in rate of per day, integrates over each month to provide an annual rate (yr^-1)
 
-# Total CP
-# Convert micromoles C to moles CaCO3 and then to petagrams
-global_integrated_total_calcif = (ds['Calcification'] * ds['volume'] * days_per_month).sum(dim=['lat', 'lon', 'depth', 'time'])
-global_integrated_total_petagrams_calcif = (global_integrated_total_calcif * molar_mass_C) / (1e15 * 1e6)
-print(global_integrated_total_petagrams_calcif)
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import xarray as xr
+    >>> with open('/home/mv23682/Documents/Abil/wiseman2024/ensemble_regressor.yml', 'r') as f:
+    ...     model_config = load(f, Loader=Loader)
+    >>> run_name = '50'
+    >>> species = '2024-05-06_cp_ci50'
+    >>> ds = xr.open_dataset(model_config['local_root'] + model_config['path_out'] + run_name + "/" + species + ".nc")
+    >>> integrated_total(ds, variable='Calcification', vol_conversion=1, magnitude_conversion=1e-21, molar_mass=12.01, rate=True)
 
-# Top 100m PP
+
+    """
+
+    # Calculate the number of cells in latitude and longitude
+    num_cells_lat = int(ds['lat'].size / resolution_lat)   
+    num_cells_lon = int(ds['lon'].size / resolution_lon)  
+    
+    # Retrieve initial latitude and longitude bound
+    min_lat = ds['lat'].values[0]
+    min_lon = ds['lon'].values[0]
+
+    # Initialize the 2D array to store the areas
+    area = np.zeros((num_cells_lat, num_cells_lon))
+
+    earth_radius = 6371000.0  # Earth's radius in meters
+
+    # Calculate the area of each cell
+    for lat_index in range(num_cells_lat):
+        for lon_index in range(num_cells_lon):
+            # Calculate the latitude range of the cell
+            lat_bottom = min_lat + lat_index * resolution_lat
+            lat_top = lat_bottom + resolution_lat
+
+            # Calculate the longitude range of the cell
+            lon_left = min_lon + lon_index * resolution_lon
+            lon_right = lon_left + resolution_lon
+
+            # Calculate the area of the grid cell
+            areas = earth_radius ** 2 * (np.sin(np.radians(lat_top)) - np.sin(np.radians(lat_bottom))) * \
+                    (np.radians(lon_right) - np.radians(lon_left))
+
+            # Store the area in the array
+            area[lat_index, lon_index] = areas
+
+    volume = area * depth_w
+    ds['volume'] = (('lat', 'lon'), volume)    
+    days_per_month = 365.25 / 12  # approx days/month
+
+    if rate:
+        total = (ds[variable] * ds['volume'] * days_per_month).sum(dim=['lat', 'lon', 'depth', 'time'])
+        total = (total * molar_mass) * vol_conversion * magnitude_conversion
+    else:
+        total = (ds[variable] * ds['volume']).sum(dim=['lat', 'lon', 'depth', 'time'])
+        total = (total * molar_mass) * vol_conversion * magnitude_conversion
+    return total
+
+# Example usage:
+# ds is your xarray.Dataset containing the variable 'Calcification'
+total_CP = integrated_total(ds, variable='Calcification', vol_conversion=1, magnitude_conversion=1e-21, molar_mass=12.01, rate=True)
+print(f"Total CP is: {total_CP.values:.2f} PgC/yr")
+
 depth_range = slice(0,100)
-top_layer_ds = ds.sel(depth=depth_range)
-#surface_int_PP = (top_layer_ds['Primary_Production'] * top_layer_ds['volume'] * days_per_month).sum(dim=['lat', 'lon', 'depth','time'])
-#surface_int_petagrams_PP = (surface_int_PP * molar_mass_C) / (1e15 * 1e6)
-#print(surface_int_petagrams_PP)
-
-# Top 100m CP
-surface_int_CP = (top_layer_ds['Calcification'] * top_layer_ds['volume'] * days_per_month).sum(dim=['lat', 'lon', 'depth','time'])
-surface_int_petagrams_CP = (surface_int_CP * molar_mass_C) / (1e15 * 1e6)
-print(surface_int_petagrams_CP)
+top_100m_ds = ds.sel(depth=depth_range)
+top_100m_CP = integrated_total(top_100m_ds, variable='Calcification', vol_conversion=1, magnitude_conversion=1e-21, molar_mass=12.01, rate=True)
+print(f"Top 100m CP is: {top_100m_CP.values:.2f} PgC/yr")
 
 # %%
