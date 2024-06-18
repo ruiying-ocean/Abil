@@ -212,35 +212,6 @@ class post:
         self.d['total_log'] = np.log(self.d['total'])
         print("finished calculating total")
 
-
-    # work in progress:
-    def integrated_total(self, variable="total", lat_name="lat", 
-                         depth_w =5, conversion=1e3):
-        """
-        Estimates global integrated values for a single target.
-
-        Considers latitude and depth bin size.
-
-        depth_w should be in meters
-
-        conversion should be in cubic meters. 
-        e.g. if original unit is cells/l conversion should be = 1e3
-
-        """
-        def asRadians(degrees):
-            return degrees * np.pi / 180
-
-        df = self.d[self.d[variable]>0].reset_index()[[lat_name, variable]].copy()
-        if lat_name not in df:
-            raise ValueError("lat_name not defined in dataframe")
-
-        #convert lat and lon to meters:
-        lat_w = (40075000 * np.cos(asRadians(df[lat_name]))) / 360
-        lon_w = 11132
-
-        total = np.sum(df[variable]*lat_w*depth_w*lon_w*conversion)
-
-        return(total)
     def integration(self, *args, **kwargs):
         return self.integration_class(self, *args, **kwargs)
 
@@ -248,6 +219,32 @@ class post:
         def __init__(self, parent, 
                      resolution_lat=1.0, resolution_lon=1.0, depth_w=5, 
                      vol_conversion=1, magnitude_conversion=1, molar_mass=1, rate=False):
+            """
+            Parameters
+            ----------
+            resolution_lat : float
+                Latitude resolution in degrees, default is 1.0 degree.
+            
+            resolution_lon : float
+                Longitude resolution in degrees, default is 1.0 degree.
+            
+            depth_w : float
+                Bin depth in meters, default is 5m.
+
+            vol_conversion : float
+                Conversion to m^3, e.g., l to m^3 would be 1e3, default is 1 (no conversion).
+            
+            magnitude_conversion : float
+                Prefix conversion, e.g., umol to Tmol would be 1e-21, default is 1 (no conversion).
+            
+            molar_mass : float
+                Conversion from mol to grams, default is 1 (no conversion). Optional: 12.01 (carbon).
+            
+            rate : bool
+                If input data is in rate per day, integrates over each month to provide an annual rate (yr^-1).            
+            """
+
+
             self.parent = parent
             self.resolution_lat = resolution_lat
             self.resolution_lon = resolution_lon
@@ -261,17 +258,6 @@ class post:
         def calculate_volume(self):
             """
             Calculate the volume for each cell and add it as a new field to the dataset.
-
-            Parameters
-            ----------
-            resolution_lat : float
-                Latitude resolution in degrees, default is 1.0 degree.
-            
-            resolution_lon : float
-                Longitude resolution in degrees, default is 1.0 degree.
-            
-            depth_w : float
-                Bin depth in meters, default is 5m.
 
             Examples
             --------
@@ -320,29 +306,20 @@ class post:
             ds['volume'] = (('lat', 'lon'), volume)
             self.parent.ds = ds
         
-        def integrate_total(self, variable='total', subset_depth=None):
+        def integrate_total(self, variable='total', monthly=False, subset_depth=None):
             """
             Estimates global integrated values for a single target. Returns the depth integrated annual total.
-
+            
             Parameters
             ----------
-            ds : xarray.Dataset
-                Dataset containing 4-d data of dimensions lat x lon x depth x time.
-            
             variable : str
                 The field to be integrated. Default is 'total' from PIC or POC Abil output.
 
-            vol_conversion : float
-                Conversion to m^3, e.g., l to m^3 would be 1e3, default is 1 (no conversion).
-            
-            magnitude_conversion : float
-                Prefix conversion, e.g., umol to Tmol would be 1e-21, default is 1 (no conversion).
-            
-            molar_mass : float
-                Conversion from mol to grams, default is 1 (no conversion). Optional: 12.01 (carbon).
-            
-            rate : bool
-                If input data is in rate per day, integrates over each month to provide an annual rate (yr^-1).
+            monthly : bool
+                Whether or not to calculate a monthly average value instead of an annual total. Default is False.
+ 
+            subset_depth : float
+                Depth in meters from surface to which integral should be calculated. Default is None. Ex. 100 for top 100m integral.
 
             Examples
             --------
@@ -369,21 +346,36 @@ class post:
             else:
                 total = (ds[variable] * ds['volume']).sum(dim=['lat', 'lon', 'depth', 'time'])
                 total = (total / molar_mass) * vol_conversion * magnitude_conversion
+
+            if monthly:
+                total /= 12
             
             print("Final integrated total:", total.values)
             return total
 
-        def integrated_totals(self, targets, subset_depth=None, 
+        def integrated_totals(self, targets, monthly=False, subset_depth=None, 
                              export=True, model="ens"):
             """
             Estimates global integrated values for all targets.
     
             Considers latitude and depth bin size.
     
-            depth_w should be in meters
-    
-            conversion should be in cubic meters. 
-            e.g. if original unit is cells/l conversion should be = 1e3
+            Parameters
+            ----------
+            targets : str
+                The fields to be integrated. Default is 'total' from PIC or POC Abil output.
+
+            monthly : bool
+                Whether or not to calculate a monthly average value instead of an annual total. Default is False.
+ 
+            subset_depth : float
+                Depth in meters from surface to which integral should be calculated. Default is None. Ex. 100 for top 100m integral.
+
+            export : bool
+                Whether of not to export integrated totals as .csv. Default is True.
+
+            model : str
+                The model version to be integrated. Default is "ens". Other options include {"rf", "xgb", "knn"}.
     
             """
             ds = self.parent.ds
@@ -395,20 +387,21 @@ class post:
     
             for target in targets:
                 try:
-                    total = self.integrate_total(variable=target, subset_depth=subset_depth)
+                    total = self.integrate_total(variable=target, monthly=monthly, subset_depth=subset_depth)
                     total_df = pd.DataFrame({'total': [total.values], 'variable': target})
                     totals.append(total_df)
                 except Exception as e:
                     print(f"Some targets do not have predictions! Missing: {target}")
                     print(f"Error: {e}")
 
-            totals = pd.concat(totals, ignore_index=True)
+            totals = pd.concat(totals)
 
             if export:
-                subset_str = f"_subset_depth_{subset_depth}" if subset_depth else ""
-                output_path = f"{self.parent.root}{self.parent.model_config['path_out']}{model}_integrated_totals{subset_str}.csv"
-                totals.to_csv(output_path, index=False)
-                print(f"Exported totals to: {output_path}")      
+                depth_str = f"_depth_{subset_depth}m" if subset_depth else ""
+                avg_str = "_monthly_avg" if average else ""
+                file_name = f"{self.parent.root}{self.parent.model_config['path_out']}{model}_integrated_totals{depth_str}{avg_str}.csv"
+                totals.to_csv(file_name, index=False)
+                print(f"Exported totals to: {file_name}")     
 
 
     def merge_env(self, X_predict):
