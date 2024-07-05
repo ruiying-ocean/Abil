@@ -8,6 +8,8 @@ from sklearn.model_selection import KFold
 from mapie.regression import MapieRegressor
 from mapie.classification import  MapieClassifier
 from mapie.conformity_scores import GammaConformityScore, AbsoluteConformityScore
+
+
 from sklearn.model_selection import cross_validate
 from joblib import Parallel, delayed
 
@@ -295,15 +297,17 @@ class predict:
                 print()
                 mapie.fit(self.X_train, self.y)
 
-                low_name = str(int(alpha[0]*100))
-                up_name = str(int(np.round((1-alpha[0])*100)))
+                #low_name = str(int(alpha[0]*100))
+                ci_name = str(int(np.round((1-alpha[0])*100)))
+                ci_LL = ci_name + "_LL"
+                ci_HL = ci_name + "_HL"
 
                 y_pred, y_pis = parallel_predict_mapie(self.X_predict, mapie, 
                                                        alpha, chunksize = 1000)
 
-                low_model_out = self.path_out + "mapie/predictions/" + low_name +"/"
+                low_model_out = self.path_out + "mapie/predictions/" + ci_LL +"/"
                 ci50_model_out = self.path_out + "mapie/predictions/50/"
-                up_model_out = self.path_out + "mapie/predictions/" + up_name +"/"
+                up_model_out = self.path_out + "mapie/predictions/" + ci_HL +"/"
                 
                 try: #make new dir if needed
                     os.makedirs(low_model_out)
@@ -327,20 +331,16 @@ class predict:
                 y_pred = None
 
                 d_low = self.X_predict.copy()
-                print("min 68 CI:")
-                print(np.mean(y_pis[:,0,:].flatten()))
-                print("min 68 CI (incl NA):")
-                print(np.nanmean(y_pis[:,0,:].flatten()))
 
                 d_low[self.species] = y_pis[:,0,:].flatten()
                 d_low[self.species].to_xarray().to_netcdf(low_model_out + self.species + ".nc") 
-                print("exported MAPIE " + low_name + " prediction to: " + low_model_out + self.species + ".nc")
+                print("exported MAPIE " + ci_LL + " prediction to: " + low_model_out + self.species + ".nc")
                 d_low = None
 
                 d_up = self.X_predict.copy()
                 d_up[self.species] = y_pis[:,1,:].flatten()
                 d_up[self.species].to_xarray().to_netcdf(up_model_out + self.species + ".nc") 
-                print("exported MAPIE " + up_name + " prediction to: " + up_model_out + self.species + ".nc")
+                print("exported MAPIE " + ci_HL + " prediction to: " + up_model_out + self.species + ".nc")
                 d_up = None
 
             scores = cross_validate(m, self.X_train, self.y, cv=self.cv, verbose=self.verbose, 
