@@ -375,8 +375,8 @@ class post:
     
             """
             ds = self.parent.ds
-            if total in ds:
-                targets = np.append(targets, 'total')
+            # if total in ds:
+            #     targets = np.append(targets, 'total')
             vol_conversion = self.vol_conversion
             totals = []
 
@@ -394,7 +394,7 @@ class post:
 
             if export:
                 depth_str = f"_depth_{subset_depth}m" if subset_depth else ""
-                avg_str = "_monthly_avg" if average else ""
+                avg_str = "_monthly_avg" if monthly else ""
                 file_name = f"{self.parent.root}{self.parent.model_config['path_out']}{model}_integrated_totals{depth_str}{avg_str}.csv"
                 totals.to_csv(file_name, index=False)
                 print(f"Exported totals to: {file_name}")     
