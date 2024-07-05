@@ -3,11 +3,8 @@ import numpy as np
 import glob, os
 import xarray as xr
 import pickle
-
-if 'site-packages' in __file__:
-    from abil.diversity import diversity
-else:
-    from diversity import diversity
+import gc
+from skbio.diversity.alpha import shannon
 
 class post:
     """
@@ -39,12 +36,13 @@ class post:
         else:
             raise ValueError("hpc True or False not defined in yml")
             
-
         self.d = self.ds.to_dataframe()
         self.d = self.d.dropna()
         self.ds = None
-        self.targets = self.d.columns.values
+        #list of targets for which there are predictions:
+        self.targets = self.traits['Target'][self.traits['Target'].isin(self.d.columns.values)]
         self.model_config = model_config
+        self.ci = ci
 
     def merge_performance(self, model, configuration=None):
         
@@ -152,13 +150,11 @@ class post:
 
         """
 
-
         w = self.traits.query('Target in @self.targets')
         var = w[variable].to_numpy()
         print(var)
         self.d = self.d.apply(lambda row : (row[self.targets]* var), axis = 1)
         print("finished estimating " + variable)
-
 
     def def_groups(self, dict):
         """
@@ -196,10 +192,9 @@ class post:
         self.d[var_name] = self.d.apply(lambda row : np.average(var, weights=row[self.targets]), axis = 1)
         print("finished calculating CWM " + variable)
 
-    def richness(self, metric):
-        measure = diversity(metric, self.d[self.targets].clip(lower=1))
-        self.d[metric] = measure.values
-        print("finished calculating " + metric)
+    def diversity(self):
+        self.d['shannon'] = self.d.apply(shannon, axis=1)
+        print("finished calculating shannon diversity")
 
     def total(self):
         """
@@ -217,9 +212,8 @@ class post:
         print("finished calculating total")
 
 
-    # work in progress:
     def integrated_total(self, variable="total", lat_name="lat", 
-                         depth_w =5, conversion=1e3):
+                         depth_w =5, conversion=1e3, subset_depth=None):
         """
         Estimates global integrated values for a single target.
 
@@ -235,12 +229,16 @@ class post:
             return degrees * np.pi / 180
 
         df = self.d[self.d[variable]>0].reset_index()[[lat_name, variable]].copy()
+
+        if subset_depth !=None:
+            df = df.loc[df.index.get_level_values('depth') <= subset_depth]
+
         if lat_name not in df:
             raise ValueError("lat_name not defined in dataframe")
 
         #convert lat and lon to meters:
-        lat_w = (40075000 * np.cos(asRadians(df[lat_name]))) / 360
-        lon_w = 11132
+        lon_w = (40075000 * np.cos(asRadians(df[lat_name]))) / 360
+        lat_w = 111320
 
         total = np.sum(df[variable]*lat_w*depth_w*lon_w*conversion)
 
@@ -248,7 +246,7 @@ class post:
 
     def integrated_totals(self, targets, lat_name="lat", 
                          depth_w =5, conversion=1e3, 
-                         export=True, model="ens"):
+                         export=True, subset_depth=None):
         """
         Estimates global integrated values for all targets.
 
@@ -263,15 +261,18 @@ class post:
 
         if 'total' in self.d:
             targets = np.append(targets, 'total')
-
         totals = []
 
         for i in range(0, len(targets)):
             target = targets[i]
             
             try:
-                total = pd.DataFrame({'total': [self.integrated_total(variable=target, lat_name=lat_name, 
-                                depth_w =depth_w, conversion=conversion)], 'variable':target
+                total = pd.DataFrame({'total': [self.integrated_total(variable=target, 
+                                                    lat_name=lat_name,
+                                                    subset_depth=None, 
+                                                    depth_w =depth_w, 
+                                                    conversion=conversion)], 
+                                            'variable':target
                                 })
                 
                 totals.append(total)
@@ -282,8 +283,12 @@ class post:
         totals = pd.concat(totals, ignore_index=True)
 
         if export:
-            totals.to_csv(self.root + self.model_config['path_out'] + model + "_integrated_totals.csv", index=False)
-            print("exported totals to: " + self.root + self.model_config['path_out'] + model + "_integrated_totals.csv")
+            if subset_depth!=None:
+                model_name = "ci" + self.ci + "_" + str(subset_depth) + "m"
+            else:
+                model_name = "ci" + self.ci
+            totals.to_csv(self.root + self.model_config['path_out'] + model_name + "_integrated_totals.csv" , index=False)
+            print("exported totals to: " + self.root + self.model_config['path_out'] + model_name + "_integrated_totals.csv")
         
 
 
@@ -293,7 +298,21 @@ class post:
         Merge model output with environmental data 
         """
 
-        self.d = pd.concat([self.d, X_predict], axis=1)
+        def concat(d, X_predict, chunk_size=1000):
+            # Ensure the length of X_predict is divisible by chunk_size
+            for start in range(0, len(X_predict), chunk_size):
+                end = start + chunk_size
+                chunk = X_predict[start:end]
+                
+                d = pd.concat([d, chunk], axis=1)
+                
+                # Delete chunk and run garbage collection to free up memory
+                del chunk
+                gc.collect()
+                
+            return d
+
+        self.d = concat(self.d, X_predict)
 
     def return_d(self):
         return(self.d)
