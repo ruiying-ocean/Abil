@@ -284,6 +284,14 @@ class predict:
 
             m, mae1 = def_prediction(self.path_out, self.ensemble_config, 0, self.species)
 
+            if self.ensemble_config["regressor"] ==True:
+                if prediction_inference==True:
+                    mapie = MapieRegressor(m, conformity_score=conformity_score, cv=cv) #            
+            else:
+                if prediction_inference==True:
+                    mapie = MapieClassifier(m, conformity_score=conformity_score, cv=cv) #
+
+
             model_name = self.ensemble_config["m" + str(1)]
             model_out = self.path_out + model_name + "/predictions/" 
             export_prediction(m, self.species, self.X_predict, 
@@ -323,58 +331,8 @@ class predict:
 
             print(np.min(self.y))
 
-            if prediction_inference==True:
-                print()
-                mapie.fit(self.X_train, self.y)
-
-                #low_name = str(int(alpha[0]*100))
-                ci_name = str(int(np.round((1-alpha[0])*100)))
-                ci_LL = ci_name + "_LL"
-                ci_HL = ci_name + "_HL"
-
-                y_pred, y_pis = parallel_predict_mapie(self.X_predict, mapie, 
-                                                       alpha, chunksize = 1000)
-
-                low_model_out = self.path_out + "mapie/predictions/" + ci_LL +"/"
-                ci50_model_out = self.path_out + "mapie/predictions/50/"
-                up_model_out = self.path_out + "mapie/predictions/" + ci_HL +"/"
-                
-                try: #make new dir if needed
-                    os.makedirs(low_model_out)
-                except:
-                    None
-                try: #make new dir if needed
-                    os.makedirs(ci50_model_out)
-                except:
-                    None
-                try: #make new dir if needed
-                    os.makedirs(up_model_out)
-                except:
-                    None
-
-                d_ci50 = self.X_predict.copy()
-                d_ci50[self.species] = y_pred
-                d_ci50 = d_ci50.to_xarray()
-                d_ci50[self.species].to_netcdf(ci50_model_out + self.species + ".nc") 
-                print("exported MAPIE CI50 prediction to: " + ci50_model_out + self.species + ".nc")
-                d_ci50 = None
-                y_pred = None
-
-                d_low = self.X_predict.copy()
-
-                d_low[self.species] = y_pis[:,0,:].flatten()
-                d_low[self.species].to_xarray().to_netcdf(low_model_out + self.species + ".nc") 
-                print("exported MAPIE " + ci_LL + " prediction to: " + low_model_out + self.species + ".nc")
-                d_low = None
-
-                d_up = self.X_predict.copy()
-                d_up[self.species] = y_pis[:,1,:].flatten()
-                d_up[self.species].to_xarray().to_netcdf(up_model_out + self.species + ".nc") 
-                print("exported MAPIE " + ci_HL + " prediction to: " + up_model_out + self.species + ".nc")
-                d_up = None
-
             scores = cross_validate(m, self.X_train, self.y, cv=self.cv, verbose=self.verbose, 
-                                 scoring=self.scoring, n_jobs=self.n_jobs)
+                                    scoring=self.scoring, n_jobs=self.n_jobs)
 
             model_out_scores = self.path_out + "ens/scoring/"
             try: #make new dir if needed
@@ -386,6 +344,57 @@ class predict:
 
         else:
             raise ValueError("at least one model should be defined in the ensemble")
+
+
+        if prediction_inference==True:
+            print()
+            mapie.fit(self.X_train, self.y)
+
+            #low_name = str(int(alpha[0]*100))
+            ci_name = str(int(np.round((1-alpha[0])*100)))
+            ci_LL = ci_name + "_LL"
+            ci_HL = ci_name + "_HL"
+
+            y_pred, y_pis = parallel_predict_mapie(self.X_predict, mapie, 
+                                                    alpha, chunksize = 1000)
+
+            low_model_out = self.path_out + "mapie/predictions/" + ci_LL +"/"
+            ci50_model_out = self.path_out + "mapie/predictions/50/"
+            up_model_out = self.path_out + "mapie/predictions/" + ci_HL +"/"
+            
+            try: #make new dir if needed
+                os.makedirs(low_model_out)
+            except:
+                None
+            try: #make new dir if needed
+                os.makedirs(ci50_model_out)
+            except:
+                None
+            try: #make new dir if needed
+                os.makedirs(up_model_out)
+            except:
+                None
+
+            d_ci50 = self.X_predict.copy()
+            d_ci50[self.species] = y_pred
+            d_ci50 = d_ci50.to_xarray()
+            d_ci50[self.species].to_netcdf(ci50_model_out + self.species + ".nc") 
+            print("exported MAPIE CI50 prediction to: " + ci50_model_out + self.species + ".nc")
+            d_ci50 = None
+            y_pred = None
+
+            d_low = self.X_predict.copy()
+
+            d_low[self.species] = y_pis[:,0,:].flatten()
+            d_low[self.species].to_xarray().to_netcdf(low_model_out + self.species + ".nc") 
+            print("exported MAPIE " + ci_LL + " prediction to: " + low_model_out + self.species + ".nc")
+            d_low = None
+
+            d_up = self.X_predict.copy()
+            d_up[self.species] = y_pis[:,1,:].flatten()
+            d_up[self.species].to_xarray().to_netcdf(up_model_out + self.species + ".nc") 
+            print("exported MAPIE " + ci_HL + " prediction to: " + up_model_out + self.species + ".nc")
+            d_up = None
 
         et = time.time()
         elapsed_time = et-self.st
