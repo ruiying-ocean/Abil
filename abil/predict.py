@@ -203,7 +203,7 @@ class predict:
 
         print("initialized prediction")
         
-    def make_prediction(self, prediction_inference=False, alpha=[0.32],
+    def make_prediction(self, prediction_inference=False, alpha=[0.05],
                         conformity_score = AbsoluteConformityScore()):
 
         """
@@ -226,7 +226,7 @@ class predict:
             intervals.
             ``alpha`` is the complement of the target coverage level.
 
-            By default ``[0.32]`.
+            By default ``[0.05]`.
 
         conformity_score: Optional[ConformityScore]
             ConformityScore instance.
