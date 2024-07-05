@@ -203,7 +203,7 @@ class predict:
 
         print("initialized prediction")
         
-    def make_prediction(self, prediction_inference=False, alpha=[0.05],
+    def make_prediction(self, prediction_inference=False, alpha=[0.05], cv=None,
                         conformity_score = AbsoluteConformityScore()):
 
         """
@@ -238,6 +238,36 @@ class predict:
             By default ``AbsoluteConformityScore()``.
 
 
+        cv: Optional[Union[int, str, BaseCrossValidator]]
+            The cross-validation strategy for computing conformity scores.
+            It directly drives the distinction between jackknife and cv variants.
+            Choose among:
+
+            - ``None``, to use the default 5-fold cross-validation
+            - integer, to specify the number of folds.
+            If equal to ``-1``, equivalent to
+            ``sklearn.model_selection.LeaveOneOut()``.
+            - CV splitter: any ``sklearn.model_selection.BaseCrossValidator``
+            Main variants are:
+                - ``sklearn.model_selection.LeaveOneOut`` (jackknife),
+                - ``sklearn.model_selection.KFold`` (cross-validation),
+                - ``subsample.Subsample`` object (bootstrap).
+            - ``"split"``, does not involve cross-validation but a division
+            of the data into training and calibration subsets. The splitter
+            used is the following: ``sklearn.model_selection.ShuffleSplit``.
+            ``method`` parameter is set to ``"base"``.
+            - ``"prefit"``, assumes that ``estimator`` has been fitted already,
+            and the ``method`` parameter is set to ``"base"``.
+            All data provided in the ``fit`` method is then used
+            for computing conformity scores only.
+            At prediction time, quantiles of these conformity scores are used
+            to provide a prediction interval with fixed width.
+            The user has to take care manually that data for model fitting and
+            conformity scores estimate are disjoint.
+
+            By default ``None``.
+
+        
         Notes
         -----
         If more than one model is provided, predictions are made for both 
@@ -285,11 +315,11 @@ class predict:
             if self.ensemble_config["regressor"] ==True:
                 m = VotingRegressor(estimators=models, weights=w).fit(self.X_train, self.y)
                 if prediction_inference==True:
-                    mapie = MapieRegressor(m, conformity_score=conformity_score) #            
+                    mapie = MapieRegressor(m, conformity_score=conformity_score, cv=cv) #            
             else:
                 m= VotingClassifier(estimators=models, weights=w).fit(self.X_train, self.y)
                 if prediction_inference==True:
-                    mapie = MapieClassifier(m, conformity_score=conformity_score) #
+                    mapie = MapieClassifier(m, conformity_score=conformity_score, cv=cv) #
 
             print(np.min(self.y))
 
