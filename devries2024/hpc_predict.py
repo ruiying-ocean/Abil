@@ -8,6 +8,9 @@ from abil.predict import predict
 from abil.functions import upsample
 from sklearn.preprocessing import OneHotEncoder
 
+from abil.ConformityScores import OffsetGammaConformityScore
+
+
 try:
     print(sys.argv[1])
     with open('/user/work/ba18321/Abil/devries2024/2-phase.yml', 'r') as f:
@@ -47,4 +50,6 @@ X_train = d[predictors]
 print("finished loading data")
 
 m = predict(X_train, y, X_predict, model_config, n_jobs=n_jobs)
-m.make_prediction(prediction_inference=True)
+
+m.make_prediction(prediction_inference=True, 
+                  conformity_score=OffsetGammaConformityScore(offset=1e-10))

@@ -3,11 +3,8 @@ import numpy as np
 import glob, os
 import xarray as xr
 import pickle
-
-if 'site-packages' in __file__:
-    from abil.diversity import diversity
-else:
-    from diversity import diversity
+import gc
+from skbio.diversity.alpha import shannon
 
 class post:
     """
@@ -39,9 +36,9 @@ class post:
             raise ValueError("hpc True or False not defined in yml")
         self.d = self.ds.to_dataframe()
         self.d = self.d.dropna()
-        self.targets = self.d.columns.values
+        self.targets = self.traits['Target'][self.traits['Target'].isin(self.d.columns.values)]
         self.model_config = model_config
-        
+       
     def merge_performance(self, model, configuration=None):
         
         all_performance = []
@@ -148,13 +145,11 @@ class post:
 
         """
 
-
         w = self.traits.query('Target in @self.targets')
         var = w[variable].to_numpy()
         print(var)
         self.d = self.d.apply(lambda row : (row[self.targets]* var), axis = 1)
         print("finished estimating " + variable)
-
 
     def def_groups(self, dict):
         """
@@ -192,10 +187,9 @@ class post:
         self.d[var_name] = self.d.apply(lambda row : np.average(var, weights=row[self.targets]), axis = 1)
         print("finished calculating CWM " + variable)
 
-    def richness(self, metric):
-        measure = diversity(metric, self.d[self.targets].clip(lower=1))
-        self.d[metric] = measure.values
-        print("finished calculating " + metric)
+    def diversity(self):
+        self.d['shannon'] = self.d.apply(shannon, axis=1)
+        print("finished calculating shannon diversity")
 
     def total(self):
         """
@@ -337,6 +331,7 @@ class post:
 
             days_per_month = 365.25 / 12  # approx days/month
 
+
             if subset_depth:
                 ds = ds.sel(depth=slice(0, subset_depth))
             
@@ -352,6 +347,7 @@ class post:
             
             print("Final integrated total:", total.values)
             return total
+
 
         def integrated_totals(self, targets, monthly=False, subset_depth=None, 
                              export=True, model="ens"):
@@ -409,7 +405,21 @@ class post:
         Merge model output with environmental data 
         """
 
-        self.d = pd.concat([self.d, X_predict], axis=1)
+        def concat(d, X_predict, chunk_size=1000):
+            # Ensure the length of X_predict is divisible by chunk_size
+            for start in range(0, len(X_predict), chunk_size):
+                end = start + chunk_size
+                chunk = X_predict[start:end]
+                
+                d = pd.concat([d, chunk], axis=1)
+                
+                # Delete chunk and run garbage collection to free up memory
+                del chunk
+                gc.collect()
+                
+            return d
+
+        self.d = concat(self.d, X_predict)
 
     def return_d(self):
         return(self.d)
