@@ -3,12 +3,12 @@
   local_root: /home/phyto/Abil/
   hpc_root: /user/work/ba18321/Abil/
 
-  path_out: ModelOutput/ #root + folder
-  path_in: ModelOutput/mapie/predictions/ #root + folder
+  path_out:  examples/ModelOutput/ #root + folder
+  path_in:  examples/ModelOutput/mapie/predictions/ #root + folder
 
-  env_data_path: data/prediction.csv #root + folder
-  targets: data/targets.csv #root + folder
-  training: data/training.csv
+  env_data_path:  examples/data/prediction.csv #root + folder
+  targets:  examples/data/targets.csv #root + folder
+  training:  examples/data/training.csv
 
   predictors: ["temperature", "din", 
      "irradiance"]
