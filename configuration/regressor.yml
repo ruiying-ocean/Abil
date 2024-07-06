@@ -4,6 +4,7 @@
   hpc_root: /user/work/ba18321/Abil/
 
   path_out: ModelOutput/ #root + folder
+  
   path_in: ModelOutput/mapie/predictions/ #root + folder
 
   env_data_path: data/prediction.csv #root + folder
@@ -12,11 +13,12 @@
 
   predictors: ["temperature", "din", 
      "irradiance"]
+
     
   verbose: 1
   seed : 1 # random seed
   n_threads : 10 # how many cpu threads to use
-  cv : 4
+  cv : 10
   predict_probability: False 
 
   ensemble_config: 

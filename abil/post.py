@@ -14,7 +14,6 @@ class post:
 
         def merge_netcdf(path_in):
             print("merging...")
-            #ds = xr.merge([xr.open_dataset(f) for f in glob.glob(os.path.join(path_in, "*.nc"))])
             ds = xr.open_mfdataset(os.path.join(path_in, "*.nc"))
             print("finished loading netcdf files")
             return(ds)
@@ -35,15 +34,11 @@ class post:
 
         else:
             raise ValueError("hpc True or False not defined in yml")
-            
         self.d = self.ds.to_dataframe()
         self.d = self.d.dropna()
-        self.ds = None
-        #list of targets for which there are predictions:
         self.targets = self.traits['Target'][self.traits['Target'].isin(self.d.columns.values)]
         self.model_config = model_config
-        self.ci = ci
-
+       
     def merge_performance(self, model, configuration=None):
         
         all_performance = []
@@ -211,86 +206,196 @@ class post:
         self.d['total_log'] = np.log(self.d['total'])
         print("finished calculating total")
 
+    def integration(self, *args, **kwargs):
+        return self.integration_class(self, *args, **kwargs)
 
-    def integrated_total(self, variable="total", lat_name="lat", 
-                         depth_w =5, conversion=1e3, subset_depth=None):
-        """
-        Estimates global integrated values for a single target.
-
-        Considers latitude and depth bin size.
-
-        depth_w should be in meters
-
-        conversion should be in cubic meters. 
-        e.g. if original unit is cells/l conversion should be = 1e3
-
-        """
-        def asRadians(degrees):
-            return degrees * np.pi / 180
-
-        df = self.d[self.d[variable]>0].reset_index()[[lat_name, variable]].copy()
-
-        if subset_depth !=None:
-            df = df.loc[df.index.get_level_values('depth') <= subset_depth]
-
-        if lat_name not in df:
-            raise ValueError("lat_name not defined in dataframe")
-
-        #convert lat and lon to meters:
-        lon_w = (40075000 * np.cos(asRadians(df[lat_name]))) / 360
-        lat_w = 111320
-
-        total = np.sum(df[variable]*lat_w*depth_w*lon_w*conversion)
-
-        return(total)
-
-    def integrated_totals(self, targets, lat_name="lat", 
-                         depth_w =5, conversion=1e3, 
-                         export=True, subset_depth=None):
-        """
-        Estimates global integrated values for all targets.
-
-        Considers latitude and depth bin size.
-
-        depth_w should be in meters
-
-        conversion should be in cubic meters. 
-        e.g. if original unit is cells/l conversion should be = 1e3
-
-        """
-
-        if 'total' in self.d:
-            targets = np.append(targets, 'total')
-        totals = []
-
-        for i in range(0, len(targets)):
-            target = targets[i]
+    class integration:
+        def __init__(self, parent, 
+                     resolution_lat=1.0, resolution_lon=1.0, depth_w=5, 
+                     vol_conversion=1, magnitude_conversion=1, molar_mass=1, rate=False):
+            """
+            Parameters
+            ----------
+            resolution_lat : float
+                Latitude resolution in degrees, default is 1.0 degree.
             
-            try:
-                total = pd.DataFrame({'total': [self.integrated_total(variable=target, 
-                                                    lat_name=lat_name,
-                                                    subset_depth=None, 
-                                                    depth_w =depth_w, 
-                                                    conversion=conversion)], 
-                                            'variable':target
-                                })
-                
-                totals.append(total)
-            except:
-                print("some targets do not have predictions!")
-                print("missing: " + target)
+            resolution_lon : float
+                Longitude resolution in degrees, default is 1.0 degree.
+            
+            depth_w : float
+                Bin depth in meters, default is 5m.
 
-        totals = pd.concat(totals, ignore_index=True)
+            vol_conversion : float
+                Conversion to m^3, e.g., l to m^3 would be 1e3, default is 1 (no conversion).
+            
+            magnitude_conversion : float
+                Prefix conversion, e.g., umol to Tmol would be 1e-21, default is 1 (no conversion).
+            
+            molar_mass : float
+                Conversion from mol to grams, default is 1 (no conversion). Optional: 12.01 (carbon).
+            
+            rate : bool
+                If input data is in rate per day, integrates over each month to provide an annual rate (yr^-1).            
+            """
 
-        if export:
-            if subset_depth!=None:
-                model_name = "ci" + self.ci + "_" + str(subset_depth) + "m"
-            else:
-                model_name = "ci" + self.ci
-            totals.to_csv(self.root + self.model_config['path_out'] + model_name + "_integrated_totals.csv" , index=False)
-            print("exported totals to: " + self.root + self.model_config['path_out'] + model_name + "_integrated_totals.csv")
+
+            self.parent = parent
+            self.resolution_lat = resolution_lat
+            self.resolution_lon = resolution_lon
+            self.depth_w = depth_w
+            self.vol_conversion = vol_conversion
+            self.magnitude_conversion = magnitude_conversion
+            self.molar_mass = molar_mass
+            self.rate = rate
+            self.calculate_volume()
+
+        def calculate_volume(self):
+            """
+            Calculate the volume for each cell and add it as a new field to the dataset.
+
+            Examples
+            --------
+            >>> m = post(model_config)
+            >>> int = m.Integration(m, resolution_lat=1.0, resolution_lon=1.0, depth_w=5, vol_conversion=1, magnitude_conversion=1e-21, molar_mass=12.01, rate=True)
+            >>> print("Volume calculated:", int.ds['volume'].values)
+
+            """            
+            ds = self.parent.ds
+            resolution_lat = self.resolution_lat
+            resolution_lon = self.resolution_lon
+            depth_w = self.depth_w
+
+            # Calculate the number of cells in latitude and longitude
+            num_cells_lat = int(ds['lat'].size / resolution_lat)
+            num_cells_lon = int(ds['lon'].size / resolution_lon)
+
+            # Retrieve initial latitude and longitude bound
+            min_lat = ds['lat'].values[0]
+            min_lon = ds['lon'].values[0]
+
+            # Initialize the 2D array to store the areas
+            area = np.zeros((num_cells_lat, num_cells_lon))
+
+            earth_radius = 6371000.0  # Earth's radius in meters
+
+            # Calculate the area of each cell
+            for lat_index in range(num_cells_lat):
+                for lon_index in range(num_cells_lon):
+                    # Calculate the latitude range of the cell
+                    lat_bottom = min_lat + lat_index * resolution_lat
+                    lat_top = lat_bottom + resolution_lat
+
+                    # Calculate the longitude range of the cell
+                    lon_left = min_lon + lon_index * resolution_lon
+                    lon_right = lon_left + resolution_lon
+
+                    # Calculate the area of the grid cell
+                    areas = earth_radius ** 2 * (np.sin(np.radians(lat_top)) - np.sin(np.radians(lat_bottom))) * \
+                            (np.radians(lon_right) - np.radians(lon_left))
+
+                    # Store the area in the array
+                    area[lat_index, lon_index] = areas
+
+            volume = area * depth_w
+            ds['volume'] = (('lat', 'lon'), volume)
+            self.parent.ds = ds
         
+        def integrate_total(self, variable='total', monthly=False, subset_depth=None):
+            """
+            Estimates global integrated values for a single target. Returns the depth integrated annual total.
+            
+            Parameters
+            ----------
+            variable : str
+                The field to be integrated. Default is 'total' from PIC or POC Abil output.
 
+            monthly : bool
+                Whether or not to calculate a monthly average value instead of an annual total. Default is False.
+ 
+            subset_depth : float
+                Depth in meters from surface to which integral should be calculated. Default is None. Ex. 100 for top 100m integral.
+
+            Examples
+            --------
+            >>> m = post(model_config)
+            >>> int = m.Integration(m, resolution_lat=1.0, resolution_lon=1.0, depth_w=5, vol_conversion=1, magnitude_conversion=1e-21, molar_mass=12.01, rate=True)
+            >>> result = integration.integrate_total(variable='Calcification')
+            >>> print("Final integrated total:", result.values)
+            """
+            
+            ds = self.parent.ds
+            vol_conversion = self.vol_conversion
+            magnitude_conversion = self.magnitude_conversion
+            molar_mass = self.molar_mass
+            rate = self.rate
+
+            days_per_month = 365.25 / 12  # approx days/month
+
+
+            if subset_depth:
+                ds = ds.sel(depth=slice(0, subset_depth))
+            
+            if rate:
+                total = (ds[variable] * ds['volume'] * days_per_month).sum(dim=['lat', 'lon', 'depth', 'time'])
+                total = (total / molar_mass) * vol_conversion * magnitude_conversion
+            else:
+                total = (ds[variable] * ds['volume']).sum(dim=['lat', 'lon', 'depth', 'time'])
+                total = (total / molar_mass) * vol_conversion * magnitude_conversion
+
+            if monthly:
+                total /= 12
+            
+            print("Final integrated total:", total.values)
+            return total
+
+
+        def integrated_totals(self, targets, monthly=False, subset_depth=None, 
+                             export=True, model="ens"):
+            """
+            Estimates global integrated values for all targets.
+    
+            Considers latitude and depth bin size.
+    
+            Parameters
+            ----------
+            targets : str
+                The fields to be integrated. Default is 'total' from PIC or POC Abil output.
+
+            monthly : bool
+                Whether or not to calculate a monthly average value instead of an annual total. Default is False.
+ 
+            subset_depth : float
+                Depth in meters from surface to which integral should be calculated. Default is None. Ex. 100 for top 100m integral.
+
+            export : bool
+                Whether of not to export integrated totals as .csv. Default is True.
+
+            model : str
+                The model version to be integrated. Default is "ens". Other options include {"rf", "xgb", "knn"}.
+    
+            """
+            ds = self.parent.ds
+            if "total" in ds:
+                targets = np.append(targets, 'total')
+            totals = []
+    
+            for target in targets:
+                try:
+                    total = self.integrate_total(variable=target, monthly=monthly, subset_depth=subset_depth)
+                    total_df = pd.DataFrame({'total': [total.values], 'variable': target})
+                    totals.append(total_df)
+                except Exception as e:
+                    print(f"Some targets do not have predictions! Missing: {target}")
+                    print(f"Error: {e}")
+
+            totals = pd.concat(totals)
+
+            if export:
+                depth_str = f"_depth_{subset_depth}m" if subset_depth else ""
+                avg_str = "_monthly_avg" if monthly else ""
+                file_name = f"{self.parent.root}{self.parent.model_config['path_out']}{model}_integrated_totals{depth_str}{avg_str}.csv"
+                totals.to_csv(file_name, index=False)
+                print(f"Exported totals to: {file_name}")     
 
 
     def merge_env(self, X_predict):
