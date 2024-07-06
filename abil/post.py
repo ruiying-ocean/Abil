@@ -375,11 +375,9 @@ class post:
     
             """
             ds = self.parent.ds
-            # if total in ds:
-            #     targets = np.append(targets, 'total')
-            vol_conversion = self.vol_conversion
+            if "total" in ds:
+                targets = np.append(targets, 'total')
             totals = []
-
     
             for target in targets:
                 try:
