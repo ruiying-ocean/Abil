@@ -73,8 +73,8 @@ Abil
 |       └── post.ipynb
 |   └── singularity
 |       └── singularity.sif
-|   └── studies
-|       └── devries2024
+├── studies
+|   └── devries2024
 ├── README.md
 ├── to-bp.sh
 ├── environment.yml
