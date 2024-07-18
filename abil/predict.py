@@ -14,7 +14,7 @@ from sklearn.model_selection import cross_validate
 from joblib import Parallel, delayed
 
 
-if 'site-packages' in __file__:
+if 'site-packages' in __file__ or os.getenv('TESTING') == 'true':
     from abil.functions import inverse_weighting, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
 else:
     from functions import inverse_weighting, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
