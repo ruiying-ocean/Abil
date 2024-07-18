@@ -32,3 +32,4 @@ zeu_data = xr.Dataset(
 zeu_data.to_netcdf('/home/mv23682/Documents/data/zeu.nc')
 
 print("Euphotic zone depth calculated and saved to 'zeu.nc'")
+# %%
