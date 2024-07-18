@@ -31,7 +31,9 @@ jobs:
         pip install -r requirements.txt
         pip install pyyaml
 
-    - name: Run tests
+- name: Run tests
+      env:
+        PYTHONPATH: ${{ github.workspace }}/src
       run: |
         python -m unittest discover -s tests -p '*.py'
 
