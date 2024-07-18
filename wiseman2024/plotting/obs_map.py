@@ -12,9 +12,11 @@ import matplotlib.colors as mcolors
 with open('/home/mv23682/Documents/Abil/wiseman2024/ensemble_regressor.yml', 'r') as f:
     model_config = load(f, Loader=Loader)
 
-run_name = '50'
+date = '2024-05-06/'
+run_name = '50/'
 species = '2024-05-06_cp_ci50_obs'
-df = pd.read_csv(model_config['local_root'] + model_config['path_out'] + run_name + "/" + species + ".csv")
+
+df = pd.read_csv(model_config['local_root'] + model_config['path_out'] + date + run_name + species + ".csv")
 
 try:
     df = df.rename({'level_0': 'time','level_1':'depth','level_2':'lat','level_3':'lon'})
@@ -27,7 +29,7 @@ def pointmap(df, variable, ax=None, cmap = cm.viridis,
              fig=None, log=False, levels = None, title=None, units=None,
              add_colorbar=False, depth_integrated=False):
 
-    df = df[df['depth'] <= 20]
+    #df = df[df['depth'] <= 20]
 
     # Plot points colored by the value of "calcification"
     calcification = df[variable]
@@ -91,7 +93,7 @@ levels = np.arange(0,2.01,0.1)
 pointmap(df, "Calcification", 
        levels=levels,
        log = True,
-       title= r"Observed Calcium Carbonate Production (0-20m)",
+       title= r"Observed Calcium Carbonate Production (0-200m)",
        units=r"Log$_{10}$ Calcification (mmol C m$^{-3}$ d$^{-1}$)",
        cmap = cm.viridis
        )
