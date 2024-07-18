@@ -6,14 +6,14 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'planktonsdm'
-copyright = '2023, nanophyto'
+project = 'Abil'
+copyright = '2024, Abil developers'
 author = 'nanophyto'
-release = '0.0.7'
+release = '0.0.9'
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../planktonsdm/'))
+sys.path.insert(0, os.path.abspath('../abil/'))
 import functions
 
 
@@ -36,4 +36,4 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'furo'
-html_static_path = ['_static']
+#html_static_path = ['_static']
