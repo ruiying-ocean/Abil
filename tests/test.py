@@ -91,6 +91,8 @@ class TestRegressors(unittest.TestCase):
         predictors = model_config['predictors']
         d = pd.read_csv(model_config['local_root'] + model_config['training'])
         target =  "Emiliania huxleyi"
+        d = d.dropna(subset=[target])
+        d = d.dropna(subset=predictors)
         X_train = d[predictors]
         y = d[target]
 
@@ -109,6 +111,8 @@ class TestRegressors(unittest.TestCase):
         predictors = model_config['predictors']
         d = pd.read_csv(model_config['local_root'] + model_config['training'])
         target =  "Emiliania huxleyi"
+        d = d.dropna(subset=[target])
+        d = d.dropna(subset=predictors)
         X_train = d[predictors]
         y = d[target]
 
@@ -127,6 +131,8 @@ class TestRegressors(unittest.TestCase):
         predictors = model_config['predictors']
         d = pd.read_csv(model_config['local_root'] + model_config['training'])
         target =  "Emiliania huxleyi"
+        d = d.dropna(subset=[target])
+        d = d.dropna(subset=predictors)
         X_train = d[predictors]
         y = d[target]
 
@@ -145,9 +151,14 @@ class TestRegressors(unittest.TestCase):
         predictors = model_config['predictors']
         d = pd.read_csv(model_config['local_root'] + model_config['training'])
         target =  "Emiliania huxleyi"
+
+
+        d = d.dropna(subset=[target])
+        d = d.dropna(subset=predictors)
+
         X_train = d[predictors]
         y = d[target]
-        
+
         X_predict = X_train
         
         m = predict(X_train, y, X_predict, model_config)
