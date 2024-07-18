@@ -176,5 +176,19 @@ class TestRegressors(unittest.TestCase):
 
 
 
+#if __name__ == '__main__':
+#    unittest.main()
+
 if __name__ == '__main__':
-    unittest.main()
+    # Create a test suite combining all test cases in order
+    suite = unittest.TestSuite()
+
+    # Add tests to the suite in the desired order
+    suite.addTest(TestRegressors('test_tune_randomforest'))
+    suite.addTest(TestRegressors('test_tune_xgb'))
+    suite.addTest(TestRegressors('test_tune_knn'))
+    suite.addTest(TestRegressors('test_predict_ensemble'))
+
+    # Run the test suite
+    runner = unittest.TextTestRunner()
+    runner.run(suite)
