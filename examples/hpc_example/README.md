@@ -6,6 +6,10 @@ To run the script on Bristol BluePebble:
 
 Compile singularity on your machine:
 
+First cd to the right folder:
+
+``` cd path_to_Abil/examples/singularity/  ```
+
 If using apptainer (recommended):
 
 ``` sudo apptainer build abil.sif Singularity.sif  ```

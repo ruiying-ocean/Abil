@@ -3,7 +3,7 @@ From: continuumio/miniconda3
 
 %files
     ../dist/abil-0.0.9.tar.gz /root
-    ../environment.yml
+    ../studies/devries2024/environment.yml
 
 %post
     echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc
