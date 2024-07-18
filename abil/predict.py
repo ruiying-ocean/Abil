@@ -27,21 +27,24 @@ def def_prediction(path_out, ensemble_config, n, species):
 
     if (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == False):
         print("predicting classifier")
-        m = pickle.load(open(path_to_param + species + '_clf.sav', 'rb'))
-        scoring =  pickle.load(open(path_to_scores + species + '_clf.sav', 'rb'))    
+        species_no_space = species.replace(' ', '_')
+        m = pickle.load(open(path_to_param + species_no_space + '_clf.sav', 'rb'))
+        scoring =  pickle.load(open(path_to_scores + species_no_space + '_clf.sav', 'rb'))    
         scores = np.mean(scoring['test_accuracy'])
 
     elif (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == True):
         print("predicting regressor")
-        m = pickle.load(open(path_to_param + species + '_reg.sav', 'rb'))
-        scoring =  pickle.load(open(path_to_scores + species + '_reg.sav', 'rb'))   
+        species_no_space = species.replace(' ', '_')
+        m = pickle.load(open(path_to_param + species_no_space + '_reg.sav', 'rb'))
+        scoring =  pickle.load(open(path_to_scores + species_no_space + '_reg.sav', 'rb'))   
         scores = abs(np.mean(scoring['test_MAE']))
 
 
     elif (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == True):
         print("predicting zero-inflated regressor")
-        m = pickle.load(open(path_to_param + species + '_zir.sav', 'rb'))
-        scoring =  pickle.load(open(path_to_scores + species + '_zir.sav', 'rb'))    
+        species_no_space = species.replace(' ', '_')
+        m = pickle.load(open(path_to_param + species_no_space + '_zir.sav', 'rb'))
+        scoring =  pickle.load(open(path_to_scores + species_no_space + '_zir.sav', 'rb'))    
         scores = abs(np.mean(scoring['test_MAE']))
 
     elif (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == False):
