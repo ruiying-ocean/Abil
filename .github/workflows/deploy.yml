@@ -40,3 +40,4 @@ jobs:
           publish_dir: ./docs/_build/html  # Adjust according to your Sphinx setup
           destination_repo: nanophyto/abil-docs  # The public repository
           destination_branch: gh-pages  # The branch GitHub Pages usesnanophyto/abil-docs  # The public repository your-username/public-repo  # Replace with your public repository
+          external_repository: nanophyto/abil-docs
