@@ -7,12 +7,14 @@ from scipy.stats import spearmanr
 from sklearn.metrics import mean_squared_error
 
 #%%
-with open('/home/mv23682/Documents/Abil_Calcif/configuration/ensemble_regressor.yml', 'r') as f:
+with open('/home/mv23682/Documents/Abil/wiseman2024/ensemble_regressor.yml', 'r') as f:
     model_config = load(f, Loader=Loader)
     
-run_name = 'wo_MLP/w_log'
-species = '19_Mar_obs'
-df = pd.read_csv(model_config['local_root'] + model_config['path_out'] + run_name + "/" + species + ".csv")
+date = '2024-07-18/'
+run_name = '50/'
+species = '2024-07-18_cp_ci50_obs'
+
+df = pd.read_csv(model_config['local_root'] + model_config['path_out'] + date + run_name + species + ".csv")
 
 try:
     df = df.rename({'level_0': 'time','level_1':'depth','level_2':'lat','level_3':'lon'})
@@ -131,31 +133,31 @@ def loglog(df,x,y,
 
 # %% Plot Model versus observations
 
-fig, ax = plt.subplots(1,2)
-fig.suptitle('Model vs. Observations')
-fig.set_size_inches(15,7.5)
-fig.tight_layout(h_pad=2)
+#fig, ax = plt.subplots(1,2)
+#fig.suptitle('Model vs. Observations')
+#fig.set_size_inches(15,7.5)
+#fig.tight_layout(h_pad=2)
 
-loglog(df,'Calcification','Calcification_mod',
-        ax=ax[0],
-        fig=fig,
-        title=None,
-        axis1=0,
-        xmin=0.1,
-        xmax=2000,
-        ymin=0.1,
-        ymax=2000)
+#loglog(df,'Calcification','Calcification_mod',
+#        ax=ax[0],
+#        fig=fig,
+#        title=None,
+#        axis1=0,
+#        xmin=0.1,
+#        xmax=2000,
+#        ymin=0.1,
+#        ymax=2000)
 
 
-loglog(df,'Primary_Production','Primary_Production_mod',
-        ax=ax[1],
-        fig=None,
-        title=None,
-        axis1=1,
-        xmin=4,
-        xmax=10000,
-        ymin=4,
-        ymax=10000)
+#loglog(df,'Primary_Production','Primary_Production_mod',
+#        ax=ax[1],
+#        fig=None,
+#        title=None,
+#        axis1=1,
+#        xmin=4,
+#        xmax=10000,
+#        ymin=4,
+#        ymax=10000)
 
 plt.show()
 # %%
@@ -173,3 +175,21 @@ loglog(df,'Calcification','Calcification_mod',
         single_plot=True)
 plt.show()
 # %%
+
+
+ax = df.plot.scatter(
+    x="Calcification",
+    y="Calcification_resid"
+)
+ax.set_xscale("log")
+ax.set_yscale("symlog")
+# %%
+ax = df.plot.scatter(
+    x="Calcification",
+    y="depth"
+)
+
+
+# %%
+
+

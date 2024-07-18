@@ -13,9 +13,11 @@ from matplotlib.ticker import LogFormatter
 with open('/home/mv23682/Documents/Abil/wiseman2024/ensemble_regressor.yml', 'r') as f:
     model_config = load(f, Loader=Loader)
 
-run_name = '50'
-species = '2024-05-06_cp_ci50'
-ds = xr.open_dataset(model_config['local_root'] + model_config['path_out'] + run_name + "/" + species + ".nc")
+date = '2024-07-01/'
+run_name = '95/'
+species = '2024-07-01_cp_ci95'
+
+ds = xr.open_dataset(model_config['local_root'] + model_config['path_out'] + date + run_name + species + ".nc")
 try:
     ds = ds.rename({'level_0': 'time','level_1':'depth','level_2':'lat','level_3':'lon'})
 except:
@@ -44,8 +46,8 @@ class plot_xy:
         depth_range = slice(start_depth, end_depth)
         lons = np.arange(-180, 180, 1)
         if depth_integrated==True:
-            cocco_plot = ds[variable].sel(depth=depth_range).sum(dim=["depth"]).mean(dim=["time"])
-            cocco_plot = cocco_plot*(10**(-3))*12.01*5 # mg C m^-2 d^-1
+            cocco_plot = ds[variable].sel(depth=depth_range).sum(dim=["depth","time"])
+            cocco_plot = cocco_plot*(10**(-3))*12.01*5*(365.25/12)/1000 # g C m^-2 a^-1
         else:
             cocco_plot = ds[variable].sel(depth=depth_range).mean(dim=["depth","time"])
             cocco_plot = cocco_plot#*(10**(-3)) # mmol C m^-3 d^-1
@@ -103,7 +105,7 @@ class plot_xy:
                         format=formatterInt,
                         ticks=[1,5,10,50,100]
                         ).set_label(
-                            label="Calcification (mg C m$^{-2}$ d$^{-1}$)",
+                            label="Calcification (g C m$^{-2}$ a$^{-1}$)",
                             size=24)
                 else:
                     cb = plt.colorbar(p,
@@ -124,7 +126,7 @@ class plot_xy:
                         shrink=0.7,
                         extend='max'
                         ).set_label(
-                            label="Calcification (mg C m$^{-2}$ d$^{-1}$)",
+                            label="Calcification (g C m$^{-2}$ a$^{-1}$)",
                             size=24)
                 else:
                     cb = plt.colorbar(p,
@@ -149,7 +151,7 @@ class plot_xy:
                  region=None):
         
         if fig==None:
-            fig = plt.figure(figsize=(20, 10))
+            fig = plt.figure(figsize=(15, 7.5))
         if ax==None:
             ax= plt.axes()
 
@@ -175,7 +177,11 @@ class plot_xy:
         else:
             cocco_plot = self.ds[variable].mean(dim=["lon", "time"])  
 
-        cocco_plot = cocco_plot.where(cocco_plot != 0, float('nan'))
+        if log==True:
+            cocco_plot = cocco_plot.where(cocco_plot != 0, float('nan'))
+        else:
+            pass
+
 
         p = cocco_plot.plot(
                         x='lat', y='depth',
@@ -189,8 +195,8 @@ class plot_xy:
 
 
         if add_contour == True:
-            cocco_plot.plot.contour(x='lat', y='depth', levels=np.arange(5,vmax+1,5),
-                            ax = ax)
+            cocco_plot.plot.contour(x='lat', y='depth', levels=np.arange(0,vmax+1,5),
+                            ax = ax, colors='white',alpha=0.2)
 
         ax.set_xlabel('Latitude')
         ax.set_ylabel('Depth')
@@ -203,7 +209,7 @@ class plot_xy:
                 formatter = LogFormatter(10,labelOnlyBase=False,minor_thresholds=(3,2))
                 cb = plt.colorbar(p,
                         location = 'bottom',
-                        pad=0.12,
+                        pad=0.13,
                         shrink=0.7,
                         extend='both',
                         format=formatter,
@@ -214,7 +220,7 @@ class plot_xy:
             else:
                 cb = plt.colorbar(p,
                         location = 'bottom',
-                        pad=0.05,
+                        pad=0.13,
                         shrink=0.7,
                         extend='max'
                         ).set_label(
@@ -223,64 +229,78 @@ class plot_xy:
 
         ax.invert_yaxis()
 
-    def depth(self, variable,
-            ax=None, 
-            fig=None, 
-            region=None,
-            title=None,
-            norm=None):
+    def depth(self, variables, 
+              ax=None, 
+              fig=None, 
+              region=None,
+              title=None,
+              norm=None):
         
-        if fig==None:
-            fig = plt.figure(figsize=(10, 15))
-        if ax==None:
-            ax= plt.axes()
+        if fig is None:
+            fig = plt.figure(figsize=(10, 10))
+        if ax is None:
+            ax = plt.gca()
 
-        if region=='PAC':
-            PAC_boundsE = {'min_lon': 120, 'max_lon': 180, 'min_lat': -77, 'max_lat': 60}
-            PAC_boundsW = {'min_lon': -180, 'max_lon': -70, 'min_lat': -77, 'max_lat': 60}
-            cocco_plotE = self.ds[variable].sel(lon=slice(PAC_boundsE['min_lon'], PAC_boundsE['max_lon']),
-                                               lat=slice(PAC_boundsE['min_lat'], PAC_boundsE['max_lat']))
-            cocco_plotW = self.ds[variable].sel(lon=slice(PAC_boundsW['min_lon'], PAC_boundsW['max_lon']),
-                                               lat=slice(PAC_boundsW['min_lat'], PAC_boundsW['max_lat']))
-            cocco_plot = xr.concat([cocco_plotE, cocco_plotW], dim='lon')
-            cocco_plot = cocco_plot.mean(dim=["lat", "lon", "time"])
-        elif region=='IND':
-            IND_bounds = {'min_lon': 20, 'max_lon': 120, 'min_lat': -67, 'max_lat': 22}
-            cocco_plot = self.ds[variable].sel(lon=slice(IND_bounds['min_lon'], IND_bounds['max_lon']),
-                                               lat=slice(IND_bounds['min_lat'], IND_bounds['max_lat']))
-            cocco_plot = cocco_plot.mean(dim=["lat", "lon", "time"])
-        elif region=='ATL':
-            ATL_bounds = {'min_lon': -70, 'max_lon': 20, 'min_lat': -73, 'max_lat': 79}
-            cocco_plot = self.ds[variable].sel(lon=slice(ATL_bounds['min_lon'], ATL_bounds['max_lon']),
-                                               lat=slice(ATL_bounds['min_lat'], ATL_bounds['max_lat']))
-            cocco_plot = cocco_plot.mean(dim=["lat", "lon", "time"])
+        # Define region bounds
+        if region == 'PAC':
+            bounds = [{'min_lon': 120, 'max_lon': 180, 'min_lat': -77, 'max_lat': 60},
+                      {'min_lon': -180, 'max_lon': -70, 'min_lat': -77, 'max_lat': 60}]
+        elif region == 'IND':
+            bounds = [{'min_lon': 20, 'max_lon': 120, 'min_lat': -67, 'max_lat': 22}]
+        elif region == 'ATL':
+            bounds = [{'min_lon': -70, 'max_lon': 20, 'min_lat': -73, 'max_lat': 79}]
         else:
-            cocco_plot = self.ds[variable].mean(dim=["lat", "lon", "time"])  
+            bounds = [None]
 
-        p = cocco_plot.plot.line(y='depth',color='blue',marker='o',ylim=[-1, 201],xlim=[0,25])
-        
-        if title==None:
-            ax.set_title(variable, fontdict = {"fontsize": 18})
-        else:
-            ax.set_title(title, fontdict = {"fontsize": 18})
+        # Initialize lists to store plotted lines
+        lines = []
 
+        for i, variable in enumerate(variables):
+            cocco_plots = []
+            for bound in bounds:
+                if bound:
+                    cocco_plot = self.ds[variable].sel(lon=slice(bound['min_lon'], bound['max_lon']),
+                                                       lat=slice(bound['min_lat'], bound['max_lat']))
+                else:
+                    cocco_plot = self.ds[variable]
+                cocco_plots.append(cocco_plot)
+
+            if len(cocco_plots) > 1:
+                cocco_plot = xr.concat(cocco_plots, dim='lon').mean(dim=["lat", "lon", "time"])
+            else:
+                cocco_plot = cocco_plots[0].mean(dim=["lat", "lon", "time"])
+
+            # Plotting
+            line, = cocco_plot.plot.line(y='depth', color='C{}'.format(i), marker='o', ax=ax, label=variable)
+            lines.append(line)
+
+        ax.set_ylim([-1, 201])
+        ax.set_xlim([0, 25])
         ax.invert_yaxis()
         ax.tick_params(top=True, labeltop=True, bottom=False, labelbottom=False)
         ax.xaxis.label.set_visible(False)
         ax.set_ylabel('Depth (m)')
+        
+        if title is None:
+            ax.set_title(', '.join(variables), fontdict={"fontsize": 18})
+        else:
+            ax.set_title(title, fontdict={"fontsize": 18})
+
+        ax.legend(['CP_Depth_Resolved','CP_Zeu_Masked','CP_Decay'])
+
 
 p = plot_xy(ds)
 plt.rcParams.update({'font.size':20})
-#%%
+#%% Depth Integrated Production
 p.latlon("Calcification",  
        title="Annual Depth Integrated Calcium Carbonate Production (0-200m)", 
        start_depth = 0,
        end_depth = 200,
        depth_integrated = True,
        vmin=0,
-       vmax=80)
+       vmax=30)
 
-#%%
+#%% Mean 0-10m Production
 p.latlon("Calcification",  
        title="Annual Mean Calcium Carbonate Production (0-10m)", 
        start_depth = 0,
@@ -288,7 +308,7 @@ p.latlon("Calcification",
        vmin=0,
        vmax=70)
 
-#%%
+#%% Mean 10-30m Production
 p.latlon("Calcification", 
        title="Annual Mean Calcium Carbonate Production (10-30m)", 
        start_depth = 10,
@@ -296,51 +316,51 @@ p.latlon("Calcification",
        vmin=0,
        vmax=70)
 
-#%%
+#%% Mean 30-70m Production
 p.latlon("Calcification", 
        title="Annual Mean Calcium Carbonate Production (30-75m)", 
        start_depth = 30,
+       end_depth = 75,
        vmin=0,
        vmax=70)
 
-#%% Plot 2d Latitude x Depth
+#%% Mean 30-70m Production
+p.latlon("Calcification", 
+       title="Annual Mean Calcium Carbonate Production (75-200m)", 
+       start_depth = 75,
+       end_depth = 200,
+       vmin=0,
+       vmax=70)
+
+#%% Plot 2d Latitude x Depth Global
 p.latdepth("Calcification", 
-           log=True, 
            title="Global Zonal Annual Mean Calcium Carbonate Production",
-           norm=matplotlib.colors.LogNorm(),
-           vmin=3,
+           vmin=0,
            vmax=70)
 
-#%% Plot 2d Latitude x Depth
+#%% Plot 2d Latitude x Depth Pacific
 p.latdepth("Calcification", 
-           log=True, 
            title="Pacific Zonal Annual Mean Calcium Carbonate Production",
-           norm=matplotlib.colors.LogNorm(),
-           vmin=3,
+           vmin=0,
            vmax=70,
            region='PAC')
-#%% Plot 2d Latitude x Depth
+#%% Plot 2d Latitude x Depth Indian
 p.latdepth("Calcification", 
-           log=True, 
            title="Indian Zonal Annual Mean Calcium Carbonate Production",
-           norm=matplotlib.colors.LogNorm(),
-           vmin=3,
+           vmin=0,
            vmax=70,
            region='IND')
-#%% Plot 2d Latitude x Depth
+#%% Plot 2d Latitude x Depth Atlantic
 p.latdepth("Calcification", 
-           log=True, 
            title="Atlantic Zonal Annual Mean Calcium Carbonate Production",
-           norm=matplotlib.colors.LogNorm(),
-           vmin=3,
+           vmin=0,
            vmax=70,
            region='ATL')
 
 #%% Plot 1d Depth
-p.depth("Calcification", 
+p.depth(["Calcification","CP_zeu_mask","CP_decay"], 
            title=r"Global Annual Mean Calcium Carbonate Production ($\mathrm{\mu}$mol C m$^{-3}$ d$^{-1}$)")
-
-#%%
+#%% Integrated Totals
 
 def integrated_total(ds, variable='total', 
                      resolution_lat=1.0, resolution_lon=1.0, depth_w=5, 
@@ -428,8 +448,7 @@ def integrated_total(ds, variable='total',
         total = (total * molar_mass) * vol_conversion * magnitude_conversion
     return total
 
-# Example usage:
-# ds is your xarray.Dataset containing the variable 'Calcification'
+# Calculate CP
 total_CP = integrated_total(ds, variable='Calcification', vol_conversion=1, magnitude_conversion=1e-21, molar_mass=12.01, rate=True)
 print(f"Total CP is: {total_CP.values:.2f} PgC/yr")
 
@@ -438,4 +457,21 @@ top_100m_ds = ds.sel(depth=depth_range)
 top_100m_CP = integrated_total(top_100m_ds, variable='Calcification', vol_conversion=1, magnitude_conversion=1e-21, molar_mass=12.01, rate=True)
 print(f"Top 100m CP is: {top_100m_CP.values:.2f} PgC/yr")
 
+# Calculate CP
+total_CP = integrated_total(ds, variable='CP_zeu_mask', vol_conversion=1, magnitude_conversion=1e-21, molar_mass=12.01, rate=True)
+print(f"Total CP_zeu_mask is: {total_CP.values:.2f} PgC/yr")
+
+depth_range = slice(0,100)
+top_100m_ds = ds.sel(depth=depth_range)
+top_100m_CP = integrated_total(top_100m_ds, variable='CP_zeu_mask', vol_conversion=1, magnitude_conversion=1e-21, molar_mass=12.01, rate=True)
+print(f"Top CP_zeu_mask 100m CP is: {top_100m_CP.values:.2f} PgC/yr")
+
+# Calculate CP
+total_CP = integrated_total(ds, variable='CP_decay', vol_conversion=1, magnitude_conversion=1e-21, molar_mass=12.01, rate=True)
+print(f"Total CP_decay is: {total_CP.values:.2f} PgC/yr")
+
+depth_range = slice(0,100)
+top_100m_ds = ds.sel(depth=depth_range)
+top_100m_CP = integrated_total(top_100m_ds, variable='CP_decay', vol_conversion=1, magnitude_conversion=1e-21, molar_mass=12.01, rate=True)
+print(f"Top 100m CP_decay is: {top_100m_CP.values:.2f} PgC/yr")
 # %%
