@@ -49,6 +49,8 @@ Abil
 |   └── abil-0.0.9-py3-none-any.whl
 ├── docs
 ├── examples
+|   └── conda
+|       └── environment.yml
 |   └── configuration
 |       └── 2-phase.yml
 |       └── classifier.yml
@@ -77,7 +79,6 @@ Abil
 |   └── devries2024
 ├── README.md
 ├── to-bp.sh
-├── environment.yml
 ├── pyproject.toml
 └── README.md
 
@@ -87,7 +88,7 @@ Abil
 
 Install the dependencies in a new environment: 
 
-``` conda env create -f package_save_path/environment.yml ``` 
+``` conda env create -f package_save_path/examples/conda/environment.yml ``` 
 
 Activate the new environment and install Abil:
 
