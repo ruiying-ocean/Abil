@@ -25,6 +25,8 @@ extensions = [
 	'sphinx.ext.autodoc', 
 	'sphinx.ext.coverage', 
 	'sphinx.ext.napoleon',
+    "sphinx_design"
+
 ]
 
 templates_path = ['_templates']
@@ -35,5 +37,6 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'furo'
-#html_static_path = ['_static']
+html_theme = 'pydata_sphinx_theme'
+
+

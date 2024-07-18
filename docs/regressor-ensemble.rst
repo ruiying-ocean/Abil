@@ -1,8 +1,8 @@
-Quick Start
-============
-
-1-phase random forest regressor
+Regressor Ensemble
 ***********************
+
+Random Forest
+-------------
 
 load dependencies:
 
@@ -75,3 +75,27 @@ set your directory:
 
             import os, sys
             os.chdir('\home\phyto\Abil\') 
+
+    .. tab-item:: java
+
+        .. code-block:: java
+
+            class Main {
+                public static void main(String[] args) {
+                }
+            }
+
+    .. tab-item:: julia
+
+        .. code-block:: julia
+
+            function main()
+            end
+
+    .. tab-item:: fortran
+
+        .. code-block:: fortran
+
+            PROGRAM main
+            END PROGRAM main
+
