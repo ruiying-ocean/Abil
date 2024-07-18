@@ -85,6 +85,7 @@ class tune:
         self.model_config = model_config
         self.seed = model_config['seed']
         self.species = y.name
+        self.species_no_space = self.species.replace(' ', '_')
         self.n_jobs = model_config['n_threads']
         self.verbose = model_config['verbose'] 
         self.regions = regions
@@ -311,9 +312,13 @@ class tune:
                 reg_grid_search = reg.transformed_fit(X_train, y, log, self.model_config['predictors'].copy())
 
             m2 = reg_grid_search.best_estimator_
-            pickle.dump(m2, open(reg_sav_out_model  + self.species + '_reg.sav', 'wb'))
 
-            print("exported model to: " + reg_sav_out_model  + self.species + '_reg.sav')
+
+            pickle.dump(m2, open(reg_sav_out_model  + self.species_no_space + '_reg.sav', 'wb'))
+            print("exported model to: " + reg_sav_out_model  + self.species_no_space + '_reg.sav')
+
+#            pickle.dump(m2, open(reg_sav_out_model  + self.species + '_reg.sav', 'wb'))
+#            print("exported model to: " + reg_sav_out_model  + self.species + '_reg.sav')
 
             with parallel_backend('multiprocessing', n_jobs=self.n_jobs):
                 reg_scores = cross_validate(m2, X_train, y, cv = cv, verbose = self.verbose, scoring=reg_scoring)
