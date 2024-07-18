@@ -13,7 +13,7 @@ jobs:
       - name: Checkout private repository
         uses: actions/checkout@v2
         with:
-          repository: nanophyto/abil/
+          repository: nanophyto/abil
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
