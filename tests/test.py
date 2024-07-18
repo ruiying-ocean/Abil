@@ -6,9 +6,9 @@ import sys, os
 from yaml import load
 from yaml import CLoader as Loader
 
-from tune import tune
-from functions import example_data, upsample
-from predict import predict
+from abil.tune import tune
+from abil.functions import example_data, upsample
+from abil.predict import predict
 
 
 # class TestClassifiers(unittest.TestCase):
