@@ -83,10 +83,12 @@ class TestRegressors(unittest.TestCase):
     def test_tune_randomforest(self):
         yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
 
-        with open(yaml_path +'/examples/configuration/regressor.yml', 'r') as f:
+        with open(yaml_path +'/tests/regressor.yml', 'r') as f:
             model_config = load(f, Loader=Loader)
 
         X_train, y = example_data("Test")
+
+        model_config['local_root'] = yaml_path
 
         m = tune(X_train, y, model_config)
     
@@ -96,9 +98,10 @@ class TestRegressors(unittest.TestCase):
     def test_tune_xgb(self):
         yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
 
-        with open(yaml_path +'/examples/configuration/regressor.yml', 'r') as f:
+        with open(yaml_path +'/tests/regressor.yml', 'r') as f:
             model_config = load(f, Loader=Loader)
 
+        model_config['local_root'] = yaml_path
         X_train, y = example_data("Test")
 
         m = tune(X_train, y, model_config)
@@ -109,7 +112,7 @@ class TestRegressors(unittest.TestCase):
     def test_tune_knn(self):
         yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
 
-        with open(yaml_path +'/examples/configuration/regressor.yml', 'r') as f:
+        with open(yaml_path +'/tests/regressor.yml', 'r') as f:
             model_config = load(f, Loader=Loader)
 
         X_train, y = example_data("Test")
@@ -122,7 +125,7 @@ class TestRegressors(unittest.TestCase):
     def test_predict_ensemble(self):
         yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
         
-        with open(yaml_path +'/examples/configuration/regressor.yml', 'r') as f:
+        with open(yaml_path +'/tests/regressor.yml', 'r') as f:
             model_config = load(f, Loader=Loader)
 
         X_train, y = example_data("Test")
