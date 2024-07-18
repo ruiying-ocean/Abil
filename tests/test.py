@@ -7,6 +7,8 @@ from yaml import load
 from yaml import CLoader as Loader
 
 import pandas as pd
+import pickle
+
 from abil.tune import tune
 from abil.functions import example_data, upsample
 from abil.predict import predict
@@ -162,6 +164,11 @@ class TestRegressors(unittest.TestCase):
         d = pd.read_csv(model_config['local_root'] + model_config['training'])
         target =  "Emiliania huxleyi"
 
+        expected_model_path = "/home/runner/work/Abil/Abil/tests/ModelOutput/rf/scoring/Emiliania_huxleyi_reg.sav"
+
+        test = pickle.load(open(expected_model_path, 'rb'))
+
+        print(test)
 
         d = d.dropna(subset=[target])
         d = d.dropna(subset=predictors)
