@@ -6,6 +6,7 @@ import sys, os
 from yaml import load
 from yaml import CLoader as Loader
 
+import pandas as pd
 from abil.tune import tune
 from abil.functions import example_data, upsample
 from abil.predict import predict
@@ -86,9 +87,12 @@ class TestRegressors(unittest.TestCase):
         with open(yaml_path +'/tests/regressor.yml', 'r') as f:
             model_config = load(f, Loader=Loader)
 
-        X_train, y = example_data("Test")
-
         model_config['local_root'] = yaml_path
+        predictors = model_config['predictors']
+        d = pd.read_csv(model_config['local_root'] + model_config['training'])
+        target =  "Emiliania huxleyi"
+        X_train = d[predictors]
+        y = d[target]
 
         m = tune(X_train, y, model_config)
     
@@ -102,7 +106,11 @@ class TestRegressors(unittest.TestCase):
             model_config = load(f, Loader=Loader)
 
         model_config['local_root'] = yaml_path
-        X_train, y = example_data("Test")
+        predictors = model_config['predictors']
+        d = pd.read_csv(model_config['local_root'] + model_config['training'])
+        target =  "Emiliania huxleyi"
+        X_train = d[predictors]
+        y = d[target]
 
         m = tune(X_train, y, model_config)
     
@@ -115,7 +123,12 @@ class TestRegressors(unittest.TestCase):
         with open(yaml_path +'/tests/regressor.yml', 'r') as f:
             model_config = load(f, Loader=Loader)
 
-        X_train, y = example_data("Test")
+        model_config['local_root'] = yaml_path
+        predictors = model_config['predictors']
+        d = pd.read_csv(model_config['local_root'] + model_config['training'])
+        target =  "Emiliania huxleyi"
+        X_train = d[predictors]
+        y = d[target]
 
         m = tune(X_train, y, model_config)
     
@@ -128,7 +141,13 @@ class TestRegressors(unittest.TestCase):
         with open(yaml_path +'/tests/regressor.yml', 'r') as f:
             model_config = load(f, Loader=Loader)
 
-        X_train, y = example_data("Test")
+        model_config['local_root'] = yaml_path
+        predictors = model_config['predictors']
+        d = pd.read_csv(model_config['local_root'] + model_config['training'])
+        target =  "Emiliania huxleyi"
+        X_train = d[predictors]
+        y = d[target]
+        
         X_predict = X_train
         
         m = predict(X_train, y, X_predict, model_config)
