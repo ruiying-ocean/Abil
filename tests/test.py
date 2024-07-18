@@ -101,6 +101,16 @@ class TestRegressors(unittest.TestCase):
         m.train(model="rf", regressor=True)
 
 
+        # Print the expected path
+        expected_model_path = "/home/runner/work/Abil/Abil/tests/ModelOutput/rf/scoring/Emiliania_huxleyi_reg.sav"
+        print(f"Expected model path: {expected_model_path}")
+
+        # Print the existence of the file
+        print(f"Does file exist: {os.path.exists(expected_model_path)}")
+
+
+
+
     def test_tune_xgb(self):
         yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
 
