@@ -8,6 +8,8 @@ from sklearn.model_selection import KFold
 from mapie.regression import MapieRegressor
 from mapie.classification import  MapieClassifier
 from mapie.conformity_scores import GammaConformityScore, AbsoluteConformityScore
+
+
 from sklearn.model_selection import cross_validate
 from joblib import Parallel, delayed
 
@@ -201,7 +203,7 @@ class predict:
 
         print("initialized prediction")
         
-    def make_prediction(self, prediction_inference=False, alpha=[0.32],
+    def make_prediction(self, prediction_inference=False, alpha=[0.05], cv=None,
                         conformity_score = AbsoluteConformityScore()):
 
         """
@@ -224,7 +226,7 @@ class predict:
             intervals.
             ``alpha`` is the complement of the target coverage level.
 
-            By default ``[0.32]`.
+            By default ``[0.05]`.
 
         conformity_score: Optional[ConformityScore]
             ConformityScore instance.
@@ -236,6 +238,36 @@ class predict:
             By default ``AbsoluteConformityScore()``.
 
 
+        cv: Optional[Union[int, str, BaseCrossValidator]]
+            The cross-validation strategy for computing conformity scores.
+            It directly drives the distinction between jackknife and cv variants.
+            Choose among:
+
+            - ``None``, to use the default 5-fold cross-validation
+            - integer, to specify the number of folds.
+            If equal to ``-1``, equivalent to
+            ``sklearn.model_selection.LeaveOneOut()``.
+            - CV splitter: any ``sklearn.model_selection.BaseCrossValidator``
+            Main variants are:
+                - ``sklearn.model_selection.LeaveOneOut`` (jackknife),
+                - ``sklearn.model_selection.KFold`` (cross-validation),
+                - ``subsample.Subsample`` object (bootstrap).
+            - ``"split"``, does not involve cross-validation but a division
+            of the data into training and calibration subsets. The splitter
+            used is the following: ``sklearn.model_selection.ShuffleSplit``.
+            ``method`` parameter is set to ``"base"``.
+            - ``"prefit"``, assumes that ``estimator`` has been fitted already,
+            and the ``method`` parameter is set to ``"base"``.
+            All data provided in the ``fit`` method is then used
+            for computing conformity scores only.
+            At prediction time, quantiles of these conformity scores are used
+            to provide a prediction interval with fixed width.
+            The user has to take care manually that data for model fitting and
+            conformity scores estimate are disjoint.
+
+            By default ``None``.
+
+        
         Notes
         -----
         If more than one model is provided, predictions are made for both 
@@ -251,6 +283,14 @@ class predict:
         if number_of_models==1:
 
             m, mae1 = def_prediction(self.path_out, self.ensemble_config, 0, self.species)
+
+            if self.ensemble_config["regressor"] ==True:
+                if prediction_inference==True:
+                    mapie = MapieRegressor(m, conformity_score=conformity_score, cv=cv) #            
+            else:
+                if prediction_inference==True:
+                    mapie = MapieClassifier(m, conformity_score=conformity_score, cv=cv) #
+
 
             model_name = self.ensemble_config["m" + str(1)]
             model_out = self.path_out + model_name + "/predictions/" 
@@ -283,68 +323,16 @@ class predict:
             if self.ensemble_config["regressor"] ==True:
                 m = VotingRegressor(estimators=models, weights=w).fit(self.X_train, self.y)
                 if prediction_inference==True:
-                    mapie = MapieRegressor(m, conformity_score=conformity_score) #            
+                    mapie = MapieRegressor(m, conformity_score=conformity_score, cv=cv) #            
             else:
                 m= VotingClassifier(estimators=models, weights=w).fit(self.X_train, self.y)
                 if prediction_inference==True:
-                    mapie = MapieClassifier(m, conformity_score=conformity_score) #
+                    mapie = MapieClassifier(m, conformity_score=conformity_score, cv=cv) #
 
             print(np.min(self.y))
 
-            if prediction_inference==True:
-                print()
-                mapie.fit(self.X_train, self.y)
-
-                low_name = str(int(alpha[0]*100))
-                up_name = str(int(np.round((1-alpha[0])*100)))
-
-                y_pred, y_pis = parallel_predict_mapie(self.X_predict, mapie, 
-                                                       alpha, chunksize = 1000)
-
-                low_model_out = self.path_out + "mapie/predictions/" + low_name +"/"
-                ci50_model_out = self.path_out + "mapie/predictions/50/"
-                up_model_out = self.path_out + "mapie/predictions/" + up_name +"/"
-                
-                try: #make new dir if needed
-                    os.makedirs(low_model_out)
-                except:
-                    None
-                try: #make new dir if needed
-                    os.makedirs(ci50_model_out)
-                except:
-                    None
-                try: #make new dir if needed
-                    os.makedirs(up_model_out)
-                except:
-                    None
-
-                d_ci50 = self.X_predict.copy()
-                d_ci50[self.species] = y_pred
-                d_ci50 = d_ci50.to_xarray()
-                d_ci50[self.species].to_netcdf(ci50_model_out + self.species + ".nc") 
-                print("exported MAPIE CI50 prediction to: " + ci50_model_out + self.species + ".nc")
-                d_ci50 = None
-                y_pred = None
-
-                d_low = self.X_predict.copy()
-                print("min 68 CI:")
-                print(np.mean(y_pis[:,0,:].flatten()))
-                print("min 68 CI (incl NA):")
-                print(np.nanmean(y_pis[:,0,:].flatten()))
-
-                d_low[self.species] = y_pis[:,0,:].flatten()
-                d_low[self.species].to_xarray().to_netcdf(low_model_out + self.species + ".nc") 
-                print("exported MAPIE " + low_name + " prediction to: " + low_model_out + self.species + ".nc")
-                d_low = None
-
-                d_up = self.X_predict.copy()
-                d_up[self.species] = y_pis[:,1,:].flatten()
-                d_up[self.species].to_xarray().to_netcdf(up_model_out + self.species + ".nc") 
-                print("exported MAPIE " + up_name + " prediction to: " + up_model_out + self.species + ".nc")
-                d_up = None
-
             scores = cross_validate(m, self.X_train, self.y, cv=self.cv, verbose=self.verbose, 
-                                 scoring=self.scoring, n_jobs=self.n_jobs)
+                                    scoring=self.scoring, n_jobs=self.n_jobs)
 
             model_out_scores = self.path_out + "ens/scoring/"
             try: #make new dir if needed
@@ -356,6 +344,57 @@ class predict:
 
         else:
             raise ValueError("at least one model should be defined in the ensemble")
+
+
+        if prediction_inference==True:
+            print()
+            mapie.fit(self.X_train, self.y)
+
+            #low_name = str(int(alpha[0]*100))
+            ci_name = str(int(np.round((1-alpha[0])*100)))
+            ci_LL = ci_name + "_LL"
+            ci_HL = ci_name + "_HL"
+
+            y_pred, y_pis = parallel_predict_mapie(self.X_predict, mapie, 
+                                                    alpha, chunksize = 1000)
+
+            low_model_out = self.path_out + "mapie/predictions/" + ci_LL +"/"
+            ci50_model_out = self.path_out + "mapie/predictions/50/"
+            up_model_out = self.path_out + "mapie/predictions/" + ci_HL +"/"
+            
+            try: #make new dir if needed
+                os.makedirs(low_model_out)
+            except:
+                None
+            try: #make new dir if needed
+                os.makedirs(ci50_model_out)
+            except:
+                None
+            try: #make new dir if needed
+                os.makedirs(up_model_out)
+            except:
+                None
+
+            d_ci50 = self.X_predict.copy()
+            d_ci50[self.species] = y_pred
+            d_ci50 = d_ci50.to_xarray()
+            d_ci50[self.species].to_netcdf(ci50_model_out + self.species + ".nc") 
+            print("exported MAPIE CI50 prediction to: " + ci50_model_out + self.species + ".nc")
+            d_ci50 = None
+            y_pred = None
+
+            d_low = self.X_predict.copy()
+
+            d_low[self.species] = y_pis[:,0,:].flatten()
+            d_low[self.species].to_xarray().to_netcdf(low_model_out + self.species + ".nc") 
+            print("exported MAPIE " + ci_LL + " prediction to: " + low_model_out + self.species + ".nc")
+            d_low = None
+
+            d_up = self.X_predict.copy()
+            d_up[self.species] = y_pis[:,1,:].flatten()
+            d_up[self.species].to_xarray().to_netcdf(up_model_out + self.species + ".nc") 
+            print("exported MAPIE " + ci_HL + " prediction to: " + up_model_out + self.species + ".nc")
+            d_up = None
 
         et = time.time()
         elapsed_time = et-self.st
