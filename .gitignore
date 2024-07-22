@@ -1,6 +1,6 @@
 singularity/
-devries2024/data/
-wiseman2024/data/
-wiseman2024/plotting/figures/
-ModelOutput/
+studies/devries2024/data/
+studies/wiseman2024/data/
+studies/wiseman2024/plotting/
+studies/wiseman2024/ModelOutput/
 *.sif
