@@ -42,11 +42,11 @@ m.merge_parameters(model="knn")
 m.export_ds(current_date + "_cp_ci50")
 m.export_csv(current_date + "_cp_ci50")
 
-m = post(model_config, ci=32)
-m.export_ds(current_date + "_cp_ci32")
-m.export_csv(current_date + "_cp_ci32")
+m = post(model_config, ci=5)
+m.export_ds(current_date + "_cp_ci5")
+m.export_csv(current_date + "_cp_ci5")
 
-m = post(model_config, ci=68)
-m.export_ds(current_date + "_cp_ci68")
-m.export_csv(current_date + "_cp_ci68")
+m = post(model_config, ci=95)
+m.export_ds(current_date + "_cp_ci95")
+m.export_csv(current_date + "_cp_ci95")
 

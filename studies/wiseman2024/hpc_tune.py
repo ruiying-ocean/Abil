@@ -1,4 +1,3 @@
-#%%
 # import required packages
 import pandas as pd
 import numpy as np
@@ -22,20 +21,19 @@ try:
     predictors = model_config['predictors']
 
 except:
-    with open('/home/mv23682/Documents/Abil/wiseman2024/ensemble_regressor_local.yml', 'r') as f:
+    with open('/home/mv23682/Documents/Abil/wiseman2024/ensemble_regressor.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = False
     n_jobs = 8
-    n_spp = 0
+    n_spp = 1
     root = model_config['local_root']
     model_config['cv'] = 3
     
-    with open('/home/mv23682/Documents/Abil/wiseman2024/ensemble_regressor_local.yml', 'r') as f:
+    with open('/home/mv23682/Documents/Abil/wiseman2024/ensemble_regressor.yml', 'r') as f:
         model_config_local = load(f, Loader=Loader)    
     
     model_config['param_grid'] = model_config_local['param_grid'] 
     model = "rf"
-    predictors = model_config['predictors']
 
 
 #define model config:
@@ -45,7 +43,7 @@ d = pd.read_csv(root + model_config['training'])
 target =  targets['Target'][n_spp]
 d[target] = d[target].fillna(0)
 d = d.dropna(subset=[target])
-#d = d.dropna(subset=['FID'])
+d = d.dropna(subset=['FID'])
 
 y = d[target]
 X_train = d[predictors]
@@ -53,6 +51,4 @@ X_train = d[predictors]
 #setup model:
 m = tune(X_train, y, model_config, regions=None)
 #run model:
-m.train(model=model, regressor=True)
-
-# %%
+m.train(model=model, regressor=True, log="yes")

@@ -6,15 +6,13 @@
   path_out: ModelOutput/ #root + folder
   path_in: ModelOutput/mapie/predictions/ #root + folder
 
-  env_data_path: wiseman2024/data/env_data.csv #root + folder
+  env_data_path: wiseman2024/data/env_data_no_sat.csv #root + folder
   targets: wiseman2024/data/traits_calc.csv #root + folder
   training: wiseman2024/data/calcif_env.csv
 
   predictors: ["temperature", 
-    "si", "phosphate", "din", "si_n", "dfe",
-    "o2", "mld", "DIC", "TA", 
-    "irradiance", "chlor_a", 
-    "Rrs_547", "Rrs_667", "CI_2"]
+    "si", "phosphate", "din", 
+    "o2", "mld", "DIC", "TA"]
  
     
   verbose: 1
