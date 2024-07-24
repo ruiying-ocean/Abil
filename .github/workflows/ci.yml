@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     branches:
-      - Continuous-integration
+      - main
   pull_request:
     branches:
-      - Continuous-integration
+      - main
 
 jobs:
   test:
