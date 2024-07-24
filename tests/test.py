@@ -1,211 +1,189 @@
 import unittest
 unittest.TestLoader.sortTestMethodsUsing = None
 
-
 import sys, os
 from yaml import load
 from yaml import CLoader as Loader
-
 import pandas as pd
-import pickle
-
 from abil.tune import tune
 from abil.functions import example_data, upsample
 from abil.predict import predict
-
-
-# class TestClassifiers(unittest.TestCase):
-
-#     def test_tune_randomforest(self):
-#         yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
-
-#         with open(yaml_path +'/configuration/classifier_test.yml', 'r') as f:
-#             model_config = load(f, Loader=Loader)
-
-#         X_train, y = example_data("Test")
-
-#         m = tune(X_train, y, model_config)
-    
-#         m.train(model="rf", classifier=True)
-
-
-#     def test_tune_xgb(self):
-#         yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
-
-#         with open(yaml_path +'/configuration/classifier_test.yml', 'r') as f:
-#             model_config = load(f, Loader=Loader)
-
-#         X_train, y = example_data("Test")
-
-#         m = tune(X_train, y, model_config)
-    
-#         m.train(model="xgb", classifier=True)
-
-
-#     def test_tune_knn(self):
-#         yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
-
-#         with open(yaml_path +'/configuration/classifier_test.yml', 'r') as f:
-#             model_config = load(f, Loader=Loader)
-
-#         X_train, y = example_data("Test")
-
-#         m = tune(X_train, y, model_config)
-    
-#         m.train(model="knn", classifier=True)
-
-
-#     def test_predict_ensemble(self):
-#         yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
-        
-#         with open(yaml_path +'/configuration/classifier_test.yml', 'r') as f:
-#             model_config = load(f, Loader=Loader)
-
-#         X_train, y = example_data("Test")
-#         X_predict = X_train
-        
-#         m = predict(X_train, y, X_predict, model_config)
-#         m.make_prediction()
-
-
-#     # def clear_tmp(self):
-#     #     yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
-        
-#     #     with open(yaml_path +'/configuration/classifier_test.yml', 'r') as f:
-#     #         model_config = load(f, Loader=Loader)
-
-#     #     os.rmdir(model_config['local_root'])
-#     #     print("deleted:" + model_config['local_root'])
-
-
-
+from abil.post import post
 
 
 class TestRegressors(unittest.TestCase):
 
-    def test_tune_randomforest(self):
-        yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
+    def setUp(self):
+        self.workspace = os.getenv('GITHUB_WORKSPACE', '.')
+        with open(self.workspace +'/tests/regressor.yml', 'r') as f:
+            self.model_config = load(f, Loader=Loader)
 
-        with open(yaml_path +'/tests/regressor.yml', 'r') as f:
-            model_config = load(f, Loader=Loader)
-
-        model_config['local_root'] = yaml_path
-        predictors = model_config['predictors']
-        d = pd.read_csv(model_config['local_root'] + model_config['training'])
+        self.model_config['local_root'] = self.workspace # yaml_path
+        predictors = self.model_config['predictors']
+        d = pd.read_csv(self.model_config['local_root'] + self.model_config['training'])
         target =  "Emiliania huxleyi"
+        d[target] = d[target].fillna(0)
+        d = upsample(d, target, ratio=10)
         d = d.dropna(subset=[target])
         d = d.dropna(subset=predictors)
-        X_train = d[predictors]
-        y = d[target]
+        self.X_train = d[predictors]
+        self.y = d[target]
 
-        m = tune(X_train, y, model_config)
-    
+        X_predict = pd.read_csv(self.model_config['local_root'] + self.model_config['prediction'])
+        X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
+        self.X_predict = X_predict[predictors]
+
+
+    def test_post_ensemble(self):
+        m = tune(self.X_train, self.y, self.model_config)
         m.train(model="rf", regressor=True)
-
-
-        # Print the expected path
-        expected_model_path = "/home/runner/work/Abil/Abil/tests/ModelOutput/rf/scoring/Emiliania_huxleyi_reg.sav"
-        print(f"Expected model path: {expected_model_path}")
-
-        # Print the existence of the file
-        print(f"Does file exist: {os.path.exists(expected_model_path)}")
-
-
-
-
-    def test_tune_xgb(self):
-        yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
-
-        with open(yaml_path +'/tests/regressor.yml', 'r') as f:
-            model_config = load(f, Loader=Loader)
-
-        model_config['local_root'] = yaml_path
-        predictors = model_config['predictors']
-        d = pd.read_csv(model_config['local_root'] + model_config['training'])
-        target =  "Emiliania huxleyi"
-        d = d.dropna(subset=[target])
-        d = d.dropna(subset=predictors)
-        X_train = d[predictors]
-        y = d[target]
-
-        m = tune(X_train, y, model_config)
-    
         m.train(model="xgb", regressor=True)
-
-
-    def test_tune_knn(self):
-        yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
-
-        with open(yaml_path +'/tests/regressor.yml', 'r') as f:
-            model_config = load(f, Loader=Loader)
-
-        model_config['local_root'] = yaml_path
-        predictors = model_config['predictors']
-        d = pd.read_csv(model_config['local_root'] + model_config['training'])
-        target =  "Emiliania huxleyi"
-        d = d.dropna(subset=[target])
-        d = d.dropna(subset=predictors)
-        X_train = d[predictors]
-        y = d[target]
-
-        m = tune(X_train, y, model_config)
-    
         m.train(model="knn", regressor=True)
 
+        m = predict(self.X_train, self.y, self.X_predict, self.model_config)
+        m.make_prediction(prediction_inference=True)
 
-    def test_predict_ensemble(self):
-        yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
-        
-        with open(yaml_path +'/tests/regressor.yml', 'r') as f:
-            model_config = load(f, Loader=Loader)
+        m = post(self.model_config)
+        m.merge_performance(model="ens") 
+        m.merge_performance(model="xgb")
+        m.merge_performance(model="rf")
+        m.merge_performance(model="knn")
 
-        model_config['local_root'] = yaml_path
-        predictors = model_config['predictors']
-        d = pd.read_csv(model_config['local_root'] + model_config['training'])
+        m.merge_parameters(model="rf")
+        m.merge_parameters(model="xgb")
+        m.merge_parameters(model="knn")
+
+        m.total()
+
+        m.merge_env(self.X_predict)
+
+        m.export_ds("test")
+        m.export_csv("test")
+
+        targets = ['Emiliania huxleyi', 'total']
+        vol_conversion = 1e3 #L-1 to m-3
+        integ = m.integration(m, vol_conversion=vol_conversion)
+        integ.integrated_totals(targets)
+        integ.integrated_totals(targets, subset_depth=100)
+
+
+
+
+class Test2Phase(unittest.TestCase):
+
+    def setUp(self):
+        self.workspace = os.getenv('GITHUB_WORKSPACE', '.')
+        with open(self.workspace +'/tests/2-phase.yml', 'r') as f:
+            self.model_config = load(f, Loader=Loader)
+
+        self.model_config['local_root'] = self.workspace # yaml_path
+        predictors = self.model_config['predictors']
+        d = pd.read_csv(self.model_config['local_root'] + self.model_config['training'])
         target =  "Emiliania huxleyi"
+        d[target] = d[target].fillna(0)
+        d = upsample(d, target, ratio=10)
+        d = d.dropna(subset=[target])
+        d = d.dropna(subset=predictors)
+        self.X_train = d[predictors]
+        self.y = d[target]
 
-        expected_model_path = "/home/runner/work/Abil/Abil/tests/ModelOutput/rf/scoring/Emiliania_huxleyi_reg.sav"
+        X_predict = pd.read_csv(self.model_config['local_root'] + self.model_config['prediction'])
+        X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
+        self.X_predict = X_predict[predictors]
 
-        test = pickle.load(open(expected_model_path, 'rb'))
+    def test_ensemble(self):
 
-        print(test)
 
+        m = tune(self.X_train, self.y, self.model_config)
+
+        m.train(model="rf", classifier=True, regressor=True)
+        m.train(model="xgb", classifier=True, regressor=True)
+        m.train(model="knn", classifier=True, regressor=True)
+
+        m = predict(self.X_train, self.y, self.X_predict, self.model_config)
+        m.make_prediction(prediction_inference=True)
+
+
+        m = post(self.model_config)
+        m.merge_performance(model="ens") 
+        m.merge_performance(model="xgb")
+        m.merge_performance(model="rf")
+        m.merge_performance(model="knn")
+
+        m.merge_parameters(model="rf")
+        m.merge_parameters(model="xgb")
+        m.merge_parameters(model="knn")
+
+        m.total()
+
+        m.merge_env(self.X_predict)
+
+        m.export_ds("test")
+        m.export_csv("test")
+
+        targets = ['Emiliania huxleyi', 'total']
+        vol_conversion = 1e3 #L-1 to m-3
+        integ = m.integration(m, vol_conversion=vol_conversion)
+        integ.integrated_totals(targets)
+        integ.integrated_totals(targets, subset_depth=100)
+
+
+
+class TestClassifiers(unittest.TestCase):
+
+    def setUp(self):
+        self.workspace = os.getenv('GITHUB_WORKSPACE', '.')
+        with open(self.workspace +'/tests/classifier.yml', 'r') as f:
+            self.model_config = load(f, Loader=Loader)
+
+        self.model_config['local_root'] = self.workspace # yaml_path
+        predictors = self.model_config['predictors']
+        d = pd.read_csv(self.model_config['local_root'] + self.model_config['training'])
+        target =  "Emiliania huxleyi"
+        d[target] = d[target].fillna(0)
+        d = upsample(d, target, ratio=10)
         d = d.dropna(subset=[target])
         d = d.dropna(subset=predictors)
 
-        X_train = d[predictors]
-        y = d[target]
+        self.X_train = d[predictors]
+        self.y = d[target]
 
-        X_predict = X_train
-        
-        m = predict(X_train, y, X_predict, model_config)
-        m.make_prediction()
+        X_predict = pd.read_csv(self.model_config['local_root'] + self.model_config['prediction'])
+        X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
+        self.X_predict = X_predict[predictors]
 
+    def test_ensemble(self):
+   
+        m = tune(self.X_train, self.y, self.model_config)
+        m.train(model="rf", classifier=True)
+        m.train(model="xgb", classifier=True)
+        m.train(model="knn", classifier=True)
 
-    # def clear_tmp(self):
-    #     yaml_path = os.path.abspath(os.path.join(sys.path[0] , os.pardir))
-        
-    #     with open(yaml_path +'/configuration/classifier_test.yml', 'r') as f:
-    #         model_config = load(f, Loader=Loader)
+        m = predict(self.X_train, self.y, self.X_predict, self.model_config)
+        m.make_prediction(prediction_inference=True)
 
-    #     os.rmdir(model_config['local_root'])
-    #     print("deleted:" + model_config['local_root'])
+        m = post(self.model_config)
 
+        m.merge_performance(model="ens") 
+        m.merge_performance(model="xgb")
+        m.merge_performance(model="rf")
+        m.merge_performance(model="knn")
 
+        m.merge_parameters(model="rf")
+        m.merge_parameters(model="xgb")
+        m.merge_parameters(model="knn")
 
-#if __name__ == '__main__':
-#    unittest.main()
+        m.merge_env(self.X_predict)
+
+        m.export_ds("test")
+        m.export_csv("test")
+
 
 if __name__ == '__main__':
     # Create a test suite combining all test cases in order
     suite = unittest.TestSuite()
-
-    # Add tests to the suite in the desired order
-    suite.addTest(TestRegressors('test_tune_randomforest'))
-    suite.addTest(TestRegressors('test_tune_xgb'))
-    suite.addTest(TestRegressors('test_tune_knn'))
-    suite.addTest(TestRegressors('test_predict_ensemble'))
-
-    # Run the test suite
+    suite.addTest(TestClassifiers('test_ensemble'))
+    suite.addTest(TestRegressors('test_post_ensemble'))
+    suite.addTest(Test2Phase('test_post_ensemble'))
     runner = unittest.TextTestRunner()
     runner.run(suite)
