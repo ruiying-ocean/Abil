@@ -6,6 +6,7 @@ from yaml import load
 from yaml import CLoader as Loader
 import pandas as pd
 from abil.tune import tune
+
 from abil.functions import upsample, OffsetGammaConformityScore
 from abil.predict import predict
 from abil.post import post
@@ -52,6 +53,8 @@ class TestRegressors(unittest.TestCase):
         m.merge_parameters(model="rf")
         m.merge_parameters(model="xgb")
         m.merge_parameters(model="knn")
+        m.estimate_carbon("pg poc")
+
 
         m.total()
 
@@ -114,6 +117,8 @@ class Test2Phase(unittest.TestCase):
         m.merge_parameters(model="xgb")
         m.merge_parameters(model="knn")
 
+        m.estimate_carbon("pg poc")
+
         m.total()
 
         m.merge_env(self.X_predict)
@@ -173,6 +178,7 @@ class TestClassifiers(unittest.TestCase):
         m.merge_parameters(model="xgb")
         m.merge_parameters(model="knn")
 
+        m.estimate_carbon("pg poc")
         m.merge_env(self.X_predict)
 
         m.export_ds("test")
@@ -214,8 +220,6 @@ class TestGammaOffset(unittest.TestCase):
         m.make_prediction(prediction_inference=True, 
                         conformity_score=OffsetGammaConformityScore(offset=1e-10))
         
-
-
 
 
 if __name__ == '__main__':
