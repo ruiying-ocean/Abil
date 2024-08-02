@@ -44,30 +44,34 @@ class TestRegressors(unittest.TestCase):
         m = predict(self.X_train, self.y, self.X_predict, self.model_config)
         m.make_prediction(prediction_inference=True)
 
-        m = post(self.model_config)
-        m.merge_performance(model="ens") 
-        m.merge_performance(model="xgb")
-        m.merge_performance(model="rf")
-        m.merge_performance(model="knn")
+        def do_post(pi):
+            m = post(self.model_config, pi=pi)
+            m.merge_performance(model="ens") 
+            m.merge_performance(model="xgb")
+            m.merge_performance(model="rf")
+            m.merge_performance(model="knn")
 
-        m.merge_parameters(model="rf")
-        m.merge_parameters(model="xgb")
-        m.merge_parameters(model="knn")
-        m.estimate_carbon("pg poc")
+            m.merge_parameters(model="rf")
+            m.merge_parameters(model="xgb")
+            m.merge_parameters(model="knn")
+            m.estimate_carbon("pg poc")
 
+            m.total()
 
-        m.total()
+            m.merge_env(self.X_predict)
 
-        m.merge_env(self.X_predict)
+            m.export_ds("test")
+            m.export_csv("test")
 
-        m.export_ds("test")
-        m.export_csv("test")
+            targets = ['Emiliania huxleyi']
+            vol_conversion = 1e3 #L-1 to m-3
+            integ = m.integration(m, vol_conversion=vol_conversion)
+            integ.integrated_totals(targets)
+            integ.integrated_totals(targets, subset_depth=100)
 
-        targets = ['Emiliania huxleyi', 'total']
-        vol_conversion = 1e3 #L-1 to m-3
-        integ = m.integration(m, vol_conversion=vol_conversion)
-        integ.integrated_totals(targets)
-        integ.integrated_totals(targets, subset_depth=100)
+        do_post(pi="50")
+        do_post(pi="95_UL")
+        do_post(pi="95_LL")
 
 
 
@@ -94,7 +98,7 @@ class Test2Phase(unittest.TestCase):
         X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
         self.X_predict = X_predict[predictors]
 
-    def test_ensemble(self):
+    def test_post_ensemble(self):
 
 
         m = tune(self.X_train, self.y, self.model_config)
@@ -107,30 +111,35 @@ class Test2Phase(unittest.TestCase):
         m.make_prediction(prediction_inference=True)
 
 
-        m = post(self.model_config)
-        m.merge_performance(model="ens") 
-        m.merge_performance(model="xgb")
-        m.merge_performance(model="rf")
-        m.merge_performance(model="knn")
+        def do_post(pi):
+            m = post(self.model_config, pi=pi)
+            m.merge_performance(model="ens") 
+            m.merge_performance(model="xgb")
+            m.merge_performance(model="rf")
+            m.merge_performance(model="knn")
 
-        m.merge_parameters(model="rf")
-        m.merge_parameters(model="xgb")
-        m.merge_parameters(model="knn")
+            m.merge_parameters(model="rf")
+            m.merge_parameters(model="xgb")
+            m.merge_parameters(model="knn")
+            m.estimate_carbon("pg poc")
 
-        m.estimate_carbon("pg poc")
+            m.total()
 
-        m.total()
+            m.merge_env(self.X_predict)
 
-        m.merge_env(self.X_predict)
 
-        m.export_ds("test")
-        m.export_csv("test")
+            m.export_ds("test")
+            m.export_csv("test")
 
-        targets = ['Emiliania huxleyi', 'total']
-        vol_conversion = 1e3 #L-1 to m-3
-        integ = m.integration(m, vol_conversion=vol_conversion)
-        integ.integrated_totals(targets)
-        integ.integrated_totals(targets, subset_depth=100)
+            targets = ['Emiliania huxleyi']
+            vol_conversion = 1e3 #L-1 to m-3
+            integ = m.integration(m, vol_conversion=vol_conversion)
+            integ.integrated_totals(targets)
+            integ.integrated_totals(targets, subset_depth=100)
+
+        do_post(pi="50")
+        do_post(pi="95_UL")
+        do_post(pi="95_LL")
 
 
 
@@ -157,7 +166,7 @@ class TestClassifiers(unittest.TestCase):
         X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
         self.X_predict = X_predict[predictors]
 
-    def test_ensemble(self):
+    def test_post_ensemble(self):
    
         m = tune(self.X_train, self.y, self.model_config)
         m.train(model="rf", classifier=True)
@@ -167,22 +176,26 @@ class TestClassifiers(unittest.TestCase):
         m = predict(self.X_train, self.y, self.X_predict, self.model_config)
         m.make_prediction(prediction_inference=True)
 
-        m = post(self.model_config)
+        def do_post(pi):
+            m = post(self.model_config, pi=pi)
+            m.merge_performance(model="ens") 
+            m.merge_performance(model="xgb")
+            m.merge_performance(model="rf")
+            m.merge_performance(model="knn")
 
-        m.merge_performance(model="ens") 
-        m.merge_performance(model="xgb")
-        m.merge_performance(model="rf")
-        m.merge_performance(model="knn")
+            m.merge_parameters(model="rf")
+            m.merge_parameters(model="xgb")
+            m.merge_parameters(model="knn")
+  
+            m.estimate_carbon("pg poc")
+            m.merge_env(self.X_predict)
 
-        m.merge_parameters(model="rf")
-        m.merge_parameters(model="xgb")
-        m.merge_parameters(model="knn")
+            m.export_ds("test")
+            m.export_csv("test")
 
-        m.estimate_carbon("pg poc")
-        m.merge_env(self.X_predict)
-
-        m.export_ds("test")
-        m.export_csv("test")
+        do_post(pi="50")
+        do_post(pi="95_UL")
+        do_post(pi="95_LL")
 
 
 
@@ -225,7 +238,7 @@ class TestGammaOffset(unittest.TestCase):
 if __name__ == '__main__':
     # Create a test suite combining all test cases in order
     suite = unittest.TestSuite()
-    suite.addTest(TestClassifiers('test_ensemble'))
+    suite.addTest(TestClassifiers('test_post_ensemble'))
     suite.addTest(TestRegressors('test_post_ensemble'))
     suite.addTest(Test2Phase('test_post_ensemble'))
     runner = unittest.TextTestRunner()
