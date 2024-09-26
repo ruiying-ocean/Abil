@@ -42,6 +42,7 @@ class TestRegressors(unittest.TestCase):
 
         m = predict(self.X_train, self.y, self.X_predict, self.model_config)
         m.make_prediction(prediction_inference=True)
+        m.make_prediction(cross_fold_esimation=True)
 
         m = post(self.model_config)
         m.merge_performance(model="ens") 

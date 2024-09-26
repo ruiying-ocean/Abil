@@ -8,6 +8,8 @@ from sklearn.model_selection import KFold
 from mapie.regression import MapieRegressor
 from mapie.classification import  MapieClassifier
 from mapie.conformity_scores import GammaConformityScore, AbsoluteConformityScore
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import cross_val_predict
 
 
 from sklearn.model_selection import cross_validate
@@ -222,7 +224,7 @@ class predict:
         print("initialized prediction")
         
     def make_prediction(self, prediction_inference=False, alpha=[0.05], cv=None,
-                        conformity_score = AbsoluteConformityScore()):
+                        conformity_score = AbsoluteConformityScore(), cross_fold_esimation=False):
 
         """
         Calculates performance of model(s) and exports prediction(s) to netcdf
@@ -365,6 +367,14 @@ class predict:
         else:
             raise ValueError("at least one model should be defined in the ensemble")
 
+        if cross_fold_esimation==True:
+            print()
+            # If no preprocessing is needed:
+            pipeline = make_pipeline(m)
+
+            # Generate cross-validated predictions for each fold
+            y_pred = cross_val_predict(pipeline, self.X_train, self.y, cv=cv)
+            print(y_pred.shape)
 
         if prediction_inference==True:
             print()
