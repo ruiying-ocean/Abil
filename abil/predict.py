@@ -368,12 +368,13 @@ class predict:
             raise ValueError("at least one model should be defined in the ensemble")
 
         if cross_fold_esimation==True:
-            print()
+            print("using cross folds for error estimation")
             # If no preprocessing is needed:
             pipeline = make_pipeline(m)
 
             # Generate cross-validated predictions for each fold
             y_pred = cross_val_predict(pipeline, self.X_train, self.y, cv=cv)
+            print("y_pred.shape is:")
             print(y_pred.shape)
 
         if prediction_inference==True:
