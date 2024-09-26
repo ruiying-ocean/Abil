@@ -369,13 +369,25 @@ class predict:
 
         if cross_fold_esimation==True:
             print("using cross folds for error estimation")
-            # If no preprocessing is needed:
-            pipeline = make_pipeline(m)
+            n_samples = self.X_train.shape[0]
+            n_folds = 10  # needs to be specified during init somewhere!!
 
-            # Generate cross-validated predictions for each fold
-            y_pred = cross_val_predict(pipeline, self.X_train, self.y, cv=cv)
-            print("y_pred.shape is:")
-            print(y_pred.shape)
+            y_pred_matrix = np.zeros((n_samples, n_folds))
+
+            # Loop through each fold and store predictions for each fold
+            for i, (train_index, test_index) in enumerate(cv.split(self.X_train)):
+                # Train the model on the training set of this fold
+                m.fit(self.X_train[train_index], self.y[train_index])
+                
+                # Predict on the test set (i.e., the held-out fold)
+                y_pred_fold = m.predict(self.X_train[test_index])
+                
+                # Store predictions in the correct rows (for the test indices of this fold)
+                y_pred_matrix[test_index, i] = y_pred_fold
+
+            # Now y_pred_matrix contains predictions for each fold, shape: (n_samples, n_folds)
+            print("y_pred_matrix shape:", y_pred_matrix.shape)
+
 
         if prediction_inference==True:
             print()
