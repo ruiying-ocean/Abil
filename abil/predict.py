@@ -375,7 +375,7 @@ class predict:
             y_pred_matrix = np.zeros((n_samples, n_folds))
 
             # Loop through each fold and store predictions for each fold
-            for i, (train_index, test_index) in enumerate(cv.split(self.X_train)):
+            for i, (train_index, test_index) in enumerate(self.cv.split(self.X_train)):
                 # Train the model on the training set of this fold
                 m.fit(self.X_train[train_index], self.y[train_index])
                 
