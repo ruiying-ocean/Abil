@@ -44,7 +44,6 @@ d = pd.read_csv(root + model_config['training'])
 target =  targets['Target'][n_spp]
 d[target] = d[target].fillna(0)
 d = d.dropna(subset=[target])
-d = d.dropna(subset=['FID'])
 d = upsample(d, target, ratio=10)
 
 y = d[target]
