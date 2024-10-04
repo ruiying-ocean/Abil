@@ -43,6 +43,8 @@ targets = pd.read_csv(root + model_config['targets'])
 d = pd.read_csv(root + model_config['training'])
 target =  targets['Target'][n_spp]
 d[target] = d[target].fillna(0)
+predictors = model_config['predictors']
+d = d.dropna(subset=[predictors])
 d = d.dropna(subset=[target])
 d = upsample(d, target, ratio=10)
 

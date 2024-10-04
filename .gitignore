@@ -4,3 +4,4 @@ ModelOutput/
 plotting/
 studies/wiseman2024/
 *.sif
+studies/devries2024/data/obs_env.csv
