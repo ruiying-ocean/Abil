@@ -339,3 +339,76 @@ def inverse_weighting(values):
     total_inverse_weight = sum(inverse_weights)
     normalized_weights = [weight / total_inverse_weight for weight in inverse_weights]
     return normalized_weights
+
+
+def cross_fold_stats(m, X_train, y, cv, n_splits):
+    print("using cross folds for error estimation")
+    n_samples = X_train.shape[0]
+    y_pred_matrix = np.zeros((n_samples, n_splits))
+
+    # Loop through each fold and store predictions for each fold
+    for i, (train_index, test_index) in enumerate(cv.split(X_train, y)):
+        # Train the model on the training set of this fold
+        m.fit(X_train.iloc[train_index], y.iloc[train_index])
+        
+        # Predict on the test set (i.e., the held-out fold)
+        y_pred_fold = m.predict(X_train.iloc[test_index])
+        
+        # Store predictions in the correct rows (for the test indices of this fold)
+        y_pred_matrix[test_index, i] = y_pred_fold
+
+    print("y_pred_matrix shape:", y_pred_matrix.shape)
+
+    # Calculate summary statistics
+    mean_preds = np.mean(y_pred_matrix, axis=1)
+    std_preds = np.std(y_pred_matrix, axis=1)
+
+    # Calculate the 2.5th and 97.5th percentiles for the confidence intervals
+    lower_bound = np.quantile(y_pred_matrix, 0.025, axis=1)
+    upper_bound = np.quantile(y_pred_matrix, 0.975, axis=1)
+
+    summary_stats = pd.DataFrame({
+        'Mean': mean_preds,
+        'Standard Deviation': std_preds,
+        'Lower Bound CI (95%)': lower_bound,
+        'Upper Bound CI (95%)': upper_bound
+    })
+
+    # Include indices in the summary statistics
+    summary_stats.index = X_train.index
+
+    # Print the head of the summary stats matrix
+    print("\nSummary Statistics (first 5 rows):\n", summary_stats.head())
+
+
+# Example usage
+if __name__ == "__main__":
+    import numpy as np
+    import pandas as pd
+    from sklearn.datasets import make_regression
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.model_selection import KFold
+
+    # Generate sample data
+    X, y = make_regression(n_samples=100, n_features=10, noise=0.1)
+    X_train = pd.DataFrame(X, columns=[f"feature_{i}" for i in range(X.shape[1])])
+    # Generate random latitude and longitude
+    latitudes = np.random.uniform(-90, 90, size=X_train.shape[0])  # Random latitude values
+    longitudes = np.random.uniform(-180, 180, size=X_train.shape[0])  # Random longitude values
+
+    # Set latitude and longitude as MultiIndex
+    X_train.index = pd.MultiIndex.from_tuples(zip(latitudes, longitudes), names=['Latitude', 'Longitude'])
+    
+    y_train = pd.Series(y)
+    n_splits = 5
+    # Define the model and cross-validation strategy
+    model = RandomForestRegressor(n_estimators=100)
+    cv = KFold(n_splits=n_splits)
+
+    # Call the function
+    predictions_matrix = cross_fold_stats(model, X_train, y_train, cv, n_splits=n_splits)
+
+    # Check predictions
+    print("Predictions matrix:\n", predictions_matrix)
+
+

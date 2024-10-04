@@ -17,9 +17,9 @@ from joblib import Parallel, delayed
 
 
 if 'site-packages' in __file__ or os.getenv('TESTING') == 'true':
-    from abil.functions import inverse_weighting, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
+    from abil.functions import inverse_weighting, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau, cross_fold_stats
 else:
-    from functions import inverse_weighting, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau
+    from functions import inverse_weighting, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, check_tau, cross_fold_stats
 
 def def_prediction(path_out, ensemble_config, n, species):
 
@@ -369,24 +369,7 @@ class predict:
             raise ValueError("at least one model should be defined in the ensemble")
 
         if cross_fold_esimation==True:
-            print("using cross folds for error estimation")
-            n_samples = self.X_train.shape[0]
-            y_pred_matrix = np.zeros((n_samples, self.n_splits))
-
-            # Loop through each fold and store predictions for each fold
-            for i, (train_index, test_index) in enumerate(self.cv.split(self.X_train, self.y)):
-                # Train the model on the training set of this fold
-                m.fit(self.X_train.iloc[train_index], self.y.iloc[train_index])
-                
-                # Predict on the test set (i.e., the held-out fold)
-                y_pred_fold = m.predict(self.X_train.iloc[test_index])
-                
-                # Store predictions in the correct rows (for the test indices of this fold)
-                y_pred_matrix[test_index, i] = y_pred_fold
-
-
-            # Now y_pred_matrix contains predictions for each fold, shape: (n_samples, n_folds)
-            print("y_pred_matrix shape:", y_pred_matrix.shape)
+            cross_fold_stats(m, self.X_train, self.y, self.cv, self.n_splits)
 
 
         if prediction_inference==True:
