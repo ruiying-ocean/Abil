@@ -195,6 +195,7 @@ class predict:
         self.ensemble_config = model_config['ensemble_config']
         self.model_config = model_config
 
+        self.n_splits = model_config['cv']
         self.n_jobs = n_jobs
 
         if (self.ensemble_config["classifier"] ==True) and (self.ensemble_config["regressor"] == False):
@@ -370,9 +371,7 @@ class predict:
         if cross_fold_esimation==True:
             print("using cross folds for error estimation")
             n_samples = self.X_train.shape[0]
-            n_folds = 10  # needs to be specified during init somewhere!!
-
-            y_pred_matrix = np.zeros((n_samples, n_folds))
+            y_pred_matrix = np.zeros((n_samples, self.n_splits))
 
             # Loop through each fold and store predictions for each fold
             for i, (train_index, test_index) in enumerate(self.cv.split(self.X_train, self.y)):
