@@ -5,10 +5,19 @@ import sys, os
 from yaml import load
 from yaml import CLoader as Loader
 import pandas as pd
-from abil.tune import tune
-from abil.functions import upsample, OffsetGammaConformityScore
-from abil.predict import predict
-from abil.post import post
+
+try:
+    from abil.tune import tune
+    from abil.functions import upsample, OffsetGammaConformityScore
+    from abil.predict import predict
+    from abil.post import post
+except:
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../abil/')))
+    from tune import tune
+    from functions import upsample, OffsetGammaConformityScore
+    from predict import predict
+    from post import post
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
 
 class TestRegressors(unittest.TestCase):
