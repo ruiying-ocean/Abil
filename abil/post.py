@@ -262,7 +262,7 @@ class post:
                 Conversion to m^3, e.g., l to m^3 would be 1e3, default is 1 (no conversion).
             
             magnitude_conversion : float
-                Prefix conversion, e.g., umol to Tmol would be 1e-21, default is 1 (no conversion).
+                Prefix conversion, e.g., umol to Pmol would be 1e-21, default is 1 (no conversion).
             
             molar_mass : float
                 Conversion from mol to grams, default is 1 (no conversion). Optional: 12.01 (carbon).
@@ -355,30 +355,55 @@ class post:
             >>> result = integration.integrate_total(variable='Calcification')
             >>> print("Final integrated total:", result.values)
             """
-            
+            print("Initiate integrated_total")
             ds = self.parent.d.to_xarray()
             vol_conversion = self.vol_conversion
             magnitude_conversion = self.magnitude_conversion
             molar_mass = self.molar_mass
             rate = self.rate
 
-            days_per_month = 365.25 / 12  # approx days/month
+            # Average number of days for each month (accounting for leap years)
+            days_per_month_full = np.array([31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+            
+            # Get the available time points (months) from the dataset
+            available_time = ds['time'].values  # Assuming 'time' is an array of 1, 2, 3, and 12
 
+            # Subset the days_per_month array to only include the available months
+            days_per_month = days_per_month_full[available_time - 1]
 
             if subset_depth:
                 ds = ds.sel(depth=slice(0, subset_depth))
-            
-            if rate:
-                total = (ds[variable] * ds['volume'] * days_per_month).sum(dim=['lat', 'lon', 'depth', 'time'])
-                total = (total * molar_mass) * vol_conversion * magnitude_conversion
-            else:
-                total = (ds[variable] * ds['volume']).sum(dim=['lat', 'lon', 'depth', 'time'])
-                total = (total * molar_mass) * vol_conversion * magnitude_conversion
 
-            if monthly:
-                total /= 12
-            
-            print("Final integrated total:", total.values)
+            if rate:
+                if monthly:
+                    # Calculate monthly total (separately for each month)
+                    total = []
+                    for i,month in enumerate(available_time):
+                        monthly_total = (ds[variable].isel(time=i) * ds['volume'].isel(time=i) * days_per_month[i]).sum(dim=['lat', 'lon', 'depth'])
+                        monthly_total = (monthly_total * molar_mass) * vol_conversion * magnitude_conversion
+                        total.append(monthly_total)
+                    total = xr.concat(total, dim="month")
+                    print(f"All monthly totals: {total.values}")
+                else:
+                    # Calculate annual total
+                    total = (ds[variable] * ds['volume'] * days_per_month.mean()).sum(dim=['lat', 'lon', 'depth', 'time'])
+                    total = (total * molar_mass) * vol_conversion * magnitude_conversion
+                    print("Final integrated total:", total.values)
+            else:
+                if monthly:
+                    # Calculate monthly total (separately for each month)
+                    total = []
+                    for i,month in enumerate(available_time):
+                        monthly_total = (ds[variable].isel(time=i) * ds['volume']).isel(time=i).sum(dim=['lat', 'lon', 'depth'])
+                        monthly_total = (monthly_total * molar_mass) * vol_conversion * magnitude_conversion
+                        total.append(monthly_total)
+                    total = xr.concat(total, dim="month")
+                    print(f"All monthly totals: {total.values}")
+                else:
+                    # Calculate annual total
+                    total = (ds[variable] * ds['volume']).sum(dim=['lat', 'lon', 'depth', 'time'])
+                    total = (total * molar_mass) * vol_conversion * magnitude_conversion
+                    print("Final integrated total:", total.values)
             return total
 
 
@@ -416,25 +441,24 @@ class post:
 
             for target in targets:
                 try:
-                    print(target)
+                    print(f"Processing target: {target}")
                     total = self.integrate_total(variable=target, monthly=monthly, subset_depth=subset_depth)
                     total_df = pd.DataFrame({'total': [total.values], 'variable': target})
                     totals.append(total_df)
                 except Exception as e:
                     print(f"Some targets do not have predictions! Missing: {target}")
                     print(f"Error: {e}")
-
             totals = pd.concat(totals)
 
             if export:
                 depth_str = f"_depth_{subset_depth}m" if subset_depth else ""
-                avg_str = "_monthly_avg" if monthly else ""
+                month_str = "_monthly_int" if monthly else ""
                 try: #make new dir if needed
                     os.makedirs(self.parent.root + self.parent.model_config['path_out'] + self.parent.model_config['run_name'] + "/posts/integrated_totals/")
                 except:
                     None
-                totals.to_csv(self.parent.root + self.parent.model_config['path_out'] + self.parent.model_config['run_name'] + "/posts/integrated_totals/" + model + '_integrated_totals_PI' + self.parent.pi + depth_str + avg_str + ".csv", index=False)
-                print(f"Exported totals")     
+                totals.to_csv(self.parent.root + self.parent.model_config['path_out'] + self.parent.model_config['run_name'] + "/posts/integrated_totals/" + model + '_integrated_totals_PI' + self.parent.pi + depth_str + month_str + ".csv", index=False)
+                print(f"Exported totals")
 
 
     def merge_env(self, X_predict):

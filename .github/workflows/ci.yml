@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches:
-      - main
+      - 75-add-monthly-integrated-totals-1
   pull_request:
     branches:
       - main
