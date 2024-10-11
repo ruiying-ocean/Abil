@@ -2,5 +2,6 @@ singularity/
 devries2024/data/
 ModelOutput/
 plotting/
-studies/wiseman2024/
-*.sif
+studies/wiseman2024/data/
+studies/wiseman2024/preprocessing
+abil.sif
