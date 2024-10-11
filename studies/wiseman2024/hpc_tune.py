@@ -9,7 +9,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 try:
     print(sys.argv[1])
-    with open('/user/work/mv23682/Abil/wiseman2024/ensemble_regressor.yml', 'r') as f:
+    with open('/user/work/mv23682/Abil/wiseman2024/studies/ensemble_regressor.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
 
     model_config['hpc'] = True
@@ -21,7 +21,7 @@ try:
     predictors = model_config['predictors']
 
 except:
-    with open('/home/mv23682/Documents/Abil/wiseman2024/ensemble_regressor.yml', 'r') as f:
+    with open('/home/mv23682/Documents/Abil/wiseman2024/studies/ensemble_regressor.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = False
     n_jobs = 8
@@ -29,7 +29,7 @@ except:
     root = model_config['local_root']
     model_config['cv'] = 3
     
-    with open('/home/mv23682/Documents/Abil/wiseman2024/ensemble_regressor.yml', 'r') as f:
+    with open('/home/mv23682/Documents/Abil/wiseman2024/studies/ensemble_regressor.yml', 'r') as f:
         model_config_local = load(f, Loader=Loader)    
     
     model_config['param_grid'] = model_config_local['param_grid'] 
@@ -41,9 +41,8 @@ model_config['n_threads'] = n_jobs
 targets = pd.read_csv(root + model_config['targets'])
 d = pd.read_csv(root + model_config['training'])
 target =  targets['Target'][n_spp]
-d[target] = d[target].fillna(0)
 d = d.dropna(subset=[target])
-d = d.dropna(subset=['FID'])
+d = d.dropna(subset=predictors)
 
 y = d[target]
 X_train = d[predictors]
@@ -51,4 +50,4 @@ X_train = d[predictors]
 #setup model:
 m = tune(X_train, y, model_config, regions=None)
 #run model:
-m.train(model=model, regressor=True, log="yes")
+m.train(model=model, regressor=True)
