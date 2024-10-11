@@ -466,21 +466,14 @@ class post:
         Merge model output with environmental data 
         """
 
-        def concat(d, X_predict, chunk_size=1000):
-            # Ensure the length of X_predict is divisible by chunk_size
-            for start in range(0, len(X_predict), chunk_size):
-                end = start + chunk_size
-                chunk = X_predict[start:end]
-                
-                d = pd.concat([d, chunk], axis=1)
-                
-                # Delete chunk and run garbage collection to free up memory
-                del chunk
-                gc.collect()
-                
-            return d
-
-        self.d = concat(self.d, X_predict)
+        X_predict = X_predict.to_xarray()
+        ds = self.d.to_xarray()
+        aligned_datasets = xr.align(ds,X_predict, join="inner")
+        ds = xr.merge(aligned_datasets)
+        if 'FID' in ds:
+            ds['FID'] = ds['FID'].where(ds['FID'] != '', np.nan)
+        self.d = ds.to_dataframe()
+        self.d = self.d.dropna()
 
     def return_d(self):
         return(self.d)
