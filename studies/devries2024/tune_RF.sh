@@ -3,7 +3,7 @@
 #
 #SBATCH --time=0-6:00:00
 #SBATCH --nodes=1
-#SBATCH --mem=10000M
+#SBATCH --mem=16000M
 #SBATCH --cpus-per-task=16
 #SBATCH --array=0-138
 #SBATCH --account=GEOG024542
