@@ -4,11 +4,12 @@ import xarray as xr
 from inspect import signature
 from scipy.stats import kendalltau
 
+
 from sklearn.base import BaseEstimator, RegressorMixin, clone, is_regressor, is_classifier
 from sklearn.compose import TransformedTargetRegressor
 from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
-from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, cross_val_predict
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.datasets import make_regression
 from sklearn.metrics import make_scorer
@@ -341,23 +342,20 @@ def inverse_weighting(values):
     return normalized_weights
 
 
-def cross_fold_stats(m, X_train, y, cv, n_splits):
+def cross_fold_stats(m, X_train, y, cv, n_repeats=100, n_jobs=-1):
     print("using cross folds for error estimation")
-    n_samples = X_train.shape[0]
-    y_pred_matrix = np.zeros((n_samples, n_splits))
-
-    # Loop through each fold and store predictions for each fold
-    for i, (train_index, test_index) in enumerate(cv.split(X_train, y)):
-        # Train the model on the training set of this fold
-        m.fit(X_train.iloc[train_index], y.iloc[train_index])
-        
-        # Predict on the test set (i.e., the held-out fold)
-        y_pred_fold = m.predict(X_train.iloc[test_index])
-        
-        # Store predictions in the correct rows (for the test indices of this fold)
-        y_pred_matrix[test_index, i] = y_pred_fold
-
-    print("y_pred_matrix shape:", y_pred_matrix.shape)
+    y_pred_matrix = np.column_stack(
+        [
+            cross_val_predict(
+                m, 
+                X=X_train,
+                y=y,
+                cv=cv,
+                n_jobs=n_jobs
+            )
+            for _ in range(n_repeats)
+        ]
+    )
 
     # Calculate summary statistics
     mean_preds = np.mean(y_pred_matrix, axis=1)
@@ -379,6 +377,8 @@ def cross_fold_stats(m, X_train, y, cv, n_splits):
 
     # Print the head of the summary stats matrix
     print("\nSummary Statistics (first 5 rows):\n", summary_stats.head())
+    return summary_stats, y_pred_matrix
+
 
 
 # Example usage
@@ -388,6 +388,7 @@ if __name__ == "__main__":
     from sklearn.datasets import make_regression
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.model_selection import KFold
+    from joblib import parallel_backend
 
     # Generate sample data
     X, y = make_regression(n_samples=100, n_features=10, noise=0.1)
@@ -406,7 +407,8 @@ if __name__ == "__main__":
     cv = KFold(n_splits=n_splits)
 
     # Call the function
-    predictions_matrix = cross_fold_stats(model, X_train, y_train, cv, n_splits=n_splits)
+    with parallel_backend("loky", n_jobs=-1):
+        predictions_matrix = cross_fold_stats(model, X_train, y_train, cv, n_repeats=100)
 
     # Check predictions
     print("Predictions matrix:\n", predictions_matrix)
