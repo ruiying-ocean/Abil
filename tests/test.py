@@ -52,7 +52,7 @@ class TestRegressors(unittest.TestCase):
 
         m = predict(self.X_train, self.y, self.X_predict, self.model_config)
         m.make_prediction(prediction_inference=True)
-        m.make_prediction(cross_fold_esimation=True)
+        m.make_prediction(cross_fold_estimation=True)
 
         targets = pd.read_csv(self.model_config['local_root']+ self.model_config['targets'])
         targets = targets.iloc[:1]

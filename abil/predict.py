@@ -225,7 +225,7 @@ class predict:
         print("initialized prediction")
         
     def make_prediction(self, prediction_inference=False, alpha=[0.05], cv=None,
-                        conformity_score = AbsoluteConformityScore(), cross_fold_esimation=False):
+                        conformity_score = AbsoluteConformityScore(), cross_fold_estimation=False):
 
         """
         Calculates performance of model(s) and exports prediction(s) to netcdf
@@ -368,7 +368,7 @@ class predict:
         else:
             raise ValueError("at least one model should be defined in the ensemble")
 
-        if cross_fold_esimation==True:
+        if cross_fold_estimation==True:
             cross_fold_stats(m, self.X_train, self.y, self.cv, self.n_splits)
 
 
