@@ -295,6 +295,7 @@ class UpsampledZeroStratifiedKFold:
 class ZeroStratifiedKFold:
     def __init__(self, n_splits=3, random_state=None):
         self.n_splits = n_splits
+        self.random_state=random_state
 
     def split(self, X, y, groups=None):
         #convert target variable to binary for stratified sampling
