@@ -265,14 +265,15 @@ class LogGridSearch:
 
 
 class UpsampledZeroStratifiedKFold:
-    def __init__(self, n_splits=3):
+    def __init__(self, n_splits=3, random_state=None):
         self.n_splits = n_splits
+        self.random_state=random_state
 
     def split(self, X, y, groups=None):
         #convert target variable to binary for stratified sampling
         y_binary = np.where(y!=0, 1, 0)
 
-        for rx, tx in StratifiedKFold(n_splits=self.n_splits).split(X,y_binary):
+        for rx, tx in StratifiedKFold(n_splits=self.n_splits, random_state=self.random_state).split(X,y_binary):
             nix = np.where(y_binary[rx]==0)[0]
             pix = np.where(y_binary[rx]==1)[0]
             pixu = np.random.choice(pix, size=nix.shape[0], replace=True)
@@ -286,7 +287,7 @@ class UpsampledZeroStratifiedKFold:
     
     
 class ZeroStratifiedKFold:
-    def __init__(self, n_splits=3):
+    def __init__(self, n_splits=3, random_state=None):
         self.n_splits = n_splits
 
     def split(self, X, y, groups=None):
@@ -295,7 +296,7 @@ class ZeroStratifiedKFold:
 
         # Check if there are any zeros in the array
         if any(element == 0 for element in y_binary):
-            for rx, tx in StratifiedKFold(n_splits=self.n_splits).split(X,y_binary):
+            for rx, tx in StratifiedKFold(n_splits=self.n_splits, random_state=self.random_state).split(X,y_binary):
                 yield rx, tx
         else:
             for rx, tx in KFold(n_splits=self.n_splits).split(X,y_binary):
@@ -348,15 +349,14 @@ def cross_fold_stats(m, X_train, y, cv, n_repeats=100, n_jobs=-1):
         [
             cross_val_predict(
                 m, 
-                X=X_train,
-                y=y,
+                X=X_train.iloc[perm := np.random.RandomState(seed=i).permutation(len(X_train))],
+                y=y.iloc[perm],
                 cv=cv,
                 n_jobs=n_jobs
             )
-            for _ in range(n_repeats)
+            for i in range(n_repeats)
         ]
     )
-
     # Calculate summary statistics
     mean_preds = np.mean(y_pred_matrix, axis=1)
     std_preds = np.std(y_pred_matrix, axis=1)
