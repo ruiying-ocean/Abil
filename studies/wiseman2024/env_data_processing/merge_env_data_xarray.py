@@ -5,18 +5,18 @@ import numpy as np
 # List of dataset file paths, to add more fields, just add path to .nc file
 # Data must already be on a common grid (example data is 180x360x41x12)
 file_paths = [
-    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/temperature.nc',
-    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/sio4.nc',
-    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/po4.nc',
-    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/no3.nc',
-    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/o2.nc',
-    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/MLD.nc',
-    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/DIC.nc',
-    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/TA.nc',
-    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/par.nc',
-    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/chlor_a.nc',
-    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/Rrs_547.nc',
-    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/Rrs_667.nc'    
+    '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/temperature.nc',
+    '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/sio4.nc',
+    '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/po4.nc',
+    '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/no3.nc',
+    '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/o2.nc',
+    '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/MLD.nc',
+    '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/DIC.nc',
+    '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/TA.nc',
+    '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/par.nc',
+    '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/chlor_a.nc',
+    '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/Rrs_547.nc',
+    '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/Rrs_667.nc'    
 ]
 
 # Open all datasets
@@ -55,7 +55,7 @@ df = df.reset_index()
 df.dropna(inplace=True)
 
 # Save the DataFrame to a CSV file
-df.to_csv('/home/mv23682/Documents/Abil-1/studies/wiseman2024/data/env_data.csv', index=False)
+df.to_csv('/home/mv23682/Documents/Abil/studies/wiseman2024/data/env_data.csv', index=False)
 
 merged_ds['lat'].attrs['units'] = 'degrees_north'
 merged_ds['lat'].attrs['long_name'] = 'latitude'
@@ -113,6 +113,6 @@ merged_ds['CI_2'].attrs['long_name'] = 'Color Index 2'
 merged_ds['CI_2'].attrs['description'] = 'Color Index 2 (CI2) from Mitchell et al. (2017) calculated using Aqua MODIS Level 3 binned Rrs_547 and Rrs_667 data monthly climatology, version R2022.0, 2002-07-01 to 2023-09-03 (NASA Ocean Biology Processing Group, 2022)'
 
 # Save the result to a new NetCDF file
-merged_ds.to_netcdf('/home/mv23682/Documents/Abil-1/studies/wiseman2024/data/env_data.nc')
+merged_ds.to_netcdf('/home/mv23682/Documents/Abil/studies/wiseman2024/data/env_data.nc')
 print('fin')
 # %%

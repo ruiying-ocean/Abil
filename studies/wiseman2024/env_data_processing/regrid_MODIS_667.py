@@ -20,7 +20,7 @@ files = [
     '20021201_20221231'
 ]
 
-base_path = '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/raw_data/MODIS_Rrs667/'
+base_path = '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/raw_data/MODIS_Rrs667/'
 
 # Create a target grid for regridding
 ds_out = xr.Dataset({
@@ -93,7 +93,7 @@ filled_ds = xr.where(null_counts == 12, ds, filled_ds)
 filled_ds.name = 'Rrs_667'
 
 # Save the filled dataset to NetCDF
-filled_ds.to_netcdf("/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/Rrs_667.nc")
+filled_ds.to_netcdf("/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/Rrs_667.nc")
 
 print("Finished processing and saved to Rrs_667.nc")
 # %%
