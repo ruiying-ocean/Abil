@@ -42,11 +42,11 @@ def preprocess(path, name):
   print(df1)
   ds = df1.to_xarray()
   print('saving ' + name)
-  ds.to_netcdf("/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/" + name + ".nc")
+  ds.to_netcdf("/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/" + name + ".nc")
 
 # Run for both DIC and TA
-preprocess("/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/raw_data/NNGv2/TCO2_NNGv2LDEO_climatology.nc", "DIC")
-preprocess("/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/raw_data/NNGv2/AT_NNGv2_climatology.nc", "TA")
+preprocess("/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/raw_data/NNGv2/TCO2_NNGv2LDEO_climatology.nc", "DIC")
+preprocess("/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/raw_data/NNGv2/AT_NNGv2_climatology.nc", "TA")
 
 print("fin")
 # %%

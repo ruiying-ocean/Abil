@@ -105,7 +105,7 @@ ds = xr.open_dataset('/home/mv23682/Documents/Abil/studies/wiseman2024/data/env_
 df = ds.to_dataframe()
 ds = None 
 df.reset_index(inplace=True)
-df = df[["temperature","sio4","po4","no3","o2","mld","DIC","TA","PAR","chlor_a","time", "depth", "lat", "lon"]]
+df = df[["temperature","sio4","po4","no3","o2","mld","DIC","TA","PAR","chlor_a","CI_2","time", "depth", "lat", "lon"]]
 df.set_index(['lat','lon','depth','time'],inplace=True)
 
 out = pd.concat([d,df], axis=1)

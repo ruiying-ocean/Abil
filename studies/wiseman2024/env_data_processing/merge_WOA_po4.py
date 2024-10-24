@@ -6,7 +6,7 @@ import xarray as xr
 import xesmf as xe
 import pandas as pd
 
-base_path = '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/raw_data/WOA18/'
+base_path = '/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/raw_data/WOA18/'
 files = ['01',
          '02',
          '03',
@@ -54,7 +54,7 @@ df.reset_index(inplace = True)
 df.set_index(['time', 'depth', 'lat', 'lon'], inplace=True)
 ds = df.to_xarray()
 
-ds.to_netcdf("/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/po4.nc")
+ds.to_netcdf("/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/po4.nc")
 
 print("fin")
 

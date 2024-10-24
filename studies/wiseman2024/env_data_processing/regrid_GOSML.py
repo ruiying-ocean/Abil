@@ -5,7 +5,7 @@ import numpy as np
 import xarray as xr
 import xesmf as xe
 import pandas as pd
-path = "/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/raw_data/GOSML/mixed_layer_properties_mean.nc"
+path = "/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/raw_data/GOSML/mixed_layer_properties_mean.nc"
 
 
 ds = xr.open_dataset(path)
@@ -33,7 +33,7 @@ df = ds.to_dataframe()
 df.reset_index(inplace = True)
 df.set_index(['time', 'depth', 'lat', 'lon'], inplace=True)
 ds = df.to_xarray()
-ds.to_netcdf("/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/MLD.nc")
+ds.to_netcdf("/home/mv23682/Documents/Abil/studies/wiseman2024/env_data_processing/regridded_data/MLD.nc")
 
 print("fin")
 # %%
