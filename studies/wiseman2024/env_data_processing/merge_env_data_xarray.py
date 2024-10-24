@@ -14,7 +14,9 @@ file_paths = [
     '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/DIC.nc',
     '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/TA.nc',
     '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/par.nc',
-    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/chlor_a.nc'
+    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/chlor_a.nc',
+    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/Rrs_547.nc',
+    '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/Rrs_667.nc'    
 ]
 
 # Open all datasets
@@ -29,8 +31,14 @@ merged_ds = xr.merge(aligned_datasets)
 # Drop DOI
 merged_ds = merged_ds.drop_vars(['DOI'])
 
+# Calculate CI_2
+merged_ds['CI_2'] = merged_ds['Rrs_547'] - merged_ds['Rrs_667']
+
+# Drop Rrs_547 and Rrs_667
+merged_ds = merged_ds.drop_vars(['Rrs_547','Rrs_667'])
+
 # List of variables of interest
-variables_of_interest = ['temperature','sio4', 'po4', 'no3','o2','mld','DIC','TA','PAR','chlor_a']  # Add all relevant variable names
+variables_of_interest = ['temperature','sio4', 'po4', 'no3','o2','mld','DIC','TA','PAR','chlor_a','CI_2']  # Add all relevant variable names
 
 # Create a mask for where any of the variables are NaN
 mask = xr.concat([merged_ds[var].isnull() for var in variables_of_interest], dim='var').any(dim='var')
@@ -100,6 +108,9 @@ merged_ds['temperature'].attrs['units'] = 'degrees_celsius'
 merged_ds['temperature'].attrs['long_name'] = 'sea_water_temperature'
 merged_ds['temperature'].attrs['description'] = 'Objectively analyzed mean fields for sea_water_temperature from WOA18 of Locarnini et al. (2019)'
 
+merged_ds['CI_2'].attrs['units'] = 'sr-1'
+merged_ds['CI_2'].attrs['long_name'] = 'Color Index 2'
+merged_ds['CI_2'].attrs['description'] = 'Color Index 2 (CI2) from Mitchell et al. (2017) calculated using Aqua MODIS Level 3 binned Rrs_547 and Rrs_667 data monthly climatology, version R2022.0, 2002-07-01 to 2023-09-03 (NASA Ocean Biology Processing Group, 2022)'
 
 # Save the result to a new NetCDF file
 merged_ds.to_netcdf('/home/mv23682/Documents/Abil-1/studies/wiseman2024/data/env_data.nc')

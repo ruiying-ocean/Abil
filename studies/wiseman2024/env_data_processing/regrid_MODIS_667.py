@@ -1,4 +1,4 @@
-#%%
+# %%
 
 import numpy as np
 import xarray as xr
@@ -8,19 +8,19 @@ import xesmf as xe
 files = [
     '20030101_20230131',
     '20030201_20230228',
-    '20030301_20230331',
-    '20030401_20230430',
-    '20030501_20230531',
-    '20030601_20230630',
+    '20030301_20220331',
+    '20030401_20210430',
+    '20030501_20220531',
+    '20030601_20220630',
     '20020701_20230731',
     '20020801_20230831',
-    '20020901_20220930',
-    '20021001_20221031',
-    '20021101_20221130',
+    '20020901_20230930',
+    '20021001_20211031',
+    '20021101_20211130',
     '20021201_20221231'
 ]
 
-base_path = '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/raw_data/MODIS_CHL/'
+base_path = '/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/raw_data/MODIS_Rrs667/'
 
 # Create a target grid for regridding
 ds_out = xr.Dataset({
@@ -33,19 +33,20 @@ weights_file = "regridded_data/regrid_weights.nc"
 
 print('Initializing regridder')
 # Open the first dataset to create a persistent regridder (only calculated once)
-initial_ds = xr.open_dataset(f"{base_path}AQUA_MODIS.{files[0]}.L3m.MC.CHL.chlor_a.9km.nc")
+initial_ds = xr.open_dataset(f"{base_path}AQUA_MODIS.{files[0]}.L3m.MC.RRS.Rrs_667.9km.nc")
 regridder = xe.Regridder(initial_ds, ds_out, method="bilinear", periodic=True, filename=weights_file)
 
 ds_all = []
 
-# Loop over each file
-for i, file in enumerate(files):
-    # Open the dataset
-    ds = xr.open_dataset(f"{base_path}AQUA_MODIS.{file}.L3m.MC.CHL.chlor_a.9km.nc")
+for i in range(0, 12):
+    ds = xr.open_dataset(f"{base_path}AQUA_MODIS.{files[i]}.L3m.MC.RRS.Rrs_667.9km.nc")
+    ds_out = xr.Dataset({'lat': (['lat'], np.arange(-90, 90, 1)),
+                    'lon': (['lon'], np.arange(-180, 180, 1))
+                    })
     print(ds)
     # Regrid chlor_a to the new lat/lon grid (with persistent regridder, reuse weights)
     regridder = xe.Regridder(ds, ds_out, method="bilinear", periodic=True, reuse_weights=True, filename=weights_file)
-    dr_out = regridder(ds['chlor_a'])
+    dr_out = regridder(ds['Rrs_667'])
     
     # Add time and depth dimensions in one step
     dr_out = dr_out.assign_coords(time=i+1).expand_dims(time=[i+1])
@@ -89,10 +90,10 @@ filled_ds = ds.where(ds.notnull(), fill_values)
 filled_ds = xr.where(null_counts == 12, ds, filled_ds)
 
 # Assign a name to the DataArray
-filled_ds.name = 'chlor_a'
+filled_ds.name = 'Rrs_667'
 
 # Save the filled dataset to NetCDF
-filled_ds.to_netcdf("/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/chlor_a.nc")
+filled_ds.to_netcdf("/home/mv23682/Documents/Abil-1/studies/wiseman2024/env_data_processing/regridded_data/Rrs_667.nc")
 
-print("Finished processing and saved to chlor_a.nc")
+print("Finished processing and saved to Rrs_667.nc")
 # %%
