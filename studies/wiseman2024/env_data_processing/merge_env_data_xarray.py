@@ -41,11 +41,20 @@ merged_ds = merged_ds.drop_vars(['Rrs_547','Rrs_667'])
 variables_of_interest = ['temperature','sio4', 'po4', 'no3','o2','mld','DIC','TA','PAR','chlor_a','CI_2']  # Add all relevant variable names
 
 # Create a mask for where any of the variables are NaN
-mask = xr.concat([merged_ds[var].isnull() for var in variables_of_interest], dim='var').any(dim='var')
+variables_mask = xr.concat([merged_ds[var].isnull() for var in variables_of_interest], dim='var').any(dim='var')
+
+# Create a mask that identifies where any of the variables are NaN across the depth dimension
+depth_nan_mask = xr.concat([merged_ds[var].isnull().any(dim='depth') for var in variables_of_interest], dim='var').any(dim='var')
+
+# Expand the mask along the depth dimension to cover the entire column for each (lat, lon, time) slice
+depth_mask = depth_nan_mask.broadcast_like(merged_ds[variables_of_interest[0]])
+
+# Combine both masks (any variable or depth missing) to set all data to NaN where either condition is true
+combined_mask = variables_mask | depth_mask
 
 # Apply the mask to all variables, setting values to NaN where any variable is missing
 for var in variables_of_interest:
-    merged_ds[var] = merged_ds[var].where(~mask, np.nan)
+    merged_ds[var] = merged_ds[var].where(~combined_mask, np.nan)
 
 # Convert the xarray Dataset to a Pandas DataFrame
 df = merged_ds.to_dataframe()
