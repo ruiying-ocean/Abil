@@ -8,6 +8,7 @@
   prediction:  /examples/data/prediction.csv #root + folder
   targets:  /examples/data/targets.csv #root + folder
   training:  /examples/data/training.csv
+  local_root: ./
 
   #predictors: ["temperature", "din", 
   #   "irradiance"]

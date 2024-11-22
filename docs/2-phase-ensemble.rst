@@ -33,10 +33,6 @@ set your directory:
             with open('./tests/2-phase.yml', 'r') as f:
                 model_config = load(f, Loader=Loader)
 
-
-            model_config['local_root'] = "./"
-
-
             #create some example training data:
             target_name =  "Emiliania huxleyi"
 
