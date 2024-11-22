@@ -29,6 +29,7 @@ class post:
             self.path_out = os.path.join(model_config['hpc_root'], model_config['path_out'], model_config['run_name'], "posts/")
             self.ds = merge_netcdf(os.path.join(model_config['hpc_root'], model_config['path_out'], model_config['run_name'], model_config['path_in'], pi))
             self.traits = pd.read_csv(os.path.join(model_config['hpc_root'], model_config['targets']))
+
             self.root  =  model_config['hpc_root'] 
 
         else:
@@ -76,6 +77,7 @@ class post:
             target = self.d.columns[i]
             target_no_space = target.replace(' ', '_')
             with open(os.path.join(self.root, self.model_config['path_out'], self.model_config['run_name'], "scoring", model, target_no_space) + self.extension, 'rb') as file:
+
                 m = pickle.load(file)
             
             if self.model_config['ensemble_config']['classifier'] and not self.model_config['ensemble_config']['regressor']:
@@ -98,6 +100,7 @@ class post:
         except:
             None
         all_performance.to_csv(os.path.join(self.root, self.model_config['path_out'], self.model_config['run_name'], "posts/performance", model) + "_performance.csv", index=False)
+
         print("finished merging performance")
 
     def merge_parameters(self, model):
@@ -110,6 +113,7 @@ class post:
             target_no_space = target.replace(' ', '_')
 
             with open(os.path.join(self.root, self.model_config['path_out'], self.model_config['run_name'], "model", model, target_no_space) + self.extension, 'rb') as file:
+
                 m = pickle.load(file)
 
             if self.model_type == "reg":
@@ -162,6 +166,7 @@ class post:
         except:
             None
         all_parameters.to_csv(os.path.join(self.root, self.model_config['path_out'], self.model_config['run_name'], "posts/parameters", model) + "_parameters.csv", index=False)
+
         
         print("finished merging parameters")
 
@@ -461,6 +466,7 @@ class post:
                 except:
                     None
                 totals.to_csv(os.path.join(self.parent.root, self.parent.model_config['path_out'], self.parent.model_config['run_name'], "posts/integrated_totals", model) + '_integrated_totals_PI' + self.parent.pi + depth_str + month_str + ".csv", index=False)
+
                 print(f"Exported totals")
 
 
@@ -527,6 +533,7 @@ class post:
 
         print(self.d.head())
         ds.to_netcdf(os.path.join(self.path_out, file_name) + "_PI" + self.pi + ".nc")
+
         print("exported ds to: " + self.path_out + file_name + "_PI" + self.pi + ".nc")
         #add nice metadata
 
@@ -552,6 +559,7 @@ class post:
     
         print(self.d.head())
         self.d.to_csv(os.path.join(self.path_out, file_name) + "_PI" + self.pi + ".csv")
+
         print("exported d to: " + self.path_out + file_name + "_PI" + self.pi + ".csv")
         #add nice metadata
 
@@ -572,6 +580,7 @@ class post:
         # Read the training targets from the training.csv file defined in model_config
         try:
             df2_path = os.path.join(self.root, self.model_config['training'])
+
             df2 = pd.read_csv(df2_path)
         except:
             raise FileNotFoundError(f"Dataset not found at {df2_path}")
@@ -594,6 +603,7 @@ class post:
         file_name = f"{file_name}_obs"
         print(out.head())
         out.to_csv(os.path.join(self.path_out, file_name) + "_PI" + self.pi + ".csv")
+
         print("exported d to: " + self.path_out + file_name + "_PI" + self.pi + ".csv")
 
         print('training merged with predictions')

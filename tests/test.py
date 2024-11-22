@@ -6,16 +6,20 @@ from yaml import load
 from yaml import CLoader as Loader
 import pandas as pd
 
+import numpy as np
+
+
 if os.path.exists(os.path.join(os.path.dirname(__file__), '../.git')): #assumes this local
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../abil/')))
     from tune import tune
-    from functions import upsample
+    from functions import upsample, example_data# example_training_data, example_predict_data
     from predict import predict
     from post import post
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 else: #if on github CI 
     from abil.tune import tune
-    from abil.functions import upsample
+
+    from abil.functions import upsample, example_data# example_training_data, example_predict_data
     from abil.predict import predict
     from abil.post import post
 
@@ -27,21 +31,11 @@ class TestRegressors(unittest.TestCase):
             self.model_config = load(f, Loader=Loader)
             
         self.model_config['local_root'] = self.workspace # yaml_path
-        predictors = self.model_config['predictors']
-        d = pd.read_csv(os.path.join(self.model_config['local_root'],self.model_config['training']))
-        targets = pd.read_csv(os.path.join(self.model_config['local_root'],self.model_config['targets']))
-        n_spp = 0
-        target =  targets['Target'][n_spp]
-        d[target] = d[target].fillna(0)
-        d = upsample(d, target, ratio=10)
-        d = d.dropna(subset=[target])
-        d = d.dropna(subset=predictors)
-        self.X_train = d[predictors]
-        self.y = d[target]
 
-        X_predict = pd.read_csv(os.path.join(self.model_config['local_root'], self.model_config['prediction']))
-        X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
-        self.X_predict = X_predict[predictors]
+
+        self.target_name =  "Emiliania huxleyi"
+        self.X_train, self.X_predict, self.y = example_data(self.target_name, n_samples=200, n_features=3, noise=0.1, train_to_predict_ratio=0.7, random_state=59)
+#        self.X_predict = X_predict[predictors]
 
 
     def test_post_ensemble(self):
@@ -52,10 +46,8 @@ class TestRegressors(unittest.TestCase):
 
         m = predict(self.X_train, self.y, self.X_predict, self.model_config)
         m.make_prediction()
-        targets = pd.read_csv(os.path.join(self.model_config['local_root'], self.model_config['targets']))
-        targets = targets.iloc[:1]
-        targets = targets['Target'].values
 
+        targets = np.array([self.target_name])
         def do_post(pi):
             m = post(self.model_config, pi=pi)
             m.merge_performance(model="ens") 
@@ -63,11 +55,11 @@ class TestRegressors(unittest.TestCase):
             m.merge_performance(model="rf")
             m.merge_performance(model="knn")
 
+
             m.merge_parameters(model="rf")
             m.merge_parameters(model="xgb")
             m.merge_parameters(model="knn")
             m.estimate_carbon("pg poc")
-            m.diversity()
 
             m.total()
 
@@ -82,7 +74,7 @@ class TestRegressors(unittest.TestCase):
             print(targets)
             integ.integrated_totals(targets)
             integ.integrated_totals(targets, monthly=True)
-
+            integ.integrated_totals(targets, subset_depth=100)
 
         do_post(pi="50")
 
@@ -97,21 +89,12 @@ class Test2Phase(unittest.TestCase):
             self.model_config = load(f, Loader=Loader)
 
         self.model_config['local_root'] = self.workspace # yaml_path
-        predictors = self.model_config['predictors']
-        d = pd.read_csv(os.path.join(self.model_config['local_root'], self.model_config['training']))
-        targets = pd.read_csv(os.path.join(self.model_config['local_root'],self.model_config['targets']))
-        n_spp = 0
-        target =  targets['Target'][n_spp]
-        d[target] = d[target].fillna(0)
-        d = upsample(d, target, ratio=10)
-        d = d.dropna(subset=[target])
-        d = d.dropna(subset=predictors)
-        self.X_train = d[predictors]
-        self.y = d[target]
 
-        X_predict = pd.read_csv(os.path.join(self.model_config['local_root'], self.model_config['prediction']))
-        X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
-        self.X_predict = X_predict[predictors]
+
+        self.target_name =  "Emiliania huxleyi"
+
+        self.X_train, self.X_predict, self.y = example_data(self.target_name, n_samples=200, n_features=3, noise=0.1, train_to_predict_ratio=0.7, random_state=59)
+
 
     def test_post_ensemble(self):
 
@@ -124,9 +107,11 @@ class Test2Phase(unittest.TestCase):
 
         m = predict(self.X_train, self.y, self.X_predict, self.model_config)
         m.make_prediction()
-        targets = pd.read_csv(os.path.join(self.model_config['local_root'], self.model_config['targets']))
-        targets = targets.iloc[:1]
-        targets = targets['Target'].values
+
+        # targets = pd.read_csv(self.model_config['local_root']+ self.model_config['targets'])
+        # targets = targets.iloc[:1]
+        # targets = targets['Target'].values
+        targets = np.array([self.target_name])
 
         def do_post(pi):
             m = post(self.model_config, pi=pi)
@@ -141,6 +126,7 @@ class Test2Phase(unittest.TestCase):
             m.estimate_carbon("pg poc")
             m.diversity()
 
+
             m.total()
 
             m.merge_env(self.X_predict)
@@ -154,6 +140,8 @@ class Test2Phase(unittest.TestCase):
             integ = m.integration(m, vol_conversion=vol_conversion)
             integ.integrated_totals(targets, monthly=True)
             integ.integrated_totals(targets)
+
+            integ.integrated_totals(targets, subset_depth=100)
 
         do_post(pi="50")
 

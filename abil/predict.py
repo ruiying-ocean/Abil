@@ -53,6 +53,7 @@ def parallel_predict(prediction_function, X_predict, n_threads=1):
     # Split the indices of X_predict into chunks
     chunk_indices = np.array_split(X_predict.index, n_threads)
 
+
     # Create a list of DataFrame chunks based on the split indices
     df_sections = [X_predict.loc[chunk_idx] for chunk_idx in chunk_indices]
 
@@ -137,6 +138,7 @@ class predict:
             self.path_out = os.path.join(model_config['local_root'], model_config['path_out'], model_config['run_name'])
         elif model_config['hpc']==True:
             self.path_out = os.path.join(model_config['hpc_root'], model_config['path_out'], model_config['run_name'])
+
         else:
             raise ValueError("hpc True or False not defined in yml")
             
@@ -204,6 +206,7 @@ class predict:
 
             model_name = self.ensemble_config["m" + str(1)]
             model_out = os.path.join(self.path_out, "predictions", model_name)
+
             export_prediction(m=m, target = self.target, target_no_space = self.target_no_space, X_predict = self.X_predict,
                               model_out = model_out, n_threads=self.n_jobs)
 
@@ -218,6 +221,7 @@ class predict:
                 m, mae = def_prediction(self.path_out, self.ensemble_config, i, self.target_no_space)
                 model_name = self.ensemble_config["m" + str(i + 1)]
                 model_out = os.path.join(self.path_out, "predictions/ens/50/") #temporary until tree/bag CI is implemented! 
+
                 export_prediction(m=m, target = self.target, target_no_space = self.target_no_space, X_predict = self.X_predict,
                               model_out = model_out, n_threads=self.n_jobs)
 
@@ -239,6 +243,7 @@ class predict:
                                     scoring=self.scoring, n_jobs=self.n_jobs)
 
             model_out_scores = os.path.join(self.path_out, "scoring/ens")
+
             try: #make new dir if needed
                 os.makedirs(model_out_scores)
             except:
