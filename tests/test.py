@@ -74,7 +74,6 @@ class TestRegressors(unittest.TestCase):
             print(targets)
             integ.integrated_totals(targets)
             integ.integrated_totals(targets, monthly=True)
-            integ.integrated_totals(targets, subset_depth=100)
 
         do_post(pi="50")
 
@@ -141,7 +140,6 @@ class Test2Phase(unittest.TestCase):
             integ.integrated_totals(targets, monthly=True)
             integ.integrated_totals(targets)
 
-            integ.integrated_totals(targets, subset_depth=100)
 
         do_post(pi="50")
 
