@@ -54,35 +54,46 @@ set your directory:
             m.export_ds("my_first_model")
 
 
-
-
     .. tab-item:: Windows
+
 
         .. code-block:: python
 
+            #load dependencies:
+            import pandas as pd
+            import numpy as np
+            from yaml import load
+            from yaml import CLoader as Loader
+            from abil.tune import tune
+            from abil.predict import predict
+            from abil.post import post
+            from abil.functions import example_data 
             import os, sys
-            os.chdir('\home\phyto\Abil\') 
 
-    .. tab-item:: java
+            #define root directory:
+            
+            #os.chdir('/home/phyto-2/Abil/')  
 
-        .. code-block:: java
+            #load configuration yaml:
+            #with open('./tests/2-phase.yml', 'r') as f:
+            #    model_config = load(f, Loader=Loader)
 
-            class Main {
-                public static void main(String[] args) {
-                }
-            }
+            #create some example training data:
+            target_name =  "Emiliania huxleyi"
 
-    .. tab-item:: julia
+            X_train, X_predict, y = example_data(target_name, n_samples=1000, n_features=3, 
+                                                noise=0.1, train_to_predict_ratio=0.7, 
+                                                random_state=59)
 
-        .. code-block:: julia
+            #train your model:
+            m = tune(X_train, y, model_config)
+            m.train(model="rf", classifier=True)
 
-            function main()
-            end
+            #predict your model:
+            m = predict(X_train=X_train, y=y, X_predict=X_predict, 
+                model_config=model_config, n_jobs=2)
+            m.make_prediction()
 
-    .. tab-item:: fortran
-
-        .. code-block:: fortran
-
-            PROGRAM main
-            END PROGRAM main
-
+            #post:
+            m = post(model_config)
+            m.export_ds("my_first_model")
