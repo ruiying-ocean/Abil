@@ -2,12 +2,12 @@
   hpc: False
 
   run_name: regressor #update for specific run name
-  path_out:  /tests/ModelOutput/ #root + folder
-  path_in:  /predictions/ens/ #root + folder
+  path_out:  tests/ModelOutput/ #root + folder
+  path_in:  predictions/ens/ #root + folder
 
-  prediction:  /examples/data/prediction.csv #root + folder
-  targets:  /examples/data/targets.csv #root + folder
-  training:  /examples/data/training.csv
+  prediction:  examples/data/prediction.csv #root + folder
+  targets:  examples/data/targets.csv #root + folder
+  training:  examples/data/training.csv
 
   predictors: ["temperature", "din", 
      "irradiance"]

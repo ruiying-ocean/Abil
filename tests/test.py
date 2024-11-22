@@ -23,13 +23,13 @@ class TestRegressors(unittest.TestCase):
 
     def setUp(self):
         self.workspace = os.getenv('GITHUB_WORKSPACE', '.')
-        with open(self.workspace +'/tests/regressor.yml', 'r') as f:
+        with open(os.path.join(self.workspace,'tests/regressor.yml'), 'r') as f:
             self.model_config = load(f, Loader=Loader)
-
+            
         self.model_config['local_root'] = self.workspace # yaml_path
         predictors = self.model_config['predictors']
-        d = pd.read_csv(self.model_config['local_root'] + self.model_config['training'])
-        targets = pd.read_csv(self.model_config['local_root']+ self.model_config['targets'])
+        d = pd.read_csv(os.path.join(self.model_config['local_root'],self.model_config['training']))
+        targets = pd.read_csv(os.path.join(self.model_config['local_root'],self.model_config['targets']))
         n_spp = 0
         target =  targets['Target'][n_spp]
         d[target] = d[target].fillna(0)
@@ -39,7 +39,7 @@ class TestRegressors(unittest.TestCase):
         self.X_train = d[predictors]
         self.y = d[target]
 
-        X_predict = pd.read_csv(self.model_config['local_root'] + self.model_config['prediction'])
+        X_predict = pd.read_csv(os.path.join(self.model_config['local_root'], self.model_config['prediction']))
         X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
         self.X_predict = X_predict[predictors]
 
@@ -52,7 +52,7 @@ class TestRegressors(unittest.TestCase):
 
         m = predict(self.X_train, self.y, self.X_predict, self.model_config)
         m.make_prediction()
-        targets = pd.read_csv(self.model_config['local_root']+ self.model_config['targets'])
+        targets = pd.read_csv(os.path.join(self.model_config['local_root'], self.model_config['targets']))
         targets = targets.iloc[:1]
         targets = targets['Target'].values
 
@@ -93,13 +93,13 @@ class Test2Phase(unittest.TestCase):
 
     def setUp(self):
         self.workspace = os.getenv('GITHUB_WORKSPACE', '.')
-        with open(self.workspace +'/tests/2-phase.yml', 'r') as f:
+        with open(os.path.join(self.workspace, 'tests/2-phase.yml'), 'r') as f:
             self.model_config = load(f, Loader=Loader)
 
         self.model_config['local_root'] = self.workspace # yaml_path
         predictors = self.model_config['predictors']
-        d = pd.read_csv(self.model_config['local_root'] + self.model_config['training'])
-        targets = pd.read_csv(self.model_config['local_root']+ self.model_config['targets'])
+        d = pd.read_csv(os.path.join(self.model_config['local_root'], self.model_config['training']))
+        targets = pd.read_csv(os.path.join(self.model_config['local_root'],self.model_config['targets']))
         n_spp = 0
         target =  targets['Target'][n_spp]
         d[target] = d[target].fillna(0)
@@ -109,7 +109,7 @@ class Test2Phase(unittest.TestCase):
         self.X_train = d[predictors]
         self.y = d[target]
 
-        X_predict = pd.read_csv(self.model_config['local_root'] + self.model_config['prediction'])
+        X_predict = pd.read_csv(os.path.join(self.model_config['local_root'], self.model_config['prediction']))
         X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
         self.X_predict = X_predict[predictors]
 
@@ -124,7 +124,7 @@ class Test2Phase(unittest.TestCase):
 
         m = predict(self.X_train, self.y, self.X_predict, self.model_config)
         m.make_prediction()
-        targets = pd.read_csv(self.model_config['local_root']+ self.model_config['targets'])
+        targets = pd.read_csv(os.path.join(self.model_config['local_root'], self.model_config['targets']))
         targets = targets.iloc[:1]
         targets = targets['Target'].values
 
