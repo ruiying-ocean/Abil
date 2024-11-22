@@ -28,7 +28,7 @@ def def_prediction(path_out, ensemble_config, n, species):
         species_no_space = species.replace(' ', '_')
         with open(os.path.join(path_to_param, species_no_space) + '_reg.sav', 'rb') as file:
             m = pickle.load(file)
-        with open(os.path.join(path_to_scores + species_no_space) + '_reg.sav', 'rb') as file:
+        with open(os.path.join(path_to_scores, species_no_space) + '_reg.sav', 'rb') as file:
             scoring = pickle.load(file) 
         scores = abs(np.mean(scoring['test_MAE']))
 
@@ -36,9 +36,9 @@ def def_prediction(path_out, ensemble_config, n, species):
     elif (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == True):
         print("predicting zero-inflated regressor")
         species_no_space = species.replace(' ', '_')
-        with open(os.path.join(path_to_param + species_no_space) + '_zir.sav', 'rb') as file:
+        with open(os.path.join(path_to_param, species_no_space) + '_zir.sav', 'rb') as file:
             m = pickle.load(file)
-        with open(os.path.join(path_to_scores + species_no_space) + '_zir.sav', 'rb') as file:
+        with open(os.path.join(path_to_scores, species_no_space) + '_zir.sav', 'rb') as file:
             scoring = pickle.load(file)
         scores = abs(np.mean(scoring['test_MAE']))
 
