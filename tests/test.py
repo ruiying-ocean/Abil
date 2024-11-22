@@ -67,6 +67,7 @@ class TestRegressors(unittest.TestCase):
             m.merge_parameters(model="xgb")
             m.merge_parameters(model="knn")
             m.estimate_carbon("pg poc")
+            m.diversity()
 
             m.total()
 
@@ -81,7 +82,7 @@ class TestRegressors(unittest.TestCase):
             print(targets)
             integ.integrated_totals(targets)
             integ.integrated_totals(targets, monthly=True)
-            integ.integrated_totals(targets, subset_depth=100)
+
 
         do_post(pi="50")
 
@@ -138,6 +139,7 @@ class Test2Phase(unittest.TestCase):
             m.merge_parameters(model="xgb")
             m.merge_parameters(model="knn")
             m.estimate_carbon("pg poc")
+            m.diversity()
 
             m.total()
 
@@ -152,7 +154,6 @@ class Test2Phase(unittest.TestCase):
             integ = m.integration(m, vol_conversion=vol_conversion)
             integ.integrated_totals(targets, monthly=True)
             integ.integrated_totals(targets)
-            integ.integrated_totals(targets, subset_depth=100)
 
         do_post(pi="50")
 
