@@ -41,7 +41,8 @@ set your directory:
             target_name =  "Emiliania huxleyi"
 
             X_train, X_predict, y = example_data(target_name, n_samples=1000, n_features=3, 
-                                                    noise=0.1, train_to_predict_ratio=0.7, random_state=59)
+                                                noise=0.1, train_to_predict_ratio=0.7, 
+                                                random_state=59)
 
             #train your model:
             m = tune(X_train, y, model_config)
