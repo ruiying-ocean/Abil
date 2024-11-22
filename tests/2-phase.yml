@@ -9,9 +9,9 @@
   targets:  /examples/data/targets.csv #root + folder
   training:  /examples/data/training.csv
 
-  predictors: ["temperature", "din", 
-     "irradiance"]
-    
+  #predictors: ["temperature", "din", 
+  #   "irradiance"]
+  predictors: ["feature_1", "feature_2", "feature_3"]
   verbose: 1
   seed : 1 # random seed
   n_threads : 1 # how many cpu threads to use
@@ -82,12 +82,12 @@
         regressor__estimator__max_samples: [0.2]
         regressor__estimator__max_features: [0.2]
         regressor__estimator__estimator__leaf_size: [25]
-        regressor__estimator__estimator__n_neighbors: [5]
+        regressor__estimator__estimator__n_neighbors: [3]
       clf_param_grid:  
         estimator__max_samples: [0.2]
         estimator__max_features: [0.2]
         estimator__estimator__leaf_size: [25]
-        estimator__estimator__n_neighbors: [5]
+        estimator__estimator__n_neighbors: [3]
 
   knn_bagging_estimators: 3
 

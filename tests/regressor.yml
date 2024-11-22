@@ -9,10 +9,11 @@
   targets:  /examples/data/targets.csv #root + folder
   training:  /examples/data/training.csv
 
-  predictors: ["temperature", "din", 
-     "irradiance"]
+  #predictors: ["temperature", "din", 
+  #   "irradiance"]
+  predictors: ["feature_1", "feature_2", "feature_3"]
 
-    
+  
   verbose: 1
   seed : 1 # random seed
   n_threads : 1 # how many cpu threads to use
