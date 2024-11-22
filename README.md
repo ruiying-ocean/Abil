@@ -1,24 +1,23 @@
 
+
 # Abil.py &middot; [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nanophyto/Abil/LICENSE) [![Build Status](https://github.com/nanophyto/Abil/actions/workflows/ci.yml/badge.svg?branch=Continuous-integration)](https://github.com/nanophyto/Abil/actions/workflows/ci.yml?query=branch%3AContinuous-integration)
 
 ## Overview
 
-Abil.py provides functions to interpolate distributions of biogeochemical observations using Machine Learning algorithms in Python. The library is optimized to interpolate many predictions in parallel and is thus particularly suited for distribution models of species, genes and transcripts. The library relies on [scikit-learn](https://scikit-learn.org/) and [MAPIE](https://mapie.readthedocs.io/).
+Abil.py provides functions to interpolate distributions of biogeochemical observations using Machine Learning algorithms in Python. The library is optimized to interpolate many predictions in parallel and is thus particularly suited for distribution models of species, genes and transcripts. The library relies on [scikit-learn](https://scikit-learn.org/).
 
 
 Current support (v0.09):
 
 - Random Forest, XGBoost, Bagged KNN, and MultiLayer Perceptrons
 
-- Presence/Absence and continuous data
+- Continuous data
 
 - 2-phase zero-inflated models
 
 - Hyperparameter tuning and cross-validation
 
 - Automatic feature scaling and one-hot-encoding
-
-- Model prediction intervals (MAPIE)
 
 - Example SLURM and Singularity scripts
 
@@ -78,6 +77,7 @@ Abil
 |       └── singularity.sif
 ├── studies
 |   └── devries2024
+├── tests
 ├── README.md
 ├── pyproject.toml
 └── README.md

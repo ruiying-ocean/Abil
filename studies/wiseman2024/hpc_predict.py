@@ -5,12 +5,13 @@ import sys
 from yaml import load
 from yaml import CLoader as Loader
 from abil.predict import predict
-from abil.functions import upsample, OffsetGammaConformityScore
 from sklearn.preprocessing import OneHotEncoder
+from mapie.conformity_scores import AbsoluteConformityScore
+from abil.functions import OffsetGammaConformityScore
 
 try:
     print(sys.argv[1])
-    with open('/user/work/ba18321/Abil/devries2024/2-phase.yml', 'r') as f:
+    with open('/user/work/mv23682/Abil/studies/wiseman2024/ensemble_regressor.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = True
     n_jobs = pd.to_numeric(sys.argv[1])
@@ -19,10 +20,10 @@ try:
     model_config['cv'] = 10
 
 except:
-    with open('/user/work/ba18321/Abil/devries2024/2-phase.yml', 'r') as f:
+    with open('/home/mv23682/Documents/Abil/studies/wiseman2024/ensemble_regressor.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = False
-    n_jobs = 1
+    n_jobs = 8
     n_spp = 1
     root = model_config['local_root']
     model_config['cv'] = 3
@@ -32,21 +33,18 @@ model_config['n_threads'] = n_jobs
 targets = pd.read_csv(root + model_config['targets'])
 d = pd.read_csv(root + model_config['training'])
 target =  targets['Target'][n_spp]
-d[target] = d[target].fillna(0)
 d = d.dropna(subset=[target])
-d = d.dropna(subset=['FID'])
-d = upsample(d, target, ratio=10)
 print(target)
 predictors = model_config['predictors']
+d = d.dropna(subset=predictors)
 
-X_predict =  pd.read_csv(root + model_config['env_data_path'])
+X_predict =  pd.read_csv(root + model_config['prediction'])
 X_predict.set_index(["time", "depth", "lat", "lon"], inplace=True)
+X_predict = X_predict.dropna()
 y = d[target]
 X_train = d[predictors]
 
 print("finished loading data")
 
 m = predict(X_train, y, X_predict, model_config, n_jobs=n_jobs)
-
-m.make_prediction(prediction_inference=True, 
-                  conformity_score=OffsetGammaConformityScore(offset=1e-10))
+m.make_prediction(prediction_inference=True,conformity_score=AbsoluteConformityScore())

@@ -4,13 +4,14 @@ import glob, os
 import xarray as xr
 import pickle
 import gc
+from yaml import dump, Dumper
 #from skbio.diversity.alpha import shannon
 
 class post:
     """
     Post processing of SDM
     """
-    def __init__(self, model_config, ci=50):
+    def __init__(self, model_config, pi="50"):
 
         def merge_netcdf(path_in):
             print("merging...")
@@ -19,14 +20,14 @@ class post:
             return(ds)
         
         if model_config['hpc']==False:
-            self.path_out = model_config['local_root'] + model_config['path_out']  + str(ci) + "/"
-            self.ds = merge_netcdf(model_config['local_root'] + model_config['path_in'] + str(ci) + "/")
+            self.path_out = model_config['local_root'] + model_config['path_out'] + model_config['run_name'] + "/posts/"
+            self.ds = merge_netcdf(model_config['local_root'] + model_config['path_out'] + model_config['run_name'] + model_config['path_in'] + pi + "/")
             self.traits = pd.read_csv(model_config['local_root'] + model_config['targets'])
             self.root  =  model_config['local_root'] 
 
         elif model_config['hpc']==True:
-            self.path_out = model_config['hpc_root'] + model_config['path_out']  + str(ci) + "/"
-            self.ds = merge_netcdf(model_config['hpc_root'] + model_config['path_in'] + str(ci) + "/")
+            self.path_out = model_config['hpc_root'] + model_config['path_out'] + model_config['run_name'] + "/posts/"
+            self.ds = merge_netcdf(model_config['hpc_root'] + model_config['path_out'] + model_config['run_name'] + model_config['path_in'] + pi + "/")
             self.traits = pd.read_csv(model_config['hpc_root'] + model_config['targets'])
             self.root  =  model_config['hpc_root'] 
 
@@ -36,22 +37,35 @@ class post:
         self.d = self.d.dropna()
         self.targets = self.traits['Target'][self.traits['Target'].isin(self.d.columns.values)]
         self.model_config = model_config
+        self.pi = pi
 
-        # if self.model_config['ensemble_config']['classifier'] and not self.model_config['ensemble_config']['regressor']:
-        #     self.extension = "_clf.sav"
-        # elif self.model_config['ensemble_config']['classifier'] and self.model_config['ensemble_config']['regressor']:
-        #     self.extension = ".sav"
-        # else:
-        #     self.extension = "_reg.sav"
-
+        # Export model_config to a YAML file
+        self.export_model_config()
         if self.model_config['ensemble_config']['classifier'] and not self.model_config['ensemble_config']['regressor']:
-            self.model_type = "clf"
+            raise ValueError("classifiers are not supported")
         elif self.model_config['ensemble_config']['classifier'] and self.model_config['ensemble_config']['regressor']:
             self.model_type = "zir"
         if self.model_config['ensemble_config']['regressor'] and not self.model_config['ensemble_config']['classifier']:
             self.model_type = "reg"
 
         self.extension = "_" + self.model_type + ".sav"
+        
+        
+    def export_model_config(self):
+        """
+        Export the model_config dictionary to a YAML file in self.path_out.
+        """
+        try:
+            os.makedirs(self.path_out, exist_ok=True)  # Ensure the output directory exists
+            yml_file_path = os.path.join(self.path_out, "model_config.yml")
+            
+            # Write the model_config dictionary to a YAML file
+            with open(yml_file_path, 'w') as yml_file:
+                dump(self.model_config, yml_file, Dumper=Dumper, default_flow_style=False)
+            
+            print(f"Model configuration exported to: {yml_file_path}")
+        except Exception as e:
+            print(f"Error exporting model_config to YAML: {e}")   
 
        
     def merge_performance(self, model):
@@ -61,13 +75,11 @@ class post:
         for i in range(len(self.d.columns)):
             target = self.d.columns[i]
             target_no_space = target.replace(' ', '_')
-            with open(self.root + self.model_config['path_out'] + model + "/scoring/" + target_no_space + self.extension, 'rb') as file:
+            with open(self.root + self.model_config['path_out'] + self.model_config['run_name'] + "/scoring/" + model + "/" + target_no_space + self.extension, 'rb') as file:
                 m = pickle.load(file)
             
             if self.model_config['ensemble_config']['classifier'] and not self.model_config['ensemble_config']['regressor']:
-                #estimate performance of classifier
-                performance = pd.DataFrame({'target':[target]})
-                all_performance.append(performance)
+                raise ValueError("classifiers are not supported")
             else:
                 mean = np.mean(self.d[self.d.columns[i]])
                 R2 = np.mean(m['test_R2'])
@@ -81,14 +93,11 @@ class post:
                 all_performance.append(performance)
 
         all_performance = pd.concat(all_performance)
-
-        all_performance.to_csv(self.root + self.model_config['path_out'] + model + "_performance.csv", index=False)
-
-        # if configuration==None:
-        #     all_performance.to_csv(self.root + self.model_config['path_out'] + model + "_performance.csv", index=False)
-        # else:
-        #     all_performance.to_csv(self.root + self.model_config['path_out'] + model + "_" + configuration + "_performance.csv", index=False)
-        
+        try: #make new dir if needed
+            os.makedirs(self.root + self.model_config['path_out'] + self.model_config['run_name'] + "/posts/performance/")
+        except:
+            None
+        all_performance.to_csv(self.root + self.model_config['path_out'] + self.model_config['run_name'] + "/posts/performance/" + model + "_performance.csv", index=False)
         print("finished merging performance")
 
     def merge_parameters(self, model):
@@ -100,7 +109,7 @@ class post:
             target = self.d.columns[i]
             target_no_space = target.replace(' ', '_')
 
-            with open(self.root + self.model_config['path_out'] + model + "/model/" + target_no_space + self.extension, 'rb') as file:
+            with open(self.root + self.model_config['path_out'] + self.model_config['run_name'] + "/model/" + model + "/" + target_no_space + self.extension, 'rb') as file:
                 m = pickle.load(file)
 
             if self.model_type == "reg":
@@ -140,9 +149,7 @@ class post:
                     all_parameters.append(parameters) 
 
             elif self.model_type == "clf":
-                #still to implement!
-                parameters = pd.DataFrame({'target':[target]})
-                all_parameters.append(parameters) 
+                raise ValueError("classifiers are not supported")
 
             elif self.model_type == "zir":
                 #still to implement!
@@ -150,7 +157,11 @@ class post:
                 all_parameters.append(parameters) 
 
         all_parameters= pd.concat(all_parameters)
-        all_parameters.to_csv(self.root + self.model_config['path_out'] + model + "_parameters.csv", index=False)
+        try: #make new dir if needed
+            os.makedirs(self.root + self.model_config['path_out'] + self.model_config['run_name'] + "/posts/parameters/")
+        except:
+            None
+        all_parameters.to_csv(self.root + self.model_config['path_out'] + self.model_config['run_name'] + "/posts/parameters/" + model + "_parameters.csv", index=False)
         
         print("finished merging parameters")
 
@@ -254,7 +265,7 @@ class post:
                 Conversion to m^3, e.g., l to m^3 would be 1e3, default is 1 (no conversion).
             
             magnitude_conversion : float
-                Prefix conversion, e.g., umol to Tmol would be 1e-21, default is 1 (no conversion).
+                Prefix conversion, e.g., umol to Pmol would be 1e-21, default is 1 (no conversion).
             
             molar_mass : float
                 Conversion from mol to grams, default is 1 (no conversion). Optional: 12.01 (carbon).
@@ -285,7 +296,7 @@ class post:
             >>> print("Volume calculated:", int.ds['volume'].values)
 
             """            
-            ds = self.parent.ds
+            ds = self.parent.d.to_xarray()
             resolution_lat = self.resolution_lat
             resolution_lon = self.resolution_lon
             depth_w = self.depth_w
@@ -323,7 +334,7 @@ class post:
 
             volume = area * depth_w
             ds['volume'] = (('lat', 'lon'), volume)
-            self.parent.ds = ds
+            self.parent.d = ds.to_dataframe()
         
         def integrate_total(self, variable='total', monthly=False, subset_depth=None):
             """
@@ -347,34 +358,59 @@ class post:
             >>> result = integration.integrate_total(variable='Calcification')
             >>> print("Final integrated total:", result.values)
             """
-            
-            ds = self.parent.ds
+            print("Initiate integrated_total")
+            ds = self.parent.d.to_xarray()
             vol_conversion = self.vol_conversion
             magnitude_conversion = self.magnitude_conversion
             molar_mass = self.molar_mass
             rate = self.rate
 
-            days_per_month = 365.25 / 12  # approx days/month
+            # Average number of days for each month (accounting for leap years)
+            days_per_month_full = np.array([31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+            
+            # Get the available time points (months) from the dataset
+            available_time = ds['time'].values  # Assuming 'time' is an array of 1, 2, 3, and 12
 
+            # Subset the days_per_month array to only include the available months
+            days_per_month = days_per_month_full[available_time - 1]
 
             if subset_depth:
                 ds = ds.sel(depth=slice(0, subset_depth))
-            
-            if rate:
-                total = (ds[variable] * ds['volume'] * days_per_month).sum(dim=['lat', 'lon', 'depth', 'time'])
-                total = (total / molar_mass) * vol_conversion * magnitude_conversion
-            else:
-                total = (ds[variable] * ds['volume']).sum(dim=['lat', 'lon', 'depth', 'time'])
-                total = (total / molar_mass) * vol_conversion * magnitude_conversion
 
-            if monthly:
-                total /= 12
-            
-            print("Final integrated total:", total.values)
+            if rate:
+                if monthly:
+                    # Calculate monthly total (separately for each month)
+                    total = []
+                    for i,month in enumerate(available_time):
+                        monthly_total = (ds[variable].isel(time=i) * ds['volume'].isel(time=i) * days_per_month[i]).sum(dim=['lat', 'lon', 'depth'])
+                        monthly_total = (monthly_total * molar_mass) * vol_conversion * magnitude_conversion
+                        total.append(monthly_total)
+                    total = xr.concat(total, dim="month")
+                    print(f"All monthly totals: {total.values}")
+                else:
+                    # Calculate annual total
+                    total = (ds[variable] * ds['volume'] * days_per_month.mean()).sum(dim=['lat', 'lon', 'depth', 'time'])
+                    total = (total * molar_mass) * vol_conversion * magnitude_conversion
+                    print("Final integrated total:", total.values)
+            else:
+                if monthly:
+                    # Calculate monthly total (separately for each month)
+                    total = []
+                    for i,month in enumerate(available_time):
+                        monthly_total = (ds[variable].isel(time=i) * ds['volume']).isel(time=i).sum(dim=['lat', 'lon', 'depth'])
+                        monthly_total = (monthly_total * molar_mass) * vol_conversion * magnitude_conversion
+                        total.append(monthly_total)
+                    total = xr.concat(total, dim="month")
+                    print(f"All monthly totals: {total.values}")
+                else:
+                    # Calculate annual total
+                    total = (ds[variable] * ds['volume']).sum(dim=['lat', 'lon', 'depth', 'time'])
+                    total = (total * molar_mass) * vol_conversion * magnitude_conversion
+                    print("Final integrated total:", total.values)
             return total
 
 
-        def integrated_totals(self, targets, monthly=False, subset_depth=None, 
+        def integrated_totals(self, targets=None, monthly=False, subset_depth=None, 
                              export=True, model="ens"):
             """
             Estimates global integrated values for all targets.
@@ -399,28 +435,33 @@ class post:
                 The model version to be integrated. Default is "ens". Other options include {"rf", "xgb", "knn"}.
     
             """
-            ds = self.parent.ds
+            ds = self.parent.d.to_xarray()
+            if targets.all == None:
+                targets = self.targets
             if "total" in ds:
                 targets = np.append(targets, 'total')
             totals = []
-    
+
             for target in targets:
                 try:
+                    print(f"Processing target: {target}")
                     total = self.integrate_total(variable=target, monthly=monthly, subset_depth=subset_depth)
                     total_df = pd.DataFrame({'total': [total.values], 'variable': target})
                     totals.append(total_df)
                 except Exception as e:
                     print(f"Some targets do not have predictions! Missing: {target}")
                     print(f"Error: {e}")
-
             totals = pd.concat(totals)
 
             if export:
                 depth_str = f"_depth_{subset_depth}m" if subset_depth else ""
-                avg_str = "_monthly_avg" if monthly else ""
-                file_name = f"{self.parent.root}{self.parent.model_config['path_out']}{model}_integrated_totals{depth_str}{avg_str}.csv"
-                totals.to_csv(file_name, index=False)
-                print(f"Exported totals to: {file_name}")     
+                month_str = "_monthly_int" if monthly else ""
+                try: #make new dir if needed
+                    os.makedirs(self.parent.root + self.parent.model_config['path_out'] + self.parent.model_config['run_name'] + "/posts/integrated_totals/")
+                except:
+                    None
+                totals.to_csv(self.parent.root + self.parent.model_config['path_out'] + self.parent.model_config['run_name'] + "/posts/integrated_totals/" + model + '_integrated_totals_PI' + self.parent.pi + depth_str + month_str + ".csv", index=False)
+                print(f"Exported totals")
 
 
     def merge_env(self, X_predict):
@@ -428,21 +469,14 @@ class post:
         Merge model output with environmental data 
         """
 
-        def concat(d, X_predict, chunk_size=1000):
-            # Ensure the length of X_predict is divisible by chunk_size
-            for start in range(0, len(X_predict), chunk_size):
-                end = start + chunk_size
-                chunk = X_predict[start:end]
-                
-                d = pd.concat([d, chunk], axis=1)
-                
-                # Delete chunk and run garbage collection to free up memory
-                del chunk
-                gc.collect()
-                
-            return d
-
-        self.d = concat(self.d, X_predict)
+        X_predict = X_predict.to_xarray()
+        ds = self.d.to_xarray()
+        aligned_datasets = xr.align(ds,X_predict, join="inner")
+        ds = xr.merge(aligned_datasets)
+        if 'FID' in ds:
+            ds['FID'] = ds['FID'].where(ds['FID'] != '', np.nan)
+        self.d = ds.to_dataframe()
+        self.d = self.d.dropna()
 
     def return_d(self):
         return(self.d)
@@ -492,8 +526,8 @@ class post:
         #to add loop defining units of variables
 
         print(self.d.head())
-        ds.to_netcdf(self.path_out + file_name + ".nc")
-        print("exported ds to: " + self.path_out + file_name + ".nc")
+        ds.to_netcdf(self.path_out + file_name + "_PI" + self.pi + ".nc")
+        print("exported ds to: " + self.path_out + file_name + "_PI" + self.pi + ".nc")
         #add nice metadata
 
 
@@ -517,6 +551,49 @@ class post:
             None
     
         print(self.d.head())
-        self.d.to_csv(self.path_out + file_name + ".csv")
-        print("exported d to: " + self.path_out + file_name + ".csv")
+        self.d.to_csv(self.path_out + file_name + "_PI" + self.pi + ".csv")
+        print("exported d to: " + self.path_out + file_name + "_PI" + self.pi + ".csv")
         #add nice metadata
+
+    def merge_obs(self, file_name, targets=None):
+        """
+        Merge model output with observational data
+        """
+        # Select and rename the target columns for d
+        if targets.all == None:
+            targets = self.targets
+        d = self.d[targets]
+
+        mod_columns = {target: target + '_mod' for target in targets}
+        d.rename(mod_columns, inplace=True, axis=1)
+        d.reset_index(inplace=True)
+        d.set_index(['lat', 'lon', 'depth', 'time'], inplace=True)        
+
+        # Read the training targets from the training.csv file defined in model_config
+        try:
+            df2_path = self.root + self.model_config['training']
+            df2 = pd.read_csv(df2_path)
+        except:
+            raise FileNotFoundError(f"Dataset not found at {df2_path}")
+        
+
+        df2.set_index(['lat', 'lon', 'depth', 'time'], inplace=True)
+        df2['dummy'] = 1
+
+        out = pd.concat([df2, d], axis=1)
+        out = out[out['dummy'] == 1].drop(['dummy'], axis=1)
+
+        # Calculate residuals
+        for target in targets:
+            out[target + '_resid'] = out[target] - out[target + '_mod']
+
+        # Define the columns to keep in the final DataFrame
+        keep_columns = list(targets) + list(mod_columns.values()) + [target + '_resid' for target in targets]
+
+        out = out[keep_columns]
+        file_name = f"{file_name}_obs"
+        print(out.head())
+        out.to_csv(self.path_out + file_name + "_PI" + self.pi + ".csv")
+        print("exported d to: " + self.path_out + file_name + "_PI" + self.pi + ".csv")
+
+        print('training merged with predictions')
