@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from inspect import signature
-from scipy.stats import kendalltau
 
 from sklearn.base import BaseEstimator, RegressorMixin, clone, is_regressor, is_classifier
 from sklearn.compose import TransformedTargetRegressor
@@ -17,27 +16,6 @@ from sklearn.metrics import make_scorer
 from mapie._machine_precision import EPSILON
 from mapie._typing import ArrayLike, NDArray
 from mapie.conformity_scores import BaseRegressionScore
-
-
-def tau_scoring(y, y_pred):
-    tau, p_value = kendalltau(y, y_pred)
-    return(tau)
-
-def tau_scoring_p(y, y_pred):
-    tau, p_value = kendalltau(y, y_pred)
-    return(p_value)
-
-def check_tau(scoring):
-
-    if 'tau' in scoring:
-        scoring['tau'] = make_scorer(tau_scoring)
-        scoring['tau_p'] = make_scorer(tau_scoring_p)
-        print(scoring)
-
-    else:
-        scoring = scoring
-
-    return scoring
 
 def do_log(self, x):
     y = np.log(x+1)
