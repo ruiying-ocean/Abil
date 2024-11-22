@@ -50,13 +50,21 @@ def def_prediction(path_out, ensemble_config, n, species):
 
 def parallel_predict(prediction_function, X_predict, n_threads=1):
 
-    df_sections = np.array_split(X_predict,  n_threads)
+    # Split the indices of X_predict into chunks
+    chunk_indices = np.array_split(X_predict.index, n_threads)
 
-    predictions = Parallel(n_jobs= n_threads)(delayed(prediction_function)(df_section) for df_section in df_sections)
+    # Create a list of DataFrame chunks based on the split indices
+    df_sections = [X_predict.loc[chunk_idx] for chunk_idx in chunk_indices]
 
+    # Use joblib to process each chunk in parallel
+    predictions = Parallel(n_jobs=n_threads)(
+        delayed(prediction_function)(df_section) for df_section in df_sections
+    )
+
+    # Combine the predictions from all threads
     combined_predictions = np.concatenate(predictions)
 
-    return(combined_predictions)
+    return combined_predictions
 
 
 def export_prediction(m, target, target_no_space, X_predict, model_out, n_threads=1):
