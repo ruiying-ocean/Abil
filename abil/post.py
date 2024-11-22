@@ -41,9 +41,8 @@ class post:
 
         # Export model_config to a YAML file
         self.export_model_config()
-
         if self.model_config['ensemble_config']['classifier'] and not self.model_config['ensemble_config']['regressor']:
-            self.model_type = "clf"
+            raise ValueError("classifiers are not supported")
         elif self.model_config['ensemble_config']['classifier'] and self.model_config['ensemble_config']['regressor']:
             self.model_type = "zir"
         if self.model_config['ensemble_config']['regressor'] and not self.model_config['ensemble_config']['classifier']:
@@ -80,9 +79,7 @@ class post:
                 m = pickle.load(file)
             
             if self.model_config['ensemble_config']['classifier'] and not self.model_config['ensemble_config']['regressor']:
-                #estimate performance of classifier
-                performance = pd.DataFrame({'target':[target]})
-                all_performance.append(performance)
+                raise ValueError("classifiers are not supported")
             else:
                 mean = np.mean(self.d[self.d.columns[i]])
                 R2 = np.mean(m['test_R2'])
@@ -101,12 +98,6 @@ class post:
         except:
             None
         all_performance.to_csv(self.root + self.model_config['path_out'] + self.model_config['run_name'] + "/posts/performance/" + model + "_performance.csv", index=False)
-
-        # if configuration==None:
-        #     all_performance.to_csv(self.root + self.model_config['path_out'] + model + "_performance.csv", index=False)
-        # else:
-        #     all_performance.to_csv(self.root + self.model_config['path_out'] + model + "_" + configuration + "_performance.csv", index=False)
-        
         print("finished merging performance")
 
     def merge_parameters(self, model):
@@ -158,9 +149,7 @@ class post:
                     all_parameters.append(parameters) 
 
             elif self.model_type == "clf":
-                #still to implement!
-                parameters = pd.DataFrame({'target':[target]})
-                all_parameters.append(parameters) 
+                raise ValueError("classifiers are not supported")
 
             elif self.model_type == "zir":
                 #still to implement!
