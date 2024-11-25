@@ -1,14 +1,11 @@
-2-phase Ensemble
-****************
+2-phase Ensemble YAML example
+*****************************
 
-Random forest
--------------
+.. literalinclude:: ../tests/2-phase.yml
+   :language: yaml
 
-load dependencies:
-
-
-set your directory:
-
+2-phase Ensemble code example
+*****************************
 .. tab-set::
 
     .. tab-item:: Linux/MacOS
@@ -87,7 +84,7 @@ set your directory:
 
             #train your model:
             m = tune(X_train, y, model_config)
-            m.train(model="rf", classifier=True)
+            m.train(model="rf", classifier=True, regressor=True)
 
             #predict your model:
             m = predict(X_train=X_train, y=y, X_predict=X_predict, 
