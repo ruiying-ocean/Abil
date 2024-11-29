@@ -83,6 +83,7 @@ class tune:
         self.y = self.y.values.ravel()
         self.X_train = X_train.sample(frac=1, random_state=model_config['seed']) #shuffle
         self.model_config = model_config
+        self.ensemble_config = model_config['ensemble_config']
         self.seed = model_config['seed']
         self.target = y.name
         self.target_no_space = self.target.replace(' ', '_')
@@ -216,18 +217,14 @@ class tune:
         else:
             raise ValueError("invalid model")
 
-        if classifier == False and regressor ==False:
+        if (self.ensemble_config['classifier'] == False) and (self.ensemble_config['regressor'] == False):
             raise ValueError("both classifier and regressor defined as False")
 
-
-        #if (classifier ==True) and (regressor ==True):
-        #    raise ValueError("2-phase model not supported, choose classifier OR regressor")
-
-        if (classifier ==True) and (regressor !=True):        
+        if (self.ensemble_config['classifier'] == True) and (self.ensemble_config['regressor'] != True):        
             raise ValueError("classifiers are not supported")
 
-        if regressor ==True:
-            if classifier==True:
+        if self.ensemble_config['regressor'] == True:
+            if self.ensemble_config['classifier'] == True:
                 y = self.y[self.y > 0]
                 X_train = self.X_train[self.y > 0].reset_index(drop=True)
                 cv = ZeroStratifiedKFold(n_splits=self.model_config['cv'])
@@ -290,7 +287,7 @@ class tune:
                 print("reg R2: " + str(round(np.mean(reg_scores['test_R2']), 2)))
 
 
-        if (classifier ==True) and (regressor ==True):      
+        if (self.ensemble_config['classifier'] == True) and (self.ensemble_config['regressor'] == True):      
             
             print("training classifier")
             clf_param_grid = self.model_config['param_grid'][model + '_param_grid']['clf_param_grid']
