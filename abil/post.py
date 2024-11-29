@@ -247,7 +247,7 @@ class post:
     def estimate_carbon(self, variable):
 
         """
-        Estimate carbon content for each species
+        Estimate carbon content for each target
 
 
         Parameters
@@ -310,7 +310,7 @@ class post:
 
         Notes
         ----------
-        Useful for estimating total species abundances if targets are continuous.
+        Useful for estimating total species abundances or varable sum if targets are continuous.
         Total is estimated based on the target list defined in model_config. 
 
         """
