@@ -157,7 +157,6 @@ class post:
                 raise ValueError("classifiers are not supported")
 
             elif self.model_type == "zir":
-                #still to implement!
                 if model == "rf":
                     max_depth_reg = m.regressor_.regressor.named_steps.estimator.max_depth
                     max_features_reg = m.regressor_.regressor.named_steps.estimator.max_features
