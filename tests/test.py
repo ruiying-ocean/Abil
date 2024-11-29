@@ -40,9 +40,9 @@ class TestRegressors(unittest.TestCase):
 
     def test_post_ensemble(self):
         m = tune(self.X_train, self.y, self.model_config)
-        m.train(model="rf", regressor=True)
-        m.train(model="xgb", regressor=True)
-        m.train(model="knn", regressor=True)
+        m.train(model="rf")
+        m.train(model="xgb")
+        m.train(model="knn")
 
         m = predict(self.X_train, self.y, self.X_predict, self.model_config)
         m.make_prediction()
@@ -100,9 +100,9 @@ class Test2Phase(unittest.TestCase):
 
         m = tune(self.X_train, self.y, self.model_config)
 
-        m.train(model="rf", classifier=True, regressor=True)
-        m.train(model="xgb", classifier=True, regressor=True)
-        m.train(model="knn", classifier=True, regressor=True)
+        m.train(model="rf")
+        m.train(model="xgb")
+        m.train(model="knn")
 
         m = predict(self.X_train, self.y, self.X_predict, self.model_config)
         m.make_prediction()
