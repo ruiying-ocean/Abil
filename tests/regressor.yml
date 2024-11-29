@@ -15,7 +15,6 @@
   seed : 1 # random seed
   n_threads : 1 # how many cpu threads to use
   cv : 10
-  predict_probability: False 
 
   ensemble_config: 
     classifier: False

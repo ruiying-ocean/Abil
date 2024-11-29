@@ -11,14 +11,11 @@
 
   local_root: ./
 
-  #predictors: ["temperature", "din", 
-  #   "irradiance"]
   predictors: ["feature_1", "feature_2", "feature_3"]
   verbose: 1
   seed : 1 # random seed
   n_threads : 1 # how many cpu threads to use
   cv : 3
-  predict_probability: False 
 
   ensemble_config: 
     classifier: True
@@ -26,7 +23,6 @@
     m1: "rf"
     m2: "knn"
     m3: "xgb"
-
 
   upsample: False
   stratify: True
@@ -52,7 +48,6 @@
         estimator__max_depth: [50] 
         estimator__max_samples: [0.8]
 
-
     xgb_param_grid:
       reg_param_grid:  
         regressor__estimator__learning_rate: [0.05]
@@ -70,7 +65,6 @@
         estimator__colsample_bytree: [0.6]
         estimator__gamma: [1] 
         estimator__reg_alpha: [1]   
-        
 
     knn_param_grid:
       reg_param_grid:  
