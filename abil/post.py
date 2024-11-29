@@ -12,8 +12,55 @@ class post:
     Post processing of SDM
     """
     def __init__(self, model_config, pi="50"):
+        """
+        A class for initializing and setting up a model with configuration, input data, and parameters.
 
+        Attributes
+        ----------
+        path_out : str
+            The output directory path where the model results will be saved.
+        ds : xarray.Dataset
+            The dataset containing the merged data from NetCDF files.
+        traits : pd.DataFrame
+            DataFrame containing the target trait information loaded from a CSV file.
+        root : str
+            Root directory as specified in the model configuration.
+        d : pd.DataFrame
+            DataFrame representation of the dataset after conversion and cleaning.
+        targets : pd.Series
+            The target values from the trait data that are present in the dataset columns.
+        model_config : dict
+            The model configuration dictionary containing paths, parameters, and other settings.
+        pi : str
+            The input parameter identifier, defaulting to "50".
+        model_type : str
+            The type of model being used, determined from the ensemble configuration (either "zir" or "reg").
+        extension : str
+            The file extension used for saving the model, based on the model type (e.g., "_zir.sav").
+
+        Methods
+        -------
+        merge_netcdf(path_in):
+            Merges multiple NetCDF files from the specified directory into a single dataset.
+        """
         def merge_netcdf(path_in):
+            """
+            Merges multiple NetCDF files from the specified directory into a single dataset.
+
+            This function uses `xarray.open_mfdataset` to load all NetCDF files in the given directory 
+            (matching the pattern "*.nc") and combines them into one xarray.Dataset. The function 
+            prints status messages indicating the start and completion of the merging process.
+
+            Parameters
+            ----------
+            path_in : str
+                The path to the directory containing the NetCDF files to be merged.
+
+            Returns
+            -------
+            xarray.Dataset
+                The merged dataset containing the combined data from all the NetCDF files in the directory.
+            """
             print("merging...")
             ds = xr.open_mfdataset(os.path.join(path_in, "*.nc"))
             print("finished loading netcdf files")
@@ -49,6 +96,16 @@ class post:
     def export_model_config(self):
         """
         Export the model_config dictionary to a YAML file in self.path_out.
+        
+        Raises
+        ------
+        Exception
+            If an error occurs during the directory creation or file writing process, an exception
+            is caught and an error message is printed.
+
+        Notes
+        -----
+        The YAML file is saved as "model_config.yml" in the `self.path_out` directory.
         """
         try:
             os.makedirs(self.path_out, exist_ok=True)  # Ensure the output directory exists
@@ -63,6 +120,14 @@ class post:
             print(f"Error exporting model_config to YAML: {e}")   
 
     def merge_performance(self):
+        """
+        Merges the performance data of multiple models as specified in the model configuration.
+
+        Notes
+        -----
+        The function relies on the `merge_performance_single_model` method to merge individual model 
+        performance data, and this is done for each model in the list, including the ensemble model.
+        """    
 
         models = [value for key, value in self.model_config['ensemble_config'].items() if key.startswith("m")]
         print("models included in merge performance!")
@@ -73,6 +138,38 @@ class post:
 
        
     def merge_performance_single_model(self, model):
+        """
+        Merges performance metrics for a single model and saves the results to a CSV file.
+
+        Parameters
+        ----------
+        model : str
+            The name of the model for which performance metrics are being calculated and merged. 
+            The model's performance data is expected to be stored in a `pickle` file in the "scoring" 
+            directory under the model name and target name.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If the model configuration includes a classifier but not a regressor, an error is raised 
+            since classifiers are not supported for performance merging.
+
+        Notes
+        -----
+        The method calculates several performance metrics for each target column in the dataset:
+            - R2: Coefficient of determination.
+            - RMSE: Root Mean Squared Error.
+            - MAE: Mean Absolute Error.
+            - rRMSE: Relative Root Mean Squared Error.
+            - rMAE: Relative Mean Absolute Error.
+
+        The performance metrics for each target are aggregated into a DataFrame, which is then saved 
+        as a CSV file in the "posts/performance" directory for the specified model.
+        """
         
         all_performance = []
 
@@ -107,12 +204,51 @@ class post:
         print("finished merging performance")
 
     def merge_parameters(self):
+        """
+        Merges model parameters for multiple models as specified in the model configuration.
+
+        Notes
+        -----
+        The method operates by iterating over each model in the ensemble configuration, collecting 
+        model parameters using `merge_parameters_single_model`, and saving the results to a CSV file 
+        in the "posts/parameters" directory.
+        """
 
         models = [value for key, value in self.model_config['ensemble_config'].items() if key.startswith("m")]
         for model in models:
             self.merge_parameters_single_model(model)
 
     def merge_parameters_single_model(self, model):
+        """
+        Merges and saves model parameters for a single model.
+
+        This method extracts the hyperparameters of a specified model (e.g., "rf", "xgb", "knn") from 
+        serialized files stored as pickle objects. The method supports different model types, including 
+        regression ("reg"), classification ("clf"), and ensemble ("zir") models. The extracted parameters 
+        are stored in a DataFrame and then saved to a CSV file.
+
+        The function also handles the creation of the necessary directories to save the resulting CSV file 
+        if they do not already exist.
+
+        Parameters
+        ----------
+        model : str
+            The name of the model for which parameters are being merged. Expected models include 
+            "rf" (Random Forest), "xgb" (XGBoost), and "knn" (K-Nearest Neighbors).
+
+        Raises
+        ------
+        ValueError
+            If the model configuration includes classifiers but not regressors, an error is raised 
+            since classifiers are not supported for parameter merging.
+
+        Notes
+        -----
+        The method processes the parameters of each model for regression and ensemble models, 
+        extracting hyperparameters such as `n_estimators`, `max_depth`, `learning_rate`, and others.
+        The parameters for each target are aggregated into a DataFrame and saved as a CSV file in the 
+        "posts/parameters" directory.
+        """
         
         all_parameters = []
 
@@ -252,19 +388,20 @@ class post:
         print("finished merging parameters")
 
 
-
     def estimate_carbon(self, variable):
 
         """
-        Estimate carbon content for each target
+        Estimate carbon content for each target based on a specified variable.
 
+        This method calculates the carbon content for each target by scaling the data in `self.d` 
+        with the values of the specified variable from the `traits` DataFrame. The results are 
+        stored back in `self.d`.
 
         Parameters
         ----------
-
-        variable: string
-            carbon content to estimate
-
+        variable : str
+            The name of the column in the `traits` DataFrame containing the carbon content values 
+            to be used for scaling the target data.
         """
 
         w = self.traits.query('Target in @self.targets')
@@ -275,14 +412,19 @@ class post:
 
     def def_groups(self, dict):
         """
-        Define groups of species
+        Define groups of species based on a provided dictionary.
 
         Parameters
         ----------
-
-        dict: dictionary
-        A dictionary containing group definitions
-
+        dict : dict
+            A dictionary where keys represent group names, and values are lists of species or 
+            column names to be grouped under each key.
+            
+        Notes
+        -----
+        - The method renames columns in `self.d` based on the provided dictionary and then sums 
+        their values to create grouped columns.
+        - The resulting grouped data is concatenated to the original `self.d`.
         """     
 
         df = self.d[self.targets]
@@ -298,7 +440,7 @@ class post:
         Parameters
         ----------
 
-        variable: string
+        variable : string
             variable that is used to estimate cwm.
 
         """
@@ -553,7 +695,20 @@ class post:
 
     def merge_env(self, X_predict):
         """
-        Merge model output with environmental data 
+        Merge model output with environmental data.
+
+        This method aligns and merges the predicted values (model output) with the existing 
+        environmental dataset stored in `self.d`. The merged data replaces `self.d`.
+
+        Parameters
+        ----------
+        X_predict : pd.DataFrame
+            A DataFrame containing the model's predicted values to be merged with the 
+            environmental dataset.
+
+        Returns
+        -------
+        None
         """
 
         X_predict = X_predict.to_xarray()
@@ -565,24 +720,30 @@ class post:
         self.d = ds.to_dataframe()
         self.d = self.d.dropna()
 
-    def return_d(self):
-        return(self.d)
-
     def export_ds(self, file_name, 
                   author=None, description=None):
         """
-        Export processed dataset to netcdf.
+        Export the processed dataset to a NetCDF file.
+
+        This method saves the processed dataset (`self.d`) to a NetCDF file in the location 
+        defined by `self.path_out`, with optional metadata such as author and description.
 
         Parameters
         ----------
-        file_name: name netcdf will be saved as. 
-        author: author included in netcdf description
-        description: title included in netcdf description
+        file_name : str 
+            The name of the NetCDF file (without extension). 
+        author : str, optional
+            The name of the author to include in NetCDF metadata (default is None).
+        description : str, optional
+            A description or title to include in the NetCDF metadata (default is None).
 
         Notes
-        ----------
-        data export location is defined in the model_config.yml
-
+        -----
+        - The export location is defined in the `model_config.yml` file and is stored in `self.path_out`.
+        - The method sets metadata attributes such as conventions, creator name, and units for 
+        latitude, longitude, and depth.
+        - Missing directories in the export path are created if necessary.
+        - The file is saved with a suffix that includes the `pi` value (e.g., `_PI50.nc`).
         """
     
         try: #make new dir if needed
@@ -621,16 +782,21 @@ class post:
 
     def export_csv(self, file_name):
         """
-        Export processed dataset to csv.
+        Export the processed dataset to a csv file.
+
+        This method saves the processed dataset (`self.d`) to a csv file in the location 
+        defined by `self.path_out`, with optional metadata such as author and description.
 
         Parameters
         ----------
-        file_name: name csv will be saved as. 
-
+        file_name : str 
+            The name of the csv file (without extension). 
+        
         Notes
-        ----------
-        data export location is defined in the model_config.yml
-
+        -----
+        - The export location is defined in the `model_config.yml` file and is stored in `self.path_out`.
+        - Missing directories in the export path are created if necessary.
+        - The file is saved with a suffix that includes the `pi` value (e.g., `_PI50.nc`).
         """
     
         try: #make new dir if needed
@@ -646,7 +812,34 @@ class post:
 
     def merge_obs(self, file_name, targets=None):
         """
-        Merge model output with observational data
+        Merge model output with observational data and calculate residuals.
+
+        This function integrates model predictions with observational data based on 
+        spatial and temporal indices, calculates residuals, and exports the merged dataset.
+
+        Parameters
+        ----------
+        file_name : str
+            The base name of the output file to save the merged dataset.
+        targets : list of str, optional
+            A list of target variable names to include in the merge. If None, the default 
+            targets from `self.targets` are used (default is None).
+
+        Notes
+        -----
+        - The function matches the observational data with model predictions based on the 
+        indices `['lat', 'lon', 'depth', 'time']`.
+        - Residuals are calculated as `observed - predicted` for each target variable.
+        - Columns included in the output are the original targets, their modeled values 
+        (suffixed with `_mod`), and their residuals (suffixed with `_resid`).
+        - The merged dataset is saved as a CSV file with a suffix `_PI` followed by the 
+        `pi` value, appended to the output file name.
+        - Observational data is loaded from the path defined in `self.model_config['training']`.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the observational dataset file cannot be found at the specified location.
         """
         # Select and rename the target columns for d
         if targets.all == None:
