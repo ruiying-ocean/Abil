@@ -70,12 +70,7 @@
         estimator__colsample_bytree: [0.6]
         estimator__gamma: [1] 
         estimator__reg_alpha: [1]   
-
-    gp_param_grid:
-      reg_param_grid:  
-        regressor__estimator__n_restarts_optimizer: [0]  
-      clf_param_grid:  
-        estimator__n_restarts_optimizer: [0]  
+        
 
     knn_param_grid:
       reg_param_grid:  
