@@ -17,7 +17,6 @@ from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder,  StandardScaler
-from sklearn.neural_network import MLPRegressor, MLPClassifier
 from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
 
 
@@ -203,9 +202,6 @@ class tune:
         elif model=="rf":
             clf_estimator = RandomForestClassifier(random_state=self.seed, oob_score=True)
             reg_estimator = RandomForestRegressor(random_state=self.seed, oob_score=True)
-        elif model=="mlp":
-            clf_estimator = MLPClassifier(random_state=self.seed, solver='lbfgs')
-            reg_estimator = MLPRegressor(random_state=self.seed, solver='lbfgs')
         elif model=="gp":
             from sklearn.gaussian_process.kernels import RBF
 
