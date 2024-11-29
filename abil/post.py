@@ -573,7 +573,7 @@ class post:
         d = self.d[targets]
 
         mod_columns = {target: target + '_mod' for target in targets}
-        d.rename(mod_columns, inplace=True, axis=1)
+        d = d.rename(mod_columns, axis=1)
         d.reset_index(inplace=True)
         d.set_index(['lat', 'lon', 'depth', 'time'], inplace=True)        
 
