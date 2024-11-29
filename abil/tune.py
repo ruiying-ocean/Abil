@@ -1,12 +1,3 @@
-"""
-Module for model tuning and training with support for cross-validation, ensemble methods, and
-zero-inflated regression.
-
-This module defines a `tune` class that facilitates training, hyperparameter tuning, and 
-evaluation of various machine learning models. It includes options for handling both regression 
-and classification tasks, including support for zero-inflated models.
-"""
-
 import os
 os.environ['MKL_NUM_THREADS'] = '1'
 os.environ['OMP_NUM_THREADS'] = '1'
