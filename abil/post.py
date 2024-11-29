@@ -166,7 +166,6 @@ class post:
                 raise ValueError("classifiers are not supported")
 
             elif self.model_type == "zir":
-                #still to implement!
                 if model == "rf":
                     max_depth_reg = m.regressor_.regressor.named_steps.estimator.max_depth
                     max_features_reg = m.regressor_.regressor.named_steps.estimator.max_features
@@ -257,7 +256,7 @@ class post:
     def estimate_carbon(self, variable):
 
         """
-        Estimate carbon content for each species
+        Estimate carbon content for each target
 
 
         Parameters
@@ -320,7 +319,7 @@ class post:
 
         Notes
         ----------
-        Useful for estimating total species abundances if targets are continuous.
+        Useful for estimating total species abundances or varable sum if targets are continuous.
         Total is estimated based on the target list defined in model_config. 
 
         """

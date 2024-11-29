@@ -1,12 +1,13 @@
+
+
 import pandas as pd
 import numpy as np
 import pickle
 import os
 import time
-from sklearn.ensemble import VotingRegressor
-from sklearn.model_selection import KFold
 
-from sklearn.model_selection import cross_validate
+from sklearn.ensemble import VotingRegressor
+from sklearn.model_selection import KFold, cross_validate
 from joblib import Parallel, delayed
 
 
@@ -15,7 +16,31 @@ if 'site-packages' in __file__ or os.getenv('TESTING') == 'true':
 else:
     from functions import inverse_weighting, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold
 
-def def_prediction(path_out, ensemble_config, n, species):
+def def_prediction(path_out, ensemble_config, n, target):
+    """
+    Loads a trained model and scoring information, and calculates the mean absolute error (MAE) for the prediction.
+
+    Parameters
+    ----------
+    path_out : str
+        Path to the output folder containing model and scoring information.
+    ensemble_config : dict
+        Dictionary containing configuration details for the ensemble models, including model names, regressor or classifier status.
+    n : int
+        Index of the model to load in the ensemble.
+    target : str
+        The target for which predictions are made (used to load target-specific files).
+
+    Returns
+    -------
+    tuple
+        A tuple containing the model and the mean absolute error (MAE) score.
+
+    Raises
+    ------
+    ValueError
+        If both regressor and classifier are set to False, or if a classifier is used when only regressors are supported.
+    """
 
     path_to_scores  = os.path.join(path_out, "scoring", ensemble_config["m"+str(n+1)])
     path_to_param  = os.path.join(path_out, "model", ensemble_config["m"+str(n+1)])
@@ -25,20 +50,20 @@ def def_prediction(path_out, ensemble_config, n, species):
 
     elif (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == True):
         print("predicting regressor")
-        species_no_space = species.replace(' ', '_')
-        with open(os.path.join(path_to_param, species_no_space) + '_reg.sav', 'rb') as file:
+        target_no_space = target.replace(' ', '_')
+        with open(os.path.join(path_to_param, target_no_space) + '_reg.sav', 'rb') as file:
             m = pickle.load(file)
-        with open(os.path.join(path_to_scores, species_no_space) + '_reg.sav', 'rb') as file:
+        with open(os.path.join(path_to_scores, target_no_space) + '_reg.sav', 'rb') as file:
             scoring = pickle.load(file) 
         scores = abs(np.mean(scoring['test_MAE']))
 
 
     elif (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == True):
         print("predicting zero-inflated regressor")
-        species_no_space = species.replace(' ', '_')
-        with open(os.path.join(path_to_param, species_no_space) + '_zir.sav', 'rb') as file:
+        target_no_space = target.replace(' ', '_')
+        with open(os.path.join(path_to_param, target_no_space) + '_zir.sav', 'rb') as file:
             m = pickle.load(file)
-        with open(os.path.join(path_to_scores, species_no_space) + '_zir.sav', 'rb') as file:
+        with open(os.path.join(path_to_scores, target_no_space) + '_zir.sav', 'rb') as file:
             scoring = pickle.load(file)
         scores = abs(np.mean(scoring['test_MAE']))
 
@@ -49,6 +74,23 @@ def def_prediction(path_out, ensemble_config, n, species):
 
 
 def parallel_predict(prediction_function, X_predict, n_threads=1):
+    """
+    Splits the prediction task across multiple threads to predict on large datasets.
+
+    Parameters
+    ----------
+    prediction_function : callable
+        The model's prediction function to be applied to each chunk of data.
+    X_predict : DataFrame
+        The features (input data) on which to make predictions.
+    n_threads : int, optional, default=1
+        The number of threads to use for parallel processing.
+
+    Returns
+    -------
+    np.ndarray
+        The combined predictions from all threads.
+    """    
 
     # Split the indices of X_predict into chunks
     chunk_indices = np.array_split(X_predict.index, n_threads)
@@ -69,6 +111,24 @@ def parallel_predict(prediction_function, X_predict, n_threads=1):
 
 
 def export_prediction(m, target, target_no_space, X_predict, model_out, n_threads=1):
+    """
+    Exports model predictions to a NetCDF file.
+
+    Parameters
+    ----------
+    m : object
+        The trained model used for predictions.
+    target : str
+        The name of the target variable.
+    target_no_space : str
+        The target variable name with spaces replaced by underscores.
+    X_predict : DataFrame
+        The features on which to make predictions.
+    model_out : str
+        Path where the predictions should be saved.
+    n_threads : int, optional, default=1
+        The number of threads to use for parallel prediction.
+    """
 
     d = X_predict.copy()
     d[target] = parallel_predict(m.predict, X_predict, n_threads)
@@ -84,46 +144,51 @@ def export_prediction(m, target, target_no_space, X_predict, model_out, n_thread
 
 class predict:
     """
+    Predicts outcomes based on an ensemble of regression models and exports the predictions to a NetCDF file.
+
     Parameters
     ----------
-
     X_train : {array-like, sparse matrix} of shape (n_samples, n_features)
-        should be the same as the X used for tuning
-
+        Training features used for model fitting.
     y : array-like of shape (n_samples,) or (n_samples, n_outputs)
-        should be the same as the y used for tuning
-
+        Target values used for model fitting.
     X_predict : {array-like, sparse matrix} of shape (n_samples, n_features)
-        Features to predict on (i.e. gridded environmental data). 
-            
-    model_config: dictionary, default=None
-        A dictionary containing:
+        Features to predict on (e.g., environmental data).
+    model_config : dict
+        Dictionary containing model configuration parameters such as:
+        - seed: int, random seed for reproducibility
+        - path_out: str, output path for saving results
+        - path_in: str, input path to models
+        - verbose: int, verbosity level (0-3)
+        - cv: int, number of cross-validation folds
+        - ensemble_config: dict, configuration for ensemble models
+    n_jobs : int, optional, default=1
+        The number of threads to use for parallel processing.
 
-        `seed` : int, used to create random numbers
+    Attributes
+    ----------
+    path_out : str
+        The path where predictions and model outputs are saved.
+    target : str
+        The name of the target variable.
+    target_no_space : str
+        The target variable name with spaces replaced by underscores.
+    verbose : int
+        Verbosity level for the model.
+    n_jobs : int
+        The number of parallel threads for prediction and cross-validation.
 
-        `root`: string, path to folder
-        
-        `path_out`: string, where predictions are saved
-        
-        `path_in`: string, where to find tuned models
-        
-        `traits`: string, file name of your trait file
-        
-        `verbose`: int, to set verbosity (0-3)
-                
-        `cv` : int, number of cross-folds
-
-        `n_threads`: int, number of threads to use
-                
-        `ensemble_config` : 
-        
-        `clf_scoring` :
-        
-        `reg_scoring` :
-
+    Methods
+    -------
+    make_prediction()
+        Fits the ensemble model(s) and makes predictions, exporting them to NetCDF.
     """
+
     def __init__(self, X_train, y, X_predict, model_config, n_jobs=1):
-        
+        """
+        Initializes the prediction process by setting up model configurations, cross-validation, and paths.
+        """
+                
         self.st = time.time()
 
         self.y = y.sample(frac=1, random_state=model_config['seed']) #shuffle
@@ -160,10 +225,6 @@ class predict:
         else:
             self.scoring = self.model_config['reg_scoring']
 
-        #unsure if this is required...
-#        if (self.ensemble_config["classifier"] !=True) and (self.ensemble_config["classifier"] !=False):
-#            raise ValueError("classifier should be True or False")
-        
         if (self.ensemble_config["regressor"] !=True) and (self.ensemble_config["regressor"] !=False):
             raise ValueError("regressor should be True or False")
 
@@ -180,11 +241,14 @@ class predict:
     def make_prediction(self):
 
         """
-        Calculates performance of model(s) and exports prediction(s) to netcdf
+        Fits the models in the ensemble and makes predictions. Exports the predictions and model performance metrics.
 
-        If more than one model is defined an weighted ensemble is generated using 
-        a voting Regressor.
+        If multiple models are provided, predictions are made for both individual models and an ensemble of models.
         
+        Returns
+        -------
+        None
+
         Notes
         -----
         If more than one model is provided, predictions are made for both 

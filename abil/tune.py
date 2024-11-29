@@ -10,8 +10,7 @@ import pandas as pd
 import numpy as np
 from joblib import parallel_backend
 from xgboost import XGBClassifier, XGBRegressor
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import cross_validate, KFold
+from sklearn.model_selection import GridSearchCV, cross_validate, KFold
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, BaggingRegressor, BaggingClassifier
 from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
 from sklearn.pipeline import Pipeline
@@ -27,54 +26,50 @@ else:
 
 class tune:
     """
-    Parameters
+    A class for model training, hyperparameter tuning, and cross-validation.
+
+    Attributes
     ----------
+    X_train : pd.DataFrame
+        The feature matrix used for training the models.
+    y : pd.Series
+        The target variable.
+    model_config : dict
+        Configuration dictionary containing model and training parameters.
+    regions : str or None, optional
+        Name of the feature column representing regions, used for stratification (default is None).
 
-    X : {array-like, sparse matrix} of shape (n_samples, n_features)
-        The training input samples. Internally, its dtype will be converted
-        to ``dtype=np.float32``. If a sparse matrix is provided, it will be
-        converted into a sparse ``csc_matrix``.
-
-    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
-        The target values (class labels in classification, real numbers in
-        regression).
-
-    model_config: dictionary, default=None
-        A dictionary containing:
-
-        `seed` : int, used to create random numbers
-        
-        `root`: string, path to folder
-        
-        `path_out`: string, where predictions are saved
-        
-        `path_in`: string, where to find tuned models
-        
-        `traits`: string, file name of your trait file
-        
-        `verbose`: int, to set verbosity (0-3)
-        
-        `n_threads`: int, number of threads to use
-        
-        `cv` : int, number of cross-folds
-                    
-        `ensemble_config` : 
-        
-        `clf_scoring` :
-        
-        `reg_scoring` :    
-    
+    Methods
+    -------
+    train(model, classifier=False, regressor=False, log="no"):
+        Train and tune models based on the provided configuration.
     """
+
     def __init__(self, X_train, y, model_config, regions=None):
-
         """
-        simulate-pseudo-absence 
-        if True:
-        1) run two phase model.
-        2) Drop zeros for regression
-        3) Include zeros for 2-phase fitting + validation
+        Initialize the `tune` object.
 
-        if False, None
+        Parameters
+        ----------
+        X_train : pd.DataFrame
+            The training feature matrix.
+        y : pd.Series
+            The target variable.
+        model_config : dict
+            Configuration dictionary with the following keys:
+                - seed : int
+                - root : str
+                - path_out : str
+                - path_in : str
+                - traits : str
+                - verbose : int
+                - n_threads : int
+                - cv : int
+                - ensemble_config : dict
+                - clf_scoring : list of str
+                - reg_scoring : list of str
+        regions : str or None, optional
+            Column name for regions to be used in preprocessing and stratification.
         """
         self.y = y.sample(frac=1, random_state=model_config['seed']) #shuffle
         print("length of y:")
@@ -89,15 +84,16 @@ class tune:
         self.n_jobs = model_config['n_threads']
         self.verbose = model_config['verbose'] 
         self.regions = regions
-
         self.path_out = os.path.join(model_config['root'], model_config['path_out'], model_config['run_name'])
 
+        # Check for valid regions
         if regions is not None:
             if regions not in X_train.columns:
                 raise ValueError("Regions defined but not in X_train. Did you mean regions=None?")
 
-        if model_config['stratify']==True:
-            if model_config['upsample']==True:
+        # Setup cross-validation strategy
+        if model_config['stratify']:
+            if model_config['upsample']:
                 self.cv = UpsampledZeroStratifiedKFold(n_splits=model_config['cv'])
                 print("upsampling = True")
             else:
@@ -105,61 +101,50 @@ class tune:
         else:
             self.cv = KFold(n_splits=model_config['cv'])
              
-        try:
-            self.bagging_estimators = model_config['knn_bagging_estimators'] 
-        except:
-            self.bagging_estimators = None
+        self.bagging_estimators = model_config.get('knn_bagging_estimators', None)
 
+        # Preprocessor for features
+        predictors = model_config['predictors'].copy()
+        numeric_features = X_train.columns.get_indexer(X_train[predictors].columns)
+        numeric_transformer = Pipeline(steps=[('scaler', StandardScaler())])
 
-        if regions!=None:
+        if regions:
             model_config['predictors'].remove(regions)
             categorical_features = [self.regions]
             categorical_transformer = OneHotEncoder(handle_unknown='ignore')
-        
-        predictors = model_config['predictors'].copy()
-
-        numeric_features =  self.X_train.columns.get_indexer(self.X_train[predictors].columns)
-        numeric_transformer = Pipeline(steps=[
-            ('scaler', StandardScaler())])
-
-        if self.regions!=None:
-            self.preprocessor = ColumnTransformer(
-                transformers=[
-                    ('num', numeric_transformer, numeric_features),
-                    ('cat', categorical_transformer, categorical_features)])
-            
+            self.preprocessor = ColumnTransformer(transformers=[
+                ('num', numeric_transformer, numeric_features),
+                ('cat', categorical_transformer, categorical_features)
+            ])
         else:
-            self.preprocessor = ColumnTransformer(
-                transformers=[
-                    ('num', numeric_transformer, numeric_features)])
+            self.preprocessor = ColumnTransformer(transformers=[
+                ('num', numeric_transformer, numeric_features)
+            ])
             
 
     
     def train(self, model, classifier=False, regressor=False, log="no"):
 
         """
+        Train a machine learning model using the specified configuration.
 
         Parameters
         ----------
-        model : string, default="rf"
-            Which model to train: 
-            Supported models:
-            `"rf"` Random Forest 
-            `"knn"` K-Nearest Neighbors
-            `"xgb"` XGBoost
-
+        model : str
+            The type of model to train. Supported options:
+            - 'rf' : Random Forest
+            - 'knn' : K-Nearest Neighbors
+            - 'xgb' : XGBoost
+            - 'gp' : Gaussian Process
         classifier : bool, default=False
-
+            Whether to train a classification model.
         regressor : bool, default=False
-
-        log : string, default="no"
-            If `"yes"`, log transformation is applied to y
-            
-            If `"no"`, y is not transformed
-            
-            If `"both"`, both log and no-log transformations are fitted by 
-                running the model two times.
-
+            Whether to train a regression model.
+        log : str, default="no"
+            Log transformation option:
+            - 'yes' : Apply log transformation to the target variable.
+            - 'no' : No transformation.
+            - 'both' : Train both with and without log transformation.
 
 
         Examples
@@ -379,7 +364,3 @@ class tune:
         elapsed_time = et-st
 
         print("execution time:", elapsed_time, "seconds")        
-
-    """
-
-    """
