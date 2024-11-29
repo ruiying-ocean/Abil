@@ -123,31 +123,32 @@ class post:
                     max_features = m.regressor_.named_steps.estimator.max_features
                     max_samples = m.regressor_.named_steps.estimator.max_samples
                     min_samples_leaf = m.regressor_.named_steps.estimator.min_samples_leaf
-                    parameters = pd.DataFrame({'target':[target], 'max_depth':[max_depth], 'max_features':[max_features], 
-                                            'max_samples':[max_samples], 'min_samples_leaf':[min_samples_leaf]})
+                    n_estimators = m.regressor_.named_steps.estimator.n_estimators
+                    parameters = pd.DataFrame({'target':[target], 'n_estimators':[n_estimators], 'max_features':[max_features], 'max_depth':[max_depth], 
+                                            'min_samples_leaf':[min_samples_leaf], 'max_samples':[max_samples]
+                                            })
                     all_parameters.append(parameters)
                 elif model == "xgb":
+                    learning_rate = m.regressor_.named_steps.estimator.learning_rate
+                    n_estimators = m.regressor_.named_steps.estimator.n_estimators
                     max_depth = m.regressor_.named_steps.estimator.max_depth
                     subsample = m.regressor_.named_steps.estimator.subsample
                     colsample_bytree = m.regressor_.named_steps.estimator.colsample_bytree
-
-                    learning_rate = m.regressor_.named_steps.estimator.learning_rate
+                    gamma = m.regressor_.named_steps.estimator.gamma
                     alpha = m.regressor_.named_steps.estimator.reg_alpha
-
-                    parameters = pd.DataFrame({'target':[target], 'max_depth':[max_depth], 'subsample':[subsample], 'colsample_bytree':[colsample_bytree],
-                                            'learning_rate':[learning_rate], 'alpha':[alpha]                                           
+                    parameters = pd.DataFrame({'target':[target], 'learning_rate':[learning_rate], 'n_estimators':[n_estimators], 
+                                            'max_depth':[max_depth], 'subsample':[subsample], 'colsample_bytree':[colsample_bytree],
+                                            'learning_rate':[learning_rate], 'gamma':[gamma], 'alpha':[alpha]                                           
                                             })
                     all_parameters.append(parameters)
                 elif model == "knn":
-                    max_features = m.regressor_.named_steps.estimator.max_features
                     max_samples = m.regressor_.named_steps.estimator.max_samples
-
+                    max_features = m.regressor_.named_steps.estimator.max_features
                     leaf_size = m.regressor_.named_steps.estimator.estimator.leaf_size
                     n_neighbors = m.regressor_.named_steps.estimator.estimator.n_neighbors
                     p = m.regressor_.named_steps.estimator.estimator.p
                     weights = m.regressor_.named_steps.estimator.estimator.weights
-
-                    parameters = pd.DataFrame({'target':[target], 'max_features':[max_features], 'max_samples':[max_samples],
+                    parameters = pd.DataFrame({'target':[target], 'max_samples':[max_samples], 'max_features':[max_features],
                                             'leaf_size':[leaf_size], 'p':[p], 'n_neighbors':[n_neighbors], 'weights':[weights]
                                             })
                     all_parameters.append(parameters) 
