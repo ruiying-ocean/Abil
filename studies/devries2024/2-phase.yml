@@ -10,12 +10,10 @@
   targets:  studies/devries2024/data/traits.csv #root + folder
   training:  studies/devries2024/data/obs_env.csv
 
-  predictors: ["temperature", "si", 
-    "phosphate", "din", 
-    "o2", "mld", "DIC", 
-    "TA", "PAR", 
-    "chlor_a"]
-    
+  predictors: ["temperature", 
+    "sio4", "po4", "no3", 
+    "o2", "mld", "DIC", "TA",
+    "PAR","chlor_a"]
 
   verbose: 3
   seed : 1 # random seed
