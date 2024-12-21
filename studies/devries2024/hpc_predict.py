@@ -10,21 +10,21 @@ from sklearn.preprocessing import OneHotEncoder
 
 try:
     print(sys.argv[1])
-    with open('/user/work/ba18321/Abil/devries2024/2-phase.yml', 'r') as f:
+    with open('/user/work/ba18321/Abil/studies/devries2024/2-phase.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = True
     n_jobs = pd.to_numeric(sys.argv[1])
     n_spp = pd.to_numeric(sys.argv[2])
-    root = model_config['hpc_root']
+    root = model_config['root']
     model_config['cv'] = 10
 
 except:
-    with open('/user/work/ba18321/Abil/devries2024/2-phase.yml', 'r') as f:
+    with open('/user/work/ba18321/Abil/studie/devries2024/2-phase.yml', 'r') as f:
         model_config = load(f, Loader=Loader)
     model_config['hpc'] = False
     n_jobs = 1
     n_spp = 1
-    root = model_config['local_root']
+    root = model_config['root']
     model_config['cv'] = 3
 
 #define model config:
@@ -34,7 +34,6 @@ d = pd.read_csv(root + model_config['training'])
 target =  targets['Target'][n_spp]
 d[target] = d[target].fillna(0)
 d = d.dropna(subset=[target])
-d = d.dropna(subset=['FID'])
 d = upsample(d, target, ratio=10)
 print(target)
 predictors = model_config['predictors']
@@ -48,5 +47,4 @@ print("finished loading data")
 
 m = predict(X_train, y, X_predict, model_config, n_jobs=n_jobs)
 
-m.make_prediction(prediction_inference=True, 
-                  conformity_score=OffsetGammaConformityScore(offset=1e-10))
+m.make_prediction()
