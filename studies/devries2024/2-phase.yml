@@ -35,7 +35,6 @@
    R2: r2
    MAE: neg_mean_absolute_error
    RMSE: neg_root_mean_squared_error
-   tau: make_scorer(tau_scoring)
 
   clf_scoring:
    accuracy: balanced_accuracy
