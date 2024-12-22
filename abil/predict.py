@@ -139,7 +139,10 @@ def export_prediction(m, target, target_no_space, X_predict, model_out, n_thread
     except:
         None
 
-    d[target].to_netcdf(model_out + target_no_space + ".nc") 
+    export_path = os.path.join(model_out, target_no_space + ".nc")
+
+
+    d[target].to_netcdf(export_path) 
 
 
 class predict:
@@ -252,7 +255,7 @@ class predict:
         Notes
         -----
         If more than one model is provided, predictions are made for both 
-        invidiual models and an ensemble of the models. 
+        individual models and an ensemble of the models. 
 
         """
 
@@ -279,7 +282,7 @@ class predict:
             for i in range(number_of_models):
                 m, mae = def_prediction(self.path_out, self.ensemble_config, i, self.target_no_space)
                 model_name = self.ensemble_config["m" + str(i + 1)]
-                model_out = os.path.join(self.path_out, "predictions/ens/50/") #temporary until tree/bag CI is implemented! 
+                model_out = os.path.join(self.path_out, "predictions", model_name, "50")
 
                 export_prediction(m=m, target = self.target, target_no_space = self.target_no_space, X_predict = self.X_predict,
                               model_out = model_out, n_threads=self.n_jobs)
@@ -293,6 +296,9 @@ class predict:
 
             if self.ensemble_config["regressor"] ==True:
                 m = VotingRegressor(estimators=models, weights=w).fit(self.X_train, self.y)   
+                model_out = os.path.join(self.path_out, "predictions", "ens", "50")
+                export_prediction(m=m, target = self.target, target_no_space = self.target_no_space, X_predict = self.X_predict,
+                              model_out = model_out, n_threads=self.n_jobs)                
             else:
                 raise ValueError("classifiers are not supported")
 
@@ -301,7 +307,7 @@ class predict:
             scores = cross_validate(m, self.X_train, self.y, cv=self.cv, verbose=self.verbose, 
                                     scoring=self.scoring, n_jobs=self.n_jobs)
 
-            model_out_scores = os.path.join(self.path_out, "scoring/ens")
+            model_out_scores = os.path.join(self.path_out, "scoring", "ens")
 
             try: #make new dir if needed
                 os.makedirs(model_out_scores)
