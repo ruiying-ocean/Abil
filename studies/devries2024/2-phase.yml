@@ -1,7 +1,7 @@
 ---
   root: /user/work/ba18321/Abil/
 
-  run_name: all_env_sep_2024 #update for specific run name
+  run_name: dec_2024_depth_res_env_var #update for specific run name
 
   path_out:  studies/devries2024/ModelOutput/ #root + folder
   path_in:  predictions/ens/ #root + folder
@@ -12,8 +12,8 @@
 
   predictors: ["temperature", 
     "sio4", "po4", "no3", 
-    "o2", "mld", "DIC", "TA",
-    "PAR","chlor_a"]
+    "o2", "DIC", "TA",
+    "PAR"]
 
   verbose: 3
   seed : 1 # random seed

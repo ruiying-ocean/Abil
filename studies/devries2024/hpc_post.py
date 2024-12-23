@@ -5,11 +5,11 @@ from yaml import CLoader as Loader
 from abil.post import post
 import pandas as pd
 
-file_name = "december_2024"
-
 with open('/user/work/ba18321/Abil/studies/devries2024/2-phase.yml', 'r') as f:
     model_config = load(f, Loader=Loader)
 root = model_config['root']
+
+file_name = model_config['run_name']
 
 print("path:")
 print(root + model_config['targets'])
