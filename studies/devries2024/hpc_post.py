@@ -40,4 +40,4 @@ def do_post(pi, datatype, diversity=False):
     integ.integrated_totals(targets)
 
 do_post(pi="50", datatype="pg poc", diversity=True)
-do_post(pi="50", datatype="pg poc")
+do_post(pi="50", datatype="pg pic")
