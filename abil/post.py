@@ -29,7 +29,7 @@ class post:
     targets : pd.Series
         The target values extracted from the trait data that are present in the dataset columns.
     model_config : dict
-        The model configuration dictionary containing paths, parameters, and other settings.
+        The model configuration dictionary containing paths, parameters, and ensemble configuration.
     pi : str
         Input parameter identifier.
     model_type : str
@@ -110,9 +110,9 @@ class post:
         Parameters
         ----------
         model_config : dict
-            A dictionary containing configuration settings for the model, including paths, parameters, and other settings.
+            A dictionary containing configuration settings for the model, including paths, parameters, and ensemble configuration.
         pi : str, optional, default="50"
-            Input parameter identifier used in file naming or data processing.
+            Prediction interval from crossfolds used for model naming. Default is 50 for median prediction.
         datatype : str, optional
             The datatype being processed (e.g., "pg poc"), which is appended to exported data files.
         
@@ -325,7 +325,7 @@ class post:
         ----------
         model : str
             The name of the model for which parameters are being merged. Examples include "rf" (Random Forest),
-            "xgb" (XGBoost), and "knn" (K-Nearest Neighbors).
+            "xgb" (XGBoost), or "knn" (K-Nearest Neighbors). Model must be one off.
 
         Raises
         ------
