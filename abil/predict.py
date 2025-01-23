@@ -122,8 +122,10 @@ def export_prediction(m, target, target_no_space, X_predict, model_out, n_thread
         The name of the target variable.
     target_no_space : str
         The target variable name with spaces replaced by underscores.
-    X_predict : DataFrame
-        The features on which to make predictions.
+    X_predict : pd.DataFrame of shape (n_points, n_features)
+        Features to predict on (e.g., environmental data), where n_points
+        is the total 1-d size of the features to predict on 
+        (ex. 31881600 for full 180x360x41x12 grid).
     model_out : str
         Path where the predictions should be saved.
     n_threads : int, optional, default=1
@@ -147,49 +149,89 @@ def export_prediction(m, target, target_no_space, X_predict, model_out, n_thread
 
 class predict:
     """
-    Predicts outcomes based on an ensemble of regression models and exports the predictions to a NetCDF file.
+    Predict outcomes using an ensemble of regression models and export the predictions to a NetCDF file.
 
     Parameters
     ----------
-    X_train : {array-like, sparse matrix} of shape (n_samples, n_features)
+    X_train : pd.DataFrame of shape (n_samples, n_features)
         Training features used for model fitting.
-    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+    y : pd.Series of shape (n_samples,) or (n_samples, n_outputs)
         Target values used for model fitting.
-    X_predict : {array-like, sparse matrix} of shape (n_samples, n_features)
-        Features to predict on (e.g., environmental data).
+    X_predict : pd.DataFrame of shape (n_points, n_features)
+        Features to predict on, where `n_points` represents the total number of prediction points 
+        (e.g., 31881600 for a full 180x360x41x12 grid).
     model_config : dict
-        Dictionary containing model configuration parameters such as:
-        - seed: int, random seed for reproducibility
-        - path_out: str, output path for saving results
-        - path_in: str, input path to models
-        - verbose: int, verbosity level (0-3)
-        - cv: int, number of cross-validation folds
-        - ensemble_config: dict, configuration for ensemble models
+        Dictionary containing model configuration parameters, including:
+            - seed : int
+                Random seed for reproducibility.
+            - root : str
+                Path to the root folder.
+            - path_out : str
+                Directory where predictions are saved.
+            - path_in : str
+                Directory containing tuned models.
+            - target : str
+                File name of the target list.
+            - verbose : int
+                Verbosity level (0-3).
+            - n_threads : int
+                Number of threads to use for parallel processing.
+            - cv : int
+                Number of cross-validation folds.
+            - ensemble_config : dict
+                Configuration for the ensemble setup, containing:
+                    - classifier : bool
+                        Whether to train a classification model.
+                    - regressor : bool
+                        Whether to train a regression model.
+                    - m{n} : str
+                        Model names (e.g., "m1: 'rf'", "m2: 'xgb'").
+            - clf_scoring : list of str
+                Metrics for classification scoring.
+            - reg_scoring : list of str
+                Metrics for regression scoring (e.g., "r2", "neg_mean_absolute_error").
     n_jobs : int, optional, default=1
-        The number of threads to use for parallel processing.
+        Number of threads to use for parallel processing.
 
     Attributes
     ----------
     path_out : str
-        The path where predictions and model outputs are saved.
+        Path where predictions and model outputs are saved.
     target : str
-        The name of the target variable.
+        Name of the target variable.
     target_no_space : str
-        The target variable name with spaces replaced by underscores.
+        Target variable name with spaces replaced by underscores.
     verbose : int
-        Verbosity level for the model.
+        Verbosity level for logging.
     n_jobs : int
-        The number of parallel threads for prediction and cross-validation.
+        Number of parallel threads used for prediction and cross-validation.
 
     Methods
     -------
     make_prediction()
-        Fits the ensemble model(s) and makes predictions, exporting them to NetCDF.
+        Train the ensemble models and generate predictions, exporting them to NetCDF.
     """
 
     def __init__(self, X_train, y, X_predict, model_config, n_jobs=1):
         """
-        Initializes the prediction process by setting up model configurations, cross-validation, and paths.
+        Initialize the `predict` class with training data, prediction data, and model configurations.
+
+        Parameters
+        ----------
+        X_train : pd.DataFrame of shape (n_samples, n_features)
+            Training features used for model fitting.
+        y : pd.Series of shape (n_samples,) or (n_samples, n_outputs)
+            Target values used for model fitting.
+        X_predict : pd.DataFrame of shape (n_points, n_features)
+            Features for which predictions are to be made.
+        model_config : dict
+            Dictionary containing configuration parameters for the model and ensemble.
+        n_jobs : int, optional, default=1
+            Number of threads for parallel processing.
+
+        Returns
+        -------
+        None
         """
                 
         self.st = time.time()
@@ -242,21 +284,21 @@ class predict:
         print("initialized prediction")
         
     def make_prediction(self):
-
         """
-        Fits the models in the ensemble and makes predictions. Exports the predictions and model performance metrics.
+        Fit models in the ensemble and generate predictions.
 
-        If multiple models are provided, predictions are made for both individual models and an ensemble of models.
-        
+        Predictions are exported to NetCDF files. If the ensemble contains multiple models, 
+        predictions are made for each individual model and the ensemble.
+
         Returns
         -------
         None
 
         Notes
         -----
-        If more than one model is provided, predictions are made for both 
-        individual models and an ensemble of the models. 
-
+        - Individual model predictions and ensemble predictions are saved separately.
+        - Performance metrics (e.g., cross-validation scores) are saved for the ensemble.
+        - Only regression models are supported; classification is not implemented.
         """
 
         number_of_models = len(self.ensemble_config) -2
