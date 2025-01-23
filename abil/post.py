@@ -165,13 +165,13 @@ class post:
 
         self.path_out = os.path.join(model_config['root'], model_config['path_out'], model_config['run_name'], "posts/")
         self.ds = merge_netcdf(os.path.join(model_config['root'], model_config['path_out'], model_config['run_name'], model_config['path_in'], pi))
-        self.targets = pd.read_csv(os.path.join(model_config['root'], model_config['targets']))
+        self.traits = pd.read_csv(os.path.join(model_config['root'], model_config['targets']))
 
         self.root  =  model_config['root'] 
 
         self.d = self.ds.to_dataframe()
         self.d = self.d.dropna()
-        self.targets = self.targets['Target'][self.targets['Target'].isin(self.d.columns.values)]
+        self.targets = self.traits['Target'][self.traits['Target'].isin(self.d.columns.values)]
         self.model_config = model_config
         self.pi = pi
 
@@ -504,7 +504,7 @@ class post:
           of the specified variable from the `traits` DataFrame.
         - The scaled values are saved back to `self.d`.
         """
-        w = self.targets.query('Target in @self.targets')
+        w = self.traits.query('Target in @self.targets')
         var = w[variable].to_numpy()
         print(var)
         self.d = self.d.apply(lambda row : (row[self.targets]* var), axis = 1)
@@ -549,7 +549,7 @@ class post:
         - The calculated CWM is added as a new column in `self.d` with the name "cwm <variable>".
         """
 
-        w = self.targets.query('Target in @self.targets')
+        w = self.traits.query('Target in @self.targets')
         var = w[variable].to_numpy()
         var_name = 'cwm ' + variable
         self.d[var_name] = self.d.apply(lambda row : np.average(var, weights=row[self.targets]), axis = 1)
