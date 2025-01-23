@@ -14,15 +14,6 @@ class post:
     This class handles tasks such as merging NetCDF files, loading target data, 
     and organizing model results for further analysis.
 
-    Parameters
-    ----------
-    model_config : dict
-        A dictionary containing configuration settings for the model, including paths, parameters, and other settings.
-    pi : str, optional, default="50"
-        Input parameter identifier used in file naming or data processing.
-    datatype : str, optional
-        The datatype being processed (e.g., "pg poc"), which is appended to exported data files.
-
     Attributes
     ----------
     path_out : str
