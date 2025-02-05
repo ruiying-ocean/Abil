@@ -126,14 +126,6 @@ Finally, we conduct the post-processing.
     m.export_ds("my_first_model")
 
     m = post(model_config)
-    m.merge_performance(model="ens") 
-    m.merge_performance(model="xgb")
-    m.merge_performance(model="rf")
-    m.merge_performance(model="knn")
-
-    m.merge_parameters(model="rf")
-    m.merge_parameters(model="xgb")
-    m.merge_parameters(model="knn")
     m.estimate_carbon("pg poc")
     m.diversity()
 
