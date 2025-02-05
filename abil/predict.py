@@ -342,16 +342,18 @@ class predict:
                 export_prediction(m=m, target = self.target, target_no_space = self.target_no_space, X_predict = self.X_predict,
                               model_out = model_out, n_threads=self.n_jobs)      
 
-                voting_regressor_output_path = os.path.join(self.path_out, "model", "ens")
+                base_output_path = os.path.join(self.path_out, "model", "ens")
                 try: #make new dir if needed
-                    os.makedirs(voting_regressor_output_path)
+                    os.makedirs(base_output_path)
                 except:
                     None
 
-                with open(os.path.join(voting_regressor_output_path, self.target_no_space) + '_zir.sav', 'wb') as f:
+                file_path = os.path.join(base_output_path, f"{self.target_no_space}{self.extension}")
+
+                with open(file_path, 'wb') as f:
                     pickle.dump(m, f)
 
-                print("exporting to: ", os.path.join(voting_regressor_output_path, self.target_no_space) + '_zir.sav', 'wb')
+                print("exporting to ens: ", file_path)
 
             else:
                 raise ValueError("classifiers are not supported")
