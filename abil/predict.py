@@ -9,16 +9,10 @@ import warnings
 
 from sklearn.ensemble import VotingRegressor, VotingClassifier
 from sklearn.model_selection import KFold, cross_validate
-from joblib import Parallel, delayed
-from joblib import parallel_backend  
+from joblib import Parallel, delayed, parallel_backend  
 
-
-if 'site-packages' in __file__ or os.getenv('TESTING') == 'true':
-    from abil.functions import inverse_weighting, ZeroInflatedRegressor, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, find_optimal_threshold
-    from abil.unified_tree_or_bag import process_data_with_model
-else:
-    from functions import inverse_weighting, ZeroInflatedRegressor, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, find_optimal_threshold
-    from unified_tree_or_bag import process_data_with_model
+from .functions import inverse_weighting, ZeroInflatedRegressor, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, find_optimal_threshold
+from .unified_tree_or_bag import process_data_with_model   
 
 def load_model_and_scores(path_out, ensemble_config, n, target):
     """
@@ -398,10 +392,10 @@ class predict:
                                     model_out, n_threads=self.n_jobs)
                     print("exporting " + model_name + " prediction to: " + model_out)
                 if (self.ensemble_config["classifier"] ==True) and (self.ensemble_config["regressor"] == True):
-                    warnings.warn('prediction of individual ZIR models broken')
+                    #warnings.warn('prediction of individual ZIR models broken')
 
-                    # export_prediction(self.ensemble_config, m, self.target, self.target_no_space, self.X_predict, self.X_train, self.y, self.cv, 
-                    #                 model_out, n_threads=self.n_jobs)
+                    export_prediction(self.ensemble_config, m, self.target, self.target_no_space, self.X_predict, self.X_train, self.y, self.cv, 
+                                     model_out, n_threads=self.n_jobs)
 
                 models.append((model_name, m))
                 mae_values.append(mae)
