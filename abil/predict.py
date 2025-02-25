@@ -1,5 +1,3 @@
-
-
 import pandas as pd
 import numpy as np
 import pickle
@@ -11,7 +9,7 @@ from sklearn.ensemble import VotingRegressor, VotingClassifier
 from sklearn.model_selection import KFold, cross_validate
 from joblib import Parallel, delayed, parallel_backend  
 
-from .functions import inverse_weighting, ZeroInflatedRegressor, ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold, find_optimal_threshold
+from .utils import inverse_weighting, find_optimal_threshold
 import shutil
 # Set the custom temporary folder for loky
 temp_folder = os.path.join(".","tmp") 
@@ -20,6 +18,8 @@ os.environ["LOKY_TEMP_FOLDER"] = temp_folder
 os.makedirs(temp_folder, exist_ok=True)
 
 from .unified_tree_or_bag import process_data_with_model   
+from .zir import ZeroInflatedRegressor
+from .zero_stratified_kfold import ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold
 
 def load_model_and_scores(path_out, ensemble_config, n, target):
     """
