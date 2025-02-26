@@ -172,7 +172,6 @@ def _summarize_predictions(model, X_predict, X_train=None, y_train=None, chunksi
     for chunk in chunks:
         if hasattr(model, "get_booster"):
             booster = model.get_booster()
-            chunk = DMatrix(chunk)
             pred_jobs = (
                 delayed(u._predict_one_member)(i, member=booster, chunk=chunk) for i in range(model.n_estimators)
             )

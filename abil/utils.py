@@ -8,6 +8,7 @@ from sklearn.metrics import roc_curve, roc_auc_score
 
 from joblib import delayed
 import warnings
+from xgboost import DMatrix
 
 def _predict_one_member(i, member, chunk):
     """
@@ -16,7 +17,7 @@ def _predict_one_member(i, member, chunk):
         action='ignore', category=UserWarning
     ):
         try:
-            return member.predict(chunk, iteration_range=(i, i+1))
+            return member.predict(DMatrix(chunk), iteration_range=(i, i+1))
         except TypeError:
             return member.predict(chunk)
 
