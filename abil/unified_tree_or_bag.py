@@ -137,6 +137,12 @@ def process_data_with_model(
 
     return {"train_stats": train_summary_stats, "predict_stats": predict_summary_stats}
 
+@delayed
+def _predict_one_member(i, member, chunk):
+    with warnings.catch_warnings(
+        action='ignore', category=UserWarning
+    ):
+        return member.predict(chunk, iteration_range=(i, i+1))
 
 def _summarize_predictions(model, X_predict, X_train=None, y_train=None, chunksize=2e4):
     # need to extract the ensemble predictions for each X
@@ -168,26 +174,21 @@ def _summarize_predictions(model, X_predict, X_train=None, y_train=None, chunksi
         model, "inverse_transform", FunctionTransformer().inverse_transform
     )
     for chunk in chunks:
-        try:
+        if hasattr(model, "get_booster"):
             booster = model.get_booster()
-            @delayed
-            def pred_job(i, booster=booster, chunk=chunk):
-                dm = DMatrix(chunk)
-                return booster.predict(dm, iteration_range=(i, i+1))
+            chunk = DMatrix(chunk)
             pred_jobs = (
-                pred_job(i, booster=booster, chunk=chunk)
-                for i in range(model.n_estimators)
+                _predict_one_member(i, model=booster, chunk=chunk) for i in range(model.n_estimators)
             )
-        except AttributeError:
+        else:
             members, features_for_members = _flatten_metaensemble(model)
-            @delayed
-            def pred_job(member, features):
-                with warnings.catch_warnings(action='ignore', category=UserWarning):
-                    out = member.predict(features)
-                return out
             pred_jobs = (
-                pred_job(member, chunk.iloc[:,features_for_member])
-                for features_for_member, member in zip(features_for_members, members)
+                _predict_one_member(
+                    _,
+                    member, 
+                    chunk.iloc[:,features_for_member]
+                )
+                for _, features_for_member, member in enumerate(zip(features_for_members, members))
             )
         results = engine(pred_jobs)
         chunk_preds = pd.DataFrame(
