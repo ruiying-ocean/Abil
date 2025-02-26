@@ -6,6 +6,20 @@ from sklearn.datasets import make_regression
 from sklearn.utils import resample
 from sklearn.metrics import roc_curve, roc_auc_score
 
+from joblib import delayed
+import warnings
+
+def _predict_one_member(i, member, chunk):
+    """
+    """
+    with warnings.catch_warnings(
+        action='ignore', category=UserWarning
+    ):
+        try:
+            return member.predict(chunk, iteration_range=(i, i+1))
+        except TypeError:
+            return member.predict(chunk)
+
 
 def upsample(d, target, ratio=10):
     """

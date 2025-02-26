@@ -22,6 +22,7 @@ from joblib import delayed, Parallel
 
 
 from .zir import ZeroInflatedRegressor
+from . import utils as u
 
 def process_data_with_model(
     model, X_predict, X_train, y_train, cv=None, chunksize=20_000
@@ -137,12 +138,6 @@ def process_data_with_model(
 
     return {"train_stats": train_summary_stats, "predict_stats": predict_summary_stats}
 
-@delayed
-def _predict_one_member(i, member, chunk):
-    with warnings.catch_warnings(
-        action='ignore', category=UserWarning
-    ):
-        return member.predict(chunk, iteration_range=(i, i+1))
 
 def _summarize_predictions(model, X_predict, X_train=None, y_train=None, chunksize=2e4):
     # need to extract the ensemble predictions for each X
@@ -160,7 +155,6 @@ def _summarize_predictions(model, X_predict, X_train=None, y_train=None, chunksi
             "Both X_train and y_train must be provided, or neither must be."
         )
 
-    engine = Parallel()
     n_samples, n_features = X_predict.shape
 
     if chunksize is not None:
@@ -173,22 +167,24 @@ def _summarize_predictions(model, X_predict, X_train=None, y_train=None, chunksi
     inverse_transform = getattr(
         model, "inverse_transform", FunctionTransformer().inverse_transform
     )
+
+    engine = Parallel()
     for chunk in chunks:
         if hasattr(model, "get_booster"):
             booster = model.get_booster()
             chunk = DMatrix(chunk)
             pred_jobs = (
-                _predict_one_member(i, model=booster, chunk=chunk) for i in range(model.n_estimators)
+                delayed(u._predict_one_member)(i, member=booster, chunk=chunk) for i in range(model.n_estimators)
             )
         else:
             members, features_for_members = _flatten_metaensemble(model)
             pred_jobs = (
-                _predict_one_member(
+                delayed(u._predict_one_member)(
                     _,
-                    member, 
-                    chunk.iloc[:,features_for_member]
+                    member=member, 
+                    chunk=chunk.iloc[:,features_for_member]
                 )
-                for _, features_for_member, member in enumerate(zip(features_for_members, members))
+                for _, (features_for_member, member) in enumerate(zip(features_for_members, members))
             )
         results = engine(pred_jobs)
         chunk_preds = pd.DataFrame(
@@ -233,10 +229,6 @@ def _flatten_metaensemble(me):
             estimators_and_feature_indices.append((member, member_features))
     estimators, features = zip(*estimators_and_feature_indices)
     return estimators, features
-        
-        
-
-
 
 # Example Usage
 if __name__ == "__main__":
