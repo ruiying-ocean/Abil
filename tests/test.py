@@ -23,7 +23,7 @@ class TestRegressors(unittest.TestCase):
 
 
         self.target_name =  "Emiliania huxleyi"
-        self.X_train, self.X_predict, self.y = example_data(self.target_name, n_samples=200, n_features=3, noise=0.1, train_to_predict_ratio=0.7, random_state=59)
+        self.X_train, self.X_predict, self.y = example_data(self.target_name, n_samples=1000, n_features=3, noise=0.1, train_to_predict_ratio=0.7, random_state=59)
 #        self.X_predict = X_predict[predictors]
 
 
@@ -33,7 +33,7 @@ class TestRegressors(unittest.TestCase):
         m.train(model="xgb")
         m.train(model="knn")
 
-        m = predict(self.X_train, self.y, self.X_predict, self.model_config)
+        m = predict(self.X_train, self.y, self.X_predict, self.model_config, n_jobs=self.model_config['n_threads'])
         m.make_prediction()
 
         targets = np.array([self.target_name])
@@ -79,7 +79,7 @@ class Test2Phase(unittest.TestCase):
 
         self.target_name =  "Emiliania huxleyi"
 
-        self.X_train, self.X_predict, self.y = example_data(self.target_name, n_samples=200, n_features=3, noise=0.1, train_to_predict_ratio=0.7, random_state=59)
+        self.X_train, self.X_predict, self.y = example_data(self.target_name, n_samples=1000, n_features=3, noise=0.1, train_to_predict_ratio=0.7, random_state=59)
 
 
     def test_post_ensemble(self):
@@ -91,7 +91,7 @@ class Test2Phase(unittest.TestCase):
         m.train(model="xgb")
         m.train(model="knn")
 
-        m = predict(self.X_train, self.y, self.X_predict, self.model_config)
+        m = predict(self.X_train, self.y, self.X_predict, self.model_config, n_jobs=self.model_config['n_threads'])
         m.make_prediction()
 
         targets = np.array([self.target_name])
