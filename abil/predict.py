@@ -11,7 +11,7 @@ from joblib import Parallel, delayed, parallel_backend
 
 from .utils import inverse_weighting, find_optimal_threshold
 import shutil
-# Set the custom temporary folder for loky
+# Set the custom temporary folder for multiprocessing
 temp_folder = os.path.join(".","tmp") 
 os.environ["LOKY_TEMP_FOLDER"] = temp_folder
 # Ensure the directory exists
@@ -78,7 +78,7 @@ def load_model_and_scores(path_out, ensemble_config, n, target):
     return(m, scores)
 
 
-def export_prediction(ensemble_config, m, target, target_no_space, X_predict, X_train, y_train, cv, model_out, n_threads=1):
+def export_prediction(ensemble_config, m, target, target_no_space, X_predict, X_train, y_train, cv, model_out, n_threads=8):
     """
     Exports model predictions to a NetCDF file.
 
@@ -101,7 +101,7 @@ def export_prediction(ensemble_config, m, target, target_no_space, X_predict, X_
     """
 
     if (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == True):
-        with parallel_backend("loky", n_jobs=n_threads):
+        with parallel_backend("multiprocessing", n_jobs=n_threads):
             d = process_data_with_model(
                 m, X_predict=X_predict, X_train=X_train, y_train=y_train, cv=cv
             )["predict_stats"]
@@ -118,13 +118,13 @@ def export_prediction(ensemble_config, m, target, target_no_space, X_predict, X_
         
     elif (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == True):
 
-        with parallel_backend("loky", n_jobs=n_threads):
+        with parallel_backend("multiprocessing", n_jobs=n_threads):
             # Generate classifier and regressor stats
             d_clf = process_data_with_model(
                 m, X_predict=X_predict, X_train=X_train, y_train=y_train, cv=cv
             )["classifier_predict_stats"]
 
-        with parallel_backend("loky", n_jobs=n_threads):
+        with parallel_backend("multiprocessing", n_jobs=n_threads):
             d_reg = process_data_with_model(
                 m, X_predict=X_predict, X_train=X_train, y_train=y_train, cv=cv
             )["regressor_predict_stats"]
@@ -164,7 +164,7 @@ def export_prediction(ensemble_config, m, target, target_no_space, X_predict, X_
     else:
         raise ValueError("classifiers are not supported")
 
-    #remove loky tmp data:
+    #remove multiprocessing tmp data:
     shutil.rmtree(temp_folder, ignore_errors=True)
 
 class predict:

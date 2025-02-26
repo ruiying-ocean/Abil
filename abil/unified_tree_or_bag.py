@@ -24,7 +24,7 @@ from joblib import delayed, Parallel
 from .zir import ZeroInflatedRegressor
 
 def process_data_with_model(
-    model, X_predict, X_train, y_train, cv=None, chunksize=None
+    model, X_predict, X_train, y_train, cv=None, chunksize=20_000
 ):
     """
     Train the model using cross-validation, compute predictions on X_train with summary stats,
