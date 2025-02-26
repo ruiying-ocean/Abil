@@ -122,7 +122,7 @@ def export_prediction(ensemble_config, m, target, target_no_space, X_predict, X_
         with parallel_backend("multiprocessing", n_jobs=n_threads):
             d_both = pp.process_data_with_model(
                 m.classifier_, X_predict=X_predict, X_train=X_train, y_train=y_train>0, cv=cv
-            )['predict_stats']
+            )
             # Generate classifier and regressor stats
             d_clf = d_both['classifier_predict_stats']
             d_reg = d_both['regressor_predict_stats']
