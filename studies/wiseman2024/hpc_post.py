@@ -44,9 +44,7 @@ def do_post(statistic):
     #m.merge_env(X_predict)
     #m.merge_obs(current_date,targets)
     
-    m.mean()
-    m.stdev()
-    m.percentile()
+    m.process_resampled_runs()
 
     m.export_ds(current_date)
 
