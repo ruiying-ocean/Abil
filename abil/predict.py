@@ -102,7 +102,7 @@ def export_prediction(ensemble_config, m, target, target_no_space, X_predict, X_
     """
 
     if (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == True):
-        with parallel_backend("multiprocessing", n_jobs=n_threads):
+        with parallel_backend("loky", n_jobs=n_threads):
             d = pp.process_data_with_model(
                 m, X_predict=X_predict, X_train=X_train, y_train=y_train, cv=cv
             )["predict_stats"]
