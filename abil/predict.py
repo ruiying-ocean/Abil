@@ -164,7 +164,7 @@ def export_prediction(ensemble_config, m, target, target_no_space, X_predict, X_
     else:
         raise ValueError("classifiers are not supported")
 
-    #remove multiprocessing tmp data:
+    #remove loky tmp data:
     shutil.rmtree(temp_folder, ignore_errors=True)
 
 class predict:
