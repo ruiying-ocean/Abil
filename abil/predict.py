@@ -12,7 +12,7 @@ from joblib import Parallel, delayed, parallel_backend
 from .utils import inverse_weighting, find_optimal_threshold
 import shutil
 
-# Set the custom temporary folder for multiprocessing
+# Set the custom temporary folder for loky
 temp_folder = os.path.join(".","tmp") 
 os.environ["LOKY_TEMP_FOLDER"] = temp_folder
 # Ensure the directory exists
