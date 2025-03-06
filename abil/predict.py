@@ -11,13 +11,14 @@ from joblib import Parallel, delayed, parallel_backend
 
 from .utils import inverse_weighting, find_optimal_threshold
 import shutil
+
 # Set the custom temporary folder for loky
 temp_folder = os.path.join(".","tmp") 
 os.environ["LOKY_TEMP_FOLDER"] = temp_folder
 # Ensure the directory exists
 os.makedirs(temp_folder, exist_ok=True)
 
-from .unified_tree_or_bag import process_data_with_model   
+from . import unified_tree_or_bag as pp
 from .zir import ZeroInflatedRegressor
 from .zero_stratified_kfold import ZeroStratifiedKFold,  UpsampledZeroStratifiedKFold
 
@@ -78,7 +79,7 @@ def load_model_and_scores(path_out, ensemble_config, n, target):
     return(m, scores)
 
 
-def export_prediction(ensemble_config, m, target, target_no_space, X_predict, X_train, y_train, cv, model_out, n_threads=1):
+def export_prediction(ensemble_config, m, target, target_no_space, X_predict, X_train, y_train, cv, model_out, n_threads=8):
     """
     Exports model predictions to a NetCDF file.
 
@@ -102,7 +103,7 @@ def export_prediction(ensemble_config, m, target, target_no_space, X_predict, X_
 
     if (ensemble_config["classifier"] ==False) and (ensemble_config["regressor"] == True):
         with parallel_backend("loky", n_jobs=n_threads):
-            d = process_data_with_model(
+            d = pp.process_data_with_model(
                 m, X_predict=X_predict, X_train=X_train, y_train=y_train, cv=cv
             )["predict_stats"]
 
@@ -119,15 +120,14 @@ def export_prediction(ensemble_config, m, target, target_no_space, X_predict, X_
     elif (ensemble_config["classifier"] ==True) and (ensemble_config["regressor"] == True):
 
         with parallel_backend("loky", n_jobs=n_threads):
+            d_both = pp.process_data_with_model(
+                m, X_predict=X_predict, X_train=X_train, y_train=y_train>0, cv=cv
+            )
             # Generate classifier and regressor stats
-            d_clf = process_data_with_model(
-                m, X_predict=X_predict, X_train=X_train, y_train=y_train, cv=cv
-            )["classifier_predict_stats"]
+            d_clf = d_both['classifier_predict_stats']
+            d_reg = d_both['regressor_predict_stats']
 
-        with parallel_backend("loky", n_jobs=n_threads):
-            d_reg = process_data_with_model(
-                m, X_predict=X_predict, X_train=X_train, y_train=y_train, cv=cv
-            )["regressor_predict_stats"]
+
 
         columns = ["mean", "sd", "median", "ci95_LL", "ci95_UL"]
         d = pd.DataFrame(d_reg)
@@ -362,7 +362,6 @@ class predict:
                                     model_out, n_threads=self.n_jobs)
                     print("exporting " + model_name + " prediction to: " + model_out)
                 if (self.ensemble_config["classifier"] ==True) and (self.ensemble_config["regressor"] == True):
-                    #warnings.warn('prediction of individual ZIR models broken')
 
                     export_prediction(self.ensemble_config, m, self.target, self.target_no_space, self.X_predict, self.X_train, self.y, self.cv, 
                                      model_out, n_threads=self.n_jobs)

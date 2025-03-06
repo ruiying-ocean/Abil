@@ -6,6 +6,21 @@ from sklearn.datasets import make_regression
 from sklearn.utils import resample
 from sklearn.metrics import roc_curve, roc_auc_score
 
+from joblib import delayed
+import warnings
+from xgboost import DMatrix
+
+def _predict_one_member(i, member, chunk):
+    """
+    """
+    with warnings.catch_warnings(
+        action='ignore', category=UserWarning
+    ):
+        try:
+            return member.predict(DMatrix(chunk), iteration_range=(i, i+1))
+        except TypeError:
+            return member.predict(chunk)
+
 
 def upsample(d, target, ratio=10):
     """
@@ -164,15 +179,15 @@ def example_data(
     y_train_combined = y_train_combined.loc[combined_indices]
     
     # Generate random latitude, longitude, depth, and time
-    latitudes_train = np.random.uniform(-90, 90, size=X_train_combined.shape[0])
-    longitudes_train = np.random.uniform(-180, 180, size=X_train_combined.shape[0])
-    depths_train = np.random.uniform(0, 200, size=X_train_combined.shape[0])
-    times_train = np.random.randint(1, 13, size=X_train_combined.shape[0])
+    latitudes_train = np.round(np.random.uniform(-90, 90, size=X_train_combined.shape[0]), -1)
+    longitudes_train = np.round(np.random.uniform(-180, 180, size=X_train_combined.shape[0]), -1)
+    depths_train = np.round(np.random.uniform(0, 200, size=X_train_combined.shape[0]), -1)
+    times_train = np.round(np.random.randint(1, 13, size=X_train_combined.shape[0]), -1)
     
-    latitudes_predict = np.random.uniform(-90, 90, size=X_predict.shape[0])
-    longitudes_predict = np.random.uniform(-180, 180, size=X_predict.shape[0])
-    depths_predict = np.random.uniform(0, 200, size=X_predict.shape[0])
-    times_predict = np.random.randint(1, 13, size=X_predict.shape[0])
+    latitudes_predict = np.round(np.random.uniform(-90, 90, size=X_predict.shape[0]), -1)
+    longitudes_predict = np.round(np.random.uniform(-180, 180, size=X_predict.shape[0]), -1)
+    depths_predict = np.round(np.random.uniform(0, 200, size=X_predict.shape[0]), -1)
+    times_predict = np.round(np.random.randint(1, 13, size=X_predict.shape[0]), -1)
     
     # Set MultiIndex for X_train and X_predict
     X_train_combined.index = pd.MultiIndex.from_arrays(
