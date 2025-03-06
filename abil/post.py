@@ -537,6 +537,30 @@ class post:
         self.d['total_log'] = np.log(self.d['total'])
         print("finished calculating total")
 
+    def process_resampled_runs(self):
+        """
+        Take mean of target rows.
+        Take the standard deviation of the target rows.
+        Calculate the 2.5th and 97.5th percentiles of target rows.
+
+        Notes
+        -----
+        Useful when running resampled targets of the same initial target.
+        Mean is estimated based on the target list defined in model_config.
+
+        """
+
+        self.d['mean'] = self.d[self.targets].mean(axis='columns')
+        print('finished calculating mean')
+    
+        self.d['stdev'] = self.d[self.targets].std(axis='columns')
+        print('finished calculating standard deviation')
+
+        self.d['prctile_2.5'] = self.d[self.targets].quantile(0.025, axis='columns')
+        self.d['prctile_97.5'] = self.d[self.targets].quantile(0.975, axis='columns')
+
+        print('finished calculating 2.5th and 97.5th percentiles')
+
     def integration(self, *args, **kwargs):
         return self.integration_class(self, *args, **kwargs)
 
