@@ -69,8 +69,6 @@ class tune:
                         - regressor: bool
                             Whether to train a regression model.
                         - m{n}: str, model name (ex. m1: "rf", m2: "xgb" etc.)
-                - clf_scoring : list of str
-                - reg_scoring : list of str, (ex. R2: r2, MAE: neg_mean_absolute_error)
         regions : str or None, optional
             Column name for regions to be used in preprocessing and stratification.
 
@@ -221,7 +219,11 @@ class tune:
 
             print("training regressor")
 
-            reg_scoring = self.model_config['reg_scoring']
+            reg_scoring = {
+                'R2': 'r2',
+                'MAE': 'neg_mean_absolute_error',
+                'RMSE': 'neg_root_mean_squared_error'
+            }
 
             user_reg_param_grid = self.model_config['param_grid'][model + '_param_grid']['reg_param_grid']
 
@@ -299,7 +301,7 @@ class tune:
                 for key, value in user_clf_param_grid.items()
             }
             
-            clf_scoring = self.model_config['clf_scoring']
+            clf_scoring = {'accuracy': 'balanced_accuracy'}
 
             clf_sav_out_scores = os.path.join(self.path_out, "scoring/", model)
             clf_sav_out_model = os.path.join(self.path_out, "model/", model)
