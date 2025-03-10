@@ -30,7 +30,6 @@ class post:
             Dictionary containing model configuration parameters such as:
             - seed: int, random seed for reproducibility
             - path_out: str, output path for saving results
-            - path_in: str, input path to models
             - verbose: int, verbosity level (0-3)
             - cv: int, number of cross-validation folds
             - ensemble_config: dict, configuration for ensemble models
