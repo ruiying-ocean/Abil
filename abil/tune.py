@@ -58,7 +58,6 @@ class tune:
                 - seed: int, random seed for reproducibility
                 - root : str, path to Abil root folder
                 - path_out : str, where predictions are saved
-                - path_in : str, where to find tuned models
                 - target : str, file name of your target list
                 - verbose : int, to set verbosity (0-3)
                 - n_threads : int, number of threads to use
