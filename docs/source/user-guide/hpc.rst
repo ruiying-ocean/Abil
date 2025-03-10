@@ -75,7 +75,7 @@ Transfer Abil to your HPC Machine
 
         For more instructions, check with your organization.
 
-Bash scripts
+SLURM scripts
 ~~~~~~~~~~~~
 
 To execute Abil on an HPC machine, we use bash scripts. A bash script tells the HPC machine what to load (the singularity container) and what to execute (python scripts) in a single executable file.
