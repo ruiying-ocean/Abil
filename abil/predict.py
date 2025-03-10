@@ -188,8 +188,6 @@ class predict:
                 Path to the root folder.
             - path_out : str
                 Directory where predictions are saved.
-            - path_in : str
-                Directory containing tuned models.
             - target : str
                 File name of the target list.
             - verbose : int
