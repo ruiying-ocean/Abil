@@ -1,5 +1,11 @@
 High Performance Computing
 ==========================
+.. note::
+
+    This tutorial assumes some basic familiarity with Unix and high performance computing.
+    To run the scripts on your HPC system, it needs to have both SLURM and Apptainer or Singularity installed.
+    If you are unsure this is the case, we recommend contacting your HPC admin team.
+
 
 HPC at the University of Bristol
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
