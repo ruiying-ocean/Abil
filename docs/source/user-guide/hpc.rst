@@ -1,6 +1,10 @@
 High Performance Computing
 ==========================
 
+HPC at the University of Bristol
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you are running Abil at the University of Bristol, we recommend first completing the `Getting Started HPC Course <https://github.com/UoB-HPC/hpc-course-getting-started>`_.
+If you are running at another institution, we recommend familiarizing yourself with your local HPC machine.
 
 Installing Singularity
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -19,11 +23,11 @@ Building Singularity Container
 
 To run abil on a HPC machine, first compile singularity from the terminal:
 
-First, cd to the singularity folder:
+First, change directory to the singularity folder:
 
 .. code-block:: 
 
-    cd ./Abil/examples/singularity/
+    cd ./Abil/singularity/
 
 If using apptainer (recommended):
 
@@ -48,13 +52,13 @@ Transfer Abil to your HPC Machine
 
         .. code-block:: 
 
-           scp -r <./Abil> <username@HPC_machine.ac.uk:~> 
+           scp -r ./Abil <username>@HPC_machine.ac.uk:~ 
 
         To transfer to a specific directory (ex. /user/work/username):
 
         .. code-block:: 
 
-            scp -r <./Abil> <username@HPC_machine.ac.uk:/user/work/username>
+            scp -r ./Abil <username>@HPC_machine.ac.uk:/user/work/username
 
 
     .. tab-item:: Windows
@@ -128,7 +132,7 @@ Example (ssh):
 
 .. code-block:: 
 
-    ssh username@HPC_machine.ac.uk
+    ssh <username>@HPC_machine.ac.uk
 
 Change directory to abil:
 
