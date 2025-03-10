@@ -1,40 +1,38 @@
 # import required packages
 import pandas as pd
-import sys
+import sys, os
 from yaml import load
 from yaml import CLoader as Loader
 from abil.post import post
-
-
 from datetime import datetime
+
 current_date = datetime.today().strftime('%Y-%m-%d')
 
+print(sys.argv[0])
+dirpath = os.path.dirname(os.path.abspath(__file__))
+conffile = os.path.abspath(os.path.join(dirpath,'ensemble_regressor.yml'))
+root = os.path.abspath(os.path.join(dirpath,'..','..'))
 
-try:
-    print(sys.argv[0])
-    with open('/user/work/mv23682/Abil/studies/wiseman2024/ensemble_regressor.yml', 'r') as f:
-        model_config = load(f, Loader=Loader)
-    model_config['hpc'] = True
-    root = model_config['root']
+#load model arguments
+with open(conffile, 'r') as f:
+    model_config = load(f, Loader=Loader)
 
-except:
-    with open('/home/mv23682/Documents/Abil/studies/wiseman2024/ensemble_regressor.yml', 'r') as f:
-        model_config = load(f, Loader=Loader)
-    model_config['hpc'] = False
-    root = model_config['local_root']
+#define model config:
+model_config['hpc'] = True
 
-targets = pd.read_csv(root+model_config['targets'])
+#load data
+targets = pd.read_csv(os.path.join(root,model_config['targets']))
 target =  targets['Target'][0]
 targets = targets['Target'].values
-
-d = pd.read_csv(root + model_config['training'])
+d = pd.read_csv(os.path.join(root,model_config['training']))
 predictors = model_config['predictors']
 d = d.dropna(subset=predictors)
 
-X_predict = pd.read_csv(root + model_config['prediction'])
+X_predict =  pd.read_csv(os.path.join(root,model_config['prediction']))
 X_predict.set_index(['time','depth','lat','lon'],inplace=True)
 X_predict = X_predict[model_config['predictors']]
 X_predict = X_predict.dropna()
+
 y = d[target]
 X_train = d[predictors]
 
