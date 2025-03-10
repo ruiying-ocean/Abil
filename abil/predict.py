@@ -188,8 +188,6 @@ class predict:
                 Path to the root folder.
             - path_out : str
                 Directory where predictions are saved.
-            - path_in : str
-                Directory containing tuned models.
             - target : str
                 File name of the target list.
             - verbose : int
@@ -206,10 +204,6 @@ class predict:
                         Whether to train a regression model.
                     - m{n} : str
                         Model names (e.g., "m1: 'rf'", "m2: 'xgb'").
-            - clf_scoring : list of str
-                Metrics for classification scoring.
-            - reg_scoring : list of str
-                Metrics for regression scoring (e.g., "r2", "neg_mean_absolute_error").
     n_jobs : int, optional, default=1
         Number of threads to use for parallel processing.
 
@@ -288,7 +282,12 @@ class predict:
         elif (self.ensemble_config["classifier"] ==False) and (self.ensemble_config["regressor"] == False):
             raise ValueError("classifier and regressor can't both be False")
         else:
-            self.scoring = self.model_config['reg_scoring']
+            self.scoring = {
+                'R2': 'r2',
+                'MAE': 'neg_mean_absolute_error',
+                'RMSE': 'neg_root_mean_squared_error'
+            }
+
 
         if (self.ensemble_config["regressor"] !=True) and (self.ensemble_config["regressor"] !=False):
             raise ValueError("regressor should be True or False")
