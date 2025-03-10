@@ -90,6 +90,9 @@ the number of cpus per task (cpus-per-task), and the number of targets to be tun
 .. literalinclude:: ../../examples/tune_KNN.sh
     :lines: 1-8
     :language: shell
+.. note::
+
+    The wall time (`--time`), amount of RAM (`--mem`) and number of threads (`--cpus-per-task`) will vary depending on the size of your dataset, the number of hyper-parameters and your HPC hardware.
 
 Executable commands
 ^^^^^^^^^^^^^^^^^^^
