@@ -15,33 +15,44 @@ If you are running at another institution, we recommend familiarizing yourself w
 Installing Singularity
 ~~~~~~~~~~~~~~~~~~~~~~
 To simplify installing packages and dependencies on HPC machines, which often require admin approval, we use containers.
-Here we use singularity, which packages all of the requirements for running Abil into a portable and reproducible container that does not require root privileges.
-There are two software options for creating singularity containers, Singularity and Apptainer.
-Apptainer is often easier to install than singularity and is backwards compatible with legacy Singularity installs.
+Here we use Singularity, which packages all of the requirements for running Abil into a portable and reproducible container that does not require root privileges.
+There are two software options for creating Singularity containers, Singularity and Apptainer.
+Apptainer is often easier to install than Singularity and is backwards compatible with legacy Singularity installs.
 Both require a Linux operating system, but provide instructions for installing on Windows or Mac OS.
 
-`Install Apptainer <https://apptainer.org/docs/admin/main/installation.html>`_
+.. tab-set::
 
-`Install Singularity <https://docs.sylabs.io/guides/3.0/user-guide/installation.html>`_
+    .. tab-item:: Unix
+        `Install Apptainer <https://apptainer.org/docs/admin/main/installation.html>`_
+
+        `Install Singularity <https://docs.sylabs.io/guides/3.0/user-guide/installation.html>`_
+
+    .. tab-item:: Windows/MacOS
+        Singularity/Apptainer is not natively supported on Windows or MacOS and requires a Virtual Machine (VM).
+    	For more details see the `Apptainer Admin guide <https://apptainer.org/docs/admin/main/installation.html#installation-on-windows-or-mac>`_
+        Or the `Singularity Admin guide <https://docs.sylabs.io/guides/3.0/user-guide/installation.html#install-on-windows-or-mac>`_
+
+
+
 
 Building Singularity Container
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To run abil on a HPC machine, first compile singularity from the terminal:
+To run Abil on a HPC machine, first compile Singularity from the terminal:
 
-First, change directory to the singularity folder:
+First, change directory to the Singularity folder:
 
 .. code-block:: 
 
-    cd ./Abil/singularity/
+    cd ./Abil/Singularity/
 
-If using apptainer (recommended):
+If using Apptainer (recommended):
 
 .. code-block:: 
 
     sudo apptainer build abil.sif Singularity.sif
 
-If using singularity:
+If using Singularity:
 
 .. code-block:: 
 
@@ -78,7 +89,7 @@ Transfer Abil to your HPC Machine
 SLURM scripts
 ~~~~~~~~~~~~
 
-To execute Abil on an HPC machine, we use SLURM scripts. The SLURM script tells the HPC machine what to load (the singularity container), what to execute (Python scripts), and how much compute is required, in a single executable file.
+To execute Abil on an HPC machine, we use SLURM scripts. The SLURM script tells the HPC machine what to load (the Singularity container), what to execute (Python scripts), and how much compute is required, in a single executable file.
 
 
 Variable declarations
@@ -103,14 +114,14 @@ First, the array value is used to set a local variable that will be used to spec
     :lines: 10
     :language: shell
 
-Next, the apptainer module is loaded, and set up using the abil.sif container uploaded prior.
+Next, the Apptainer module is loaded, and set up using the abil.sif container uploaded prior.
 
 .. literalinclude:: ../../examples/tune_KNN.sh
     :lines: 12-16
     :language: shell
 
-Finally, the model python script is executed using the specified number of cpus, for the target "i", within a specific model (knn in this instance).
-Lastly, the singularity cache is exported.
+Finally, the model Python script is executed using the specified number of cpus, for the target "i", within a specific model (knn in this instance).
+Lastly, the Singularity cache is exported.
 
 .. literalinclude:: ../../examples/tune_KNN.sh
     :lines: 17-19
@@ -119,7 +130,7 @@ Lastly, the singularity cache is exported.
 Alterations for predict and post
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The set up is the same for each the predict.sh and post.sh scripts, with the only change being the python executable line.
+The set up is the same for each the predict.sh and post.sh scripts, with the only change being the Python executable line.
 predict.sh should say the following:
 
 .. literalinclude:: ../../examples/predict.sh
@@ -143,7 +154,7 @@ Example (ssh):
 
     ssh <username>@HPC_machine.ac.uk
 
-Change directory to abil:
+Change directory to Abil:
 
 .. code-block:: 
 
