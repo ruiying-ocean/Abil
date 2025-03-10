@@ -959,7 +959,6 @@ class post:
         self.d.to_csv(os.path.join(self.path_out, file_name) + "_" + self.statistic + self.datatype + ".csv")
 
         print("exported d to: " + self.path_out + file_name + "_" + self.statistic + self.datatype + ".csv")
-        #add nice metadata
 
     def merge_obs(self, file_name, targets=None):
         """
