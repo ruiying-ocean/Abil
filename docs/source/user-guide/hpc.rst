@@ -18,7 +18,7 @@ To simplify installing packages and dependencies on HPC machines, which often re
 Here we use singularity, which packages all of the requirements for running Abil into a portable and reproducible container that does not require root privileges.
 There are two software options for creating singularity containers, Singularity and Apptainer.
 Apptainer is often easier to install than singularity and is backwards compatible with legacy Singularity installs.
-Both require a Linux operating system, but provide instuctions for installing on Windows or Mac OS.
+Both require a Linux operating system, but provide instructions for installing on Windows or Mac OS.
 
 `Install Apptainer <https://apptainer.org/docs/admin/main/installation.html>`_
 
