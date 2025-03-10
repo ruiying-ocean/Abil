@@ -3,7 +3,6 @@
 
   run_name: regressor #update for specific run name
   path_out:  ModelOutput/ #root + folder
-  path_in:  predictions/ens/ #root + folder
 
   prediction:  data/prediction.csv #root + folder
   targets:  data/targets.csv #root + folder
