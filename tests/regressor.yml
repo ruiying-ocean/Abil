@@ -25,11 +25,6 @@
   upsample: False
   stratify: False
 
-  reg_scoring:
-   R2: r2
-   MAE: neg_mean_absolute_error
-   RMSE: neg_root_mean_squared_error
-
   param_grid:
     rf_param_grid:
       reg_param_grid:
