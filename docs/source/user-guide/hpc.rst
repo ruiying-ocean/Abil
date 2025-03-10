@@ -44,7 +44,7 @@ First, change directory to the Singularity folder:
 
 .. code-block:: 
 
-    cd ./Abil/Singularity/
+    cd ./Abil/singularity/
 
 If using Apptainer (recommended):
 
