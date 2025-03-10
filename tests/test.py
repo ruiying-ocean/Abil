@@ -108,7 +108,6 @@ class Test2Phase(unittest.TestCase):
             m.merge_obs("test",targets)
 
             m.export_ds("test")
-            m.export_csv("test")
 
             vol_conversion = 1e3 #L-1 to m-3
             integ = m.integration(m, vol_conversion=vol_conversion)

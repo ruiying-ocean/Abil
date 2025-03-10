@@ -40,9 +40,9 @@ X_train = d[predictors]
 
 def do_post(statistic):
     m = post(X_train, y, X_predict, model_config, statistic)
-    #m.estimate_applicability()
-    #m.merge_env(X_predict)
-    #m.merge_obs(current_date,targets)
+    m.estimate_applicability()
+    m.merge_env(X_predict)
+    m.merge_obs(current_date,targets)
     
     m.process_resampled_runs()
 
