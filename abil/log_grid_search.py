@@ -104,26 +104,26 @@ class LogGridSearch:
         if log=="yes":
 
             model = TransformedTargetRegressor(self.m, func = self.do_log, inverse_func=self.do_exp)
-            grid_search = GridSearchCV(model, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
+            grid_search = GridSearchCV(model, param_grid = self.param_grid, scoring=self.scoring, refit=True,
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search.fit(X, y)
         
         elif log=="no":
 
             model = TransformedTargetRegressor(self.m, func = None, inverse_func=None)
-            grid_search = GridSearchCV(model, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
+            grid_search = GridSearchCV(model, param_grid = self.param_grid, scoring=self.scoring, refit=True,
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search.fit(X, y)
 
         elif log =="both":
 
             normal_m = TransformedTargetRegressor(self.m, func = None, inverse_func=None)
-            grid_search1 = GridSearchCV(normal_m, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
+            grid_search1 = GridSearchCV(normal_m, param_grid = self.param_grid, scoring=self.scoring, refit=True,
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search1.fit(X, y)
 
             log_m = TransformedTargetRegressor(self.m, func = self.do_log, inverse_func=self.do_exp)
-            grid_search2 = GridSearchCV(log_m, param_grid = self.param_grid, scoring=self.scoring, refit="MAE",
+            grid_search2 = GridSearchCV(log_m, param_grid = self.param_grid, scoring=self.scoring, refit=True,
                             cv = self.cv, verbose = self.verbose, return_train_score=True, error_score=-1e99)
             grid_search2.fit(X, y)
 
