@@ -29,9 +29,9 @@ class TestRegressors(unittest.TestCase):
 
     def test_post_ensemble(self):
         m = tune(self.X_train, self.y, self.model_config)
-        m.train(model="rf")
-        m.train(model="xgb")
-        m.train(model="knn")
+        m.train(model="rf", log="yes")
+        m.train(model="xgb", log="yes")
+        m.train(model="knn", log="yes")
 
         m = predict(self.X_train, self.y, self.X_predict, self.model_config, n_jobs=self.model_config['n_threads'])
         m.make_prediction()
@@ -59,8 +59,6 @@ class TestRegressors(unittest.TestCase):
             integ.integrated_totals(targets, monthly=True)
 
         do_post(statistic="mean")
-        do_post(statistic="median")
-        do_post(statistic="sd")
         do_post(statistic="ci95_UL")
         do_post(statistic="ci95_LL")
 
@@ -87,9 +85,9 @@ class Test2Phase(unittest.TestCase):
 
         m = tune(self.X_train, self.y, self.model_config)
 
-        m.train(model="rf")
-        m.train(model="xgb")
-        m.train(model="knn")
+        m.train(model="rf", log="yes")
+        m.train(model="xgb", log="yes")
+        m.train(model="knn", log="yes")
 
         m = predict(self.X_train, self.y, self.X_predict, self.model_config, n_jobs=self.model_config['n_threads'])
         m.make_prediction()
@@ -115,8 +113,6 @@ class Test2Phase(unittest.TestCase):
             integ.integrated_totals(targets)
 
         do_post(statistic="mean")
-        do_post(statistic="median")
-        do_post(statistic="sd")
         do_post(statistic="ci95_UL")
         do_post(statistic="ci95_LL")
 

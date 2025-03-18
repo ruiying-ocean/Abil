@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 import warnings
+from sklearn.metrics import mean_absolute_error, balanced_accuracy_score
 
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import FunctionTransformer
@@ -20,12 +21,13 @@ from sklearn.pipeline import Pipeline
 from sklearn import base
 from joblib import delayed, Parallel
 
+from sklearn.base import is_regressor
 
 from .zir import ZeroInflatedRegressor
 from . import utils as u
 
-def process_data_with_model(
-    model, X_predict, X_train, y_train, cv=None, chunksize=20_000
+def estimate_prediction_quantiles(
+    model, X_predict, X_train, y_train, cv=None, chunksize=20_000, threshold=0.5
 ):
     """
     Train the model using cross-validation, compute predictions on X_train with summary stats,
@@ -92,16 +94,17 @@ def process_data_with_model(
     # effect of leaving a fold out. Do this in parallel.
 
     if isinstance(model, ZeroInflatedRegressor):
-        classifier_stats = process_data_with_model(
+        classifier_stats = estimate_prediction_quantiles(
             model.classifier_,
             X_predict = X_predict,
             X_train = X_train,
             y_train = y_train > 0,
             cv=cv,
             chunksize=chunksize,
+            threshold=threshold
         )
-        regressor_stats = process_data_with_model(
-            model.regressor_, X_predict=X_predict, X_train=X_train, y_train=y_train, cv=cv, chunksize=chunksize
+        regressor_stats = estimate_prediction_quantiles(
+            model.regressor_, X_predict=X_predict, X_train=X_train, y_train=y_train, cv=cv, chunksize=chunksize, threshold=threshold
         )
         return {
             **{f"classifier_{k}": v for k, v in classifier_stats.items()},
@@ -116,6 +119,7 @@ def process_data_with_model(
                 X_train=X_train.iloc[train_idx],
                 y_train=y_train.iloc[train_idx],
                 chunksize=chunksize,
+                threshold=threshold
             )
             for train_idx, test_idx in cv.split(X_train, y_train)
         ]
@@ -130,33 +134,27 @@ def process_data_with_model(
             X_predict=X_train,
             y_train=y_train,
             chunksize=chunksize,
+            threshold=threshold
         )
 
     predict_summary_stats = _summarize_predictions(
-        model, X_predict=X_predict, chunksize=chunksize
+        model, X_predict=X_predict, chunksize=chunksize, threshold=threshold
     )
 
     return {"train_stats": train_summary_stats, "predict_stats": predict_summary_stats}
 
 
-def _summarize_predictions(model, X_predict, X_train=None, y_train=None, chunksize=2e4):
-    # need to extract the ensemble predictions for each X
-    # over all learners, then summarize those
-    # and do that in parallel.
+def _summarize_predictions(model, X_predict, X_train=None, y_train=None, chunksize=2e4, threshold=0.5):
     if (X_train is not None) & (y_train is not None):
-        model = base.clone(model).fit(X_train, y_train)
+        print("model not cloned")
     elif not all([(X_train is None), (y_train is None)]):
         if not base.check_is_fitted(model):
             raise ValueError(
                 "model provided is not fit, and no data is provided to fit the model on. Fit the model on the data first."
             )
-
-        raise ValueError(
-            "Both X_train and y_train must be provided, or neither must be."
-        )
+        raise ValueError("Both X_train and y_train must be provided, or neither must be.")
 
     n_samples, n_features = X_predict.shape
-
     if chunksize is not None:
         n_chunks = int(np.ceil(n_samples / chunksize))
         chunks = np.array_split(X_predict, n_chunks)
@@ -165,51 +163,107 @@ def _summarize_predictions(model, X_predict, X_train=None, y_train=None, chunksi
 
     stats = []
     inverse_transform = getattr(
-        model, "inverse_transform", FunctionTransformer().inverse_transform
+        model, "inverse_func", FunctionTransformer().inverse_func
     )
 
     engine = Parallel()
+
+    if is_regressor(model):
+        proba = False
+    else:
+        proba = True
+
+    # Compute predictions on X_train to estimate member performance
+    if X_train is not None and y_train is not None:
+        if hasattr(model, "get_booster"):
+            booster = model.get_booster()
+            train_pred_jobs = (
+                delayed(u._predict_one_member)(i, member=booster, chunk=X_train, proba=proba, threshold=threshold)
+                for i in range(model.n_estimators)
+            )
+        else:
+            members, features_for_members = _flatten_metaensemble(model)
+            train_pred_jobs = (
+                delayed(u._predict_one_member)(
+                    _,
+                    member=member,
+                    chunk=X_train.iloc[:, features_for_member],
+                    proba=proba, 
+                    threshold=threshold
+                )
+                for _, (features_for_member, member) in enumerate(zip(features_for_members, members))
+            )
+        
+        train_results = engine(train_pred_jobs)
+
+        if proba:
+            print("model is a classifier")  # for debug
+            losses = 1 - np.array([balanced_accuracy_score(y_train.astype(int), pred.astype(int)) for pred in train_results])
+
+        else:
+            print("model is a regressor")  # for debug
+            losses = np.array([mean_absolute_error(y_train, pred) for pred in train_results])
+
+        weights = 1 / (losses + 1e-99)  # Avoid division by zero
+        weights /= weights.sum()  # Normalize weights
+    else:
+        weights = None  # Use equal weights if no X_train/y_train
+    
+    # Compute predictions on X_predict
     for chunk in chunks:
         if hasattr(model, "get_booster"):
             booster = model.get_booster()
             pred_jobs = (
-                delayed(u._predict_one_member)(i, member=booster, chunk=chunk) for i in range(model.n_estimators)
+                delayed(u._predict_one_member)(i, member=booster, chunk=chunk, proba=proba, threshold=threshold)
+                for i in range(model.n_estimators)
             )
         else:
             members, features_for_members = _flatten_metaensemble(model)
             pred_jobs = (
                 delayed(u._predict_one_member)(
                     _,
-                    member=member, 
-                    chunk=chunk.iloc[:,features_for_member]
+                    member=member,
+                    chunk=chunk.iloc[:, features_for_member], 
+                    proba=proba, 
+                    threshold=threshold
                 )
                 for _, (features_for_member, member) in enumerate(zip(features_for_members, members))
             )
+        
         results = engine(pred_jobs)
-        chunk_preds = pd.DataFrame(
-            inverse_transform(np.column_stack(results)),
-            index=getattr(chunk, "index", None),
-        )
-        chunk_stats = pd.DataFrame.from_dict(
-            dict(
-                mean=chunk_preds.mean(axis=1),
-                sd=chunk_preds.std(axis=1),
-                median=np.median(chunk_preds, axis=1),
-                **dict(
-                    zip(
-                        ["ci95_LL", "ci95_UL"],
-                        chunk_preds.quantile(q=(0.025, 0.975), axis=1).values,
-                    )
-                ),
+        try:
+            chunk_preds = pd.DataFrame(
+                inverse_transform(np.column_stack(results)),
+                index=getattr(chunk, "index", None),
             )
+            print("model uses log") 
+        except:
+            chunk_preds = pd.DataFrame(
+                np.column_stack(results),
+                index=getattr(chunk, "index", None),
+            )
+            print("model does not use log")
+
+        if weights is not None:
+            lower = chunk_preds.apply(u.weighted_quantile, q=0.025, weights=weights, axis=1)
+            upper =  chunk_preds.apply(u.weighted_quantile, q=0.975, weights=weights, axis=1)
+        else:
+            lower = chunk_preds.quantile(q=0.025, axis=1)
+            upper =  chunk_preds.quantile(q=0.975, axis=1)
+
+        chunk_stats = pd.DataFrame(
+            np.column_stack((lower, upper)), # stats we've calculated by chunk
+            columns=['ci95_LL', 'ci95_UL'], # column names for the stats
+            index = chunk.index # the index of the chunk, so we can align the results back to X_predict
         )
         stats.append(chunk_stats)
+    
     output = pd.concat(stats, axis=0, ignore_index=False)
     return output
 
 def _flatten_metaensemble(me):
     """
-    Memoized verison of the recursive meta-ensemble unpacking
+    Memoized version of the recursive meta-ensemble unpacking
     """
     estimators = [(me,None)]
     estimators_and_feature_indices = []
@@ -335,19 +389,19 @@ if __name__ == "__main__":
     # this sets the backend type and number of jobs to use in the internal
     # Parallel() call.
     with parallel_backend("loky", n_jobs=16):
-        results = process_data_with_model(
+        results = estimate_prediction_quantiles(
             model, X_predict=X_predict, X_train=X_train, y_train=y_train, cv=cv
         )
     with parallel_backend("loky", n_jobs=16):
-        vresults = process_data_with_model(
+        vresults = estimate_prediction_quantiles(
             vmodel, X_predict=X_predict, X_train=X_train, y_train=y_train, cv=cv
         )
     with parallel_backend("loky", n_jobs=16):
-        zirresults = process_data_with_model(
+        zirresults = estimate_prediction_quantiles(
             zirmodel, X_predict=X_predict, X_train=X_train, y_train=y_train, cv=cv
         )
     with parallel_backend("loky", n_jobs=16):
-        vzir_results = process_data_with_model(
+        vzir_results = estimate_prediction_quantiles(
             zir_of_vmodels, X_predict=X_predict, X_train=X_train, y_train=y_train, cv=cv
         )
     print("\n=== Training Summary Stats ===\n", results["train_stats"].head())
