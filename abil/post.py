@@ -754,7 +754,7 @@ class post:
     
             """
             ds = self.parent.d.to_xarray()
-            if targets.all == None:
+            if targets is None:
                 targets = self.targets
             if "total" in ds:
                 targets = np.append(targets, 'total')
@@ -818,7 +818,7 @@ class post:
             targets from `self.targets` are used (default is None).
 
         """
-        if targets.all == None:
+        if targets is None:
             targets = self.targets
 
         # create empty dataframe with the same index as X_predict
@@ -1008,7 +1008,7 @@ class post:
             If the observational dataset file cannot be found at the specified location.
         """
         # Select and rename the target columns for d
-        if targets.all == None:
+        if targets is None:
             targets = self.targets
         d = self.d[targets]
 
