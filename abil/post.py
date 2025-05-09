@@ -810,6 +810,11 @@ class post:
         This calculates the importance-weighted feature distances from test to train points,
         and then defines the "applicable" test sites as those closer than some threshold
         distance.
+
+        A value of 0 indicates the point is within the Area of Applicability, 
+        while a value of 1 indicates the point is outside the Area of Applicability.
+        Note: if using pseudo-absences in y_train and  X_train, mask out where y_train = 0 to calculate
+        the AOA for the original dataset.
         
         Parameters
         ----------
