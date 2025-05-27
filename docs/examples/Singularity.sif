@@ -8,8 +8,7 @@ From: continuumio/miniconda3
     echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc
     . /opt/conda/etc/profile.d/conda.sh
     conda install -n base -c conda-forge mamba
-    mamba env create -n abil --file /root/environment.yml
-    conda activate abil
+    mamba env update -n base --file /root/environment.yml
     pip install abil
 
 %runscript
