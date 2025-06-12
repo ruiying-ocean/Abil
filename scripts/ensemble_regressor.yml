@@ -1,16 +1,16 @@
 ---
-  root: /user/work/mv23682/Abil/
-  local_root: /home/mv23682/Documents/Abil/
+  root: /user/work/mv23682/Abil_Wiseman2025/
+  local_root: /home/mv23682/Documents/Abil_Wiseman2025/
 
 
   run_name: v25.04.01 #update for specific run name
 
-  path_out:  studies/wiseman2024/ModelOutput/ #root + folder
+  path_out:  scripts/ModelOutput/ #root + folder
   path_in:  predictions/ens/ #root + folder
 
-  prediction: studies/wiseman2024/data/env_data.csv #root + folder
-  targets: studies/wiseman2024/data/traits_calc_presample.csv #root + folder
-  training: studies/wiseman2024/data/calcif_env_presample.csv
+  prediction: scripts/data/env_data.csv #root + folder
+  targets: scripts/data/traits_calc_presample.csv #root + folder
+  training: scripts/data/calcif_env_presample.csv
 
   predictors: ["temperature", 
     "sio4", "po4", "no3", 
