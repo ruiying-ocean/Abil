@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 
 # Load raw dataset from Marsh et al.
-d_raw = pd.read_csv('/user/work/mv23682/Abil/studies/wiseman2024/data/calcif_2018_v2.0.1.csv',
+d_raw = pd.read_csv('/user/work/mv23682/Abil/studies/wiseman2024/data/calcif_2018_v2.0.2.csv',
                  skiprows=1,
                  names=["PI","Expedition","OS Region","Reference_Author_Published_year","Reference_doi",
                         "Date","Sample_ID","Latitude","Longitude","Depth","Irr_Depth",
@@ -127,8 +127,8 @@ zeros_df = mask_zeros.to_dataframe().reset_index()
 # Drop rows where the mask is not 0
 zeros_df = zeros_df[zeros_df['mask'] == 0]
 
-# Randomly select 10% (~10,000 points) for 10:1 pseudo zero to obs
-zeros_df_subset = zeros_df.sample(n=(10*(d["Calcification"].notna().sum())), random_state=42)
+# Randomly select for 1:1 pseudo zero to obs
+zeros_df_subset = zeros_df.sample(n=(1*(d["Calcification"].notna().sum())), random_state=42)
 
 # Get all relevant columns (Calcification + sample_{n})
 columns_to_zero = ['Calcification'] + [col for col in d.columns if col.startswith('sample_')]
@@ -158,7 +158,7 @@ out = out.drop(['dummy'], axis = 1)
 out = out.dropna()
 ##non_zero_count = out["Calcification"].notna() &
 print((out["Calcification"].notna() & (out["Calcification"] != 0)).sum())
-out.to_csv("/user/work/mv23682/Abil/studies/wiseman2024/data/calcif_env_presample_v3.csv", index=True)
+out.to_csv("/user/work/mv23682/Abil/studies/wiseman2024/data/calcif_env_presample_v4.csv", index=True)
 
 print("fin")
 # %%
