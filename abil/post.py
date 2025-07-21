@@ -803,7 +803,7 @@ class post:
 
                 print(f"Exported totals")
 
-    def estimate_applicability(self, targets=None):
+    def estimate_applicability(self, targets=None, threshold='tukey', return_all=False):
         """
         Estimate the area of applicability for the data using a strategy similar to Meyer & Pebesma 2022).
 
@@ -839,19 +839,33 @@ class post:
             with open(os.path.join(self.root, self.model_config['path_out'], self.model_config['run_name'], "model", "ens", target_no_space) + self.extension, 'rb') as file:
                 m = pickle.load(file)
             
-            aoa = area_of_applicability(
-                X_test=self.X_predict,
-                X_train=self.X_train,
-                y_train= self.y_train,
-                model=m
-            )
-
-            # update the dataframe, where each column name is the target analyzed
-            aoa_dataset[target] = aoa
+            if return_all == True:
+                aoa, di_test, lpd_test, cutpoint, test_to_train_d = area_of_applicability(
+                    X_test=self.X_predict,
+                    X_train=self.X_train,
+                    y_train= self.y_train,
+                    model=m,
+                    threshold=threshold,
+                    return_all=return_all
+                )
+                aoa_dataset[f"{target}_aoa"] = aoa
+                aoa_dataset[f"{target}_di"] = di_test
+            elif return_all == False:
+                aoa = area_of_applicability(
+                    X_test=self.X_predict,
+                    X_train=self.X_train,
+                    y_train= self.y_train,
+                    model=m,
+                    threshold=threshold,
+                    return_all=return_all
+                )
+                aoa_dataset[f"{target}_aoa"] = aoa
+            else:
+                print("return_all requires a boolean input")
 
         # convert df to xarray ds:
         aoa_dataset = aoa_dataset.to_xarray()
-        
+
         # add metadata:
         aoa_dataset['lat'].attrs['units'] = 'degrees_north'
         aoa_dataset['lat'].attrs['long_name'] = 'latitude'
@@ -861,10 +875,9 @@ class post:
 
         aoa_dataset['depth'].attrs['units'] = 'm'
         aoa_dataset['depth'].attrs['positive'] = 'down'
-        
+
         # export aoa to netcdf:
         aoa_dataset.to_netcdf(os.path.join(self.path_out, "aoa.nc"))
-
 
     def merge_env(self):
         """
