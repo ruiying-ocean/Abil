@@ -840,7 +840,7 @@ class post:
                 m = pickle.load(file)
             
             if return_all == True:
-                aoa, di_test, lpd_test, cutpoint, test_to_train_d = area_of_applicability(
+                aoa, di_test, lpd_test, cutpoint = area_of_applicability(
                     X_test=self.X_predict,
                     X_train=self.X_train,
                     y_train= self.y_train,
@@ -850,6 +850,15 @@ class post:
                 )
                 aoa_dataset[f"{target}_aoa"] = aoa
                 aoa_dataset[f"{target}_di"] = di_test
+                aoa_dataset[f"{target}_lpd"] = lpd_test
+                aoa_dataset[f"{target}_cutpoint"] = cutpoint
+
+                encoding = {
+                    f"{target}_aoa": {"zlib": True, "complevel": 4, "dtype": "float32", "_FillValue": np.float32(np.nan)},
+                    f"{target}_di": {"zlib": True, "complevel": 4, "dtype": "float64", "_FillValue": np.float64(np.nan)},
+                    f"{target}_lpd": {"zlib": True, "complevel": 4, "dtype": "float64", "_FillValue": np.float64(np.nan)},
+                    f"{target}_cutpoint": {"zlib": True, "complevel": 4, "dtype": "float64", "_FillValue": np.float64(np.nan)},
+                }
             elif return_all == False:
                 aoa = area_of_applicability(
                     X_test=self.X_predict,
@@ -877,7 +886,7 @@ class post:
         aoa_dataset['depth'].attrs['positive'] = 'down'
 
         # export aoa to netcdf:
-        aoa_dataset.to_netcdf(os.path.join(self.path_out, "aoa.nc"))
+        aoa_dataset.to_netcdf(os.path.join(self.path_out, "aoa.nc"), encoding=encoding)
 
     def merge_env(self):
         """
