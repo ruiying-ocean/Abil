@@ -71,6 +71,9 @@ def area_of_applicability(
         The first element is the applicability mentioned above, the second is the 
         dissimilarity index for the test points, and the thord
         is the local density of training points near each test point.
+
+        A value of 0 indicates the point is within the Area of Applicability, 
+        while a value of 1 indicates the point is outside the Area of Applicability.
     """
     if feature_weight_kwargs is None:
         feature_weight_kwargs = dict()
