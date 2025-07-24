@@ -141,69 +141,34 @@ def area_of_applicability(
         cutpoint = numpy.percentile(di_train, threshold)
     cutpoint = numpy.maximum(cutpoint, di_train.max())
 
-    X_test_weighted = X_test * feature_weights[None, :]
-    X_train_weighted = X_train * feature_weights[None, :]
+    if return_all:
+        test_to_train_d = metrics.pairwise_distances(
+            X_test * feature_weights[None, :],
+            X_train * feature_weights[None, :],
+            metric=metric,
+        )
+        test_to_train_d_min = test_to_train_d.min(axis=1)
+        test_to_train_i = test_to_train_d.argmin(axis=1)
 
-    # Efficient chunked dissimilarity index computation
-    def compute_dissimilarity_index_in_chunks(X_test_w, X_train_w, d_mean, cutpoint, return_all, metric="euclidean", chunk_size=10000):
-        n_test = X_test_w.shape[0]
-        di_test = numpy.empty(n_test)
-        test_to_train_i = numpy.empty(n_test, dtype=int)
-        lpd_test = numpy.full(n_test, numpy.nan) if not return_all else numpy.empty(n_test)
+        di_test = test_to_train_d_min / d_mean
+        lpd_test = ((test_to_train_d / test_to_train_d.mean()) < cutpoint).sum(axis=1)
 
-        for start in range(0, n_test, chunk_size):
-            end = min(start + chunk_size, n_test)
-            X_chunk = X_test_w[start:end]
-            dist_chunk = metrics.pairwise_distances(X_chunk, X_train_w, metric=metric)
-            di_chunk = dist_chunk.min(axis=1) / d_mean
-            idx_chunk = dist_chunk.argmin(axis=1)
-
-            di_test[start:end] = di_chunk
-            test_to_train_i[start:end] = idx_chunk
-
-            if return_all:
-                lpd_test[start:end] = (dist_chunk / dist_chunk.mean() < cutpoint).sum(axis=1)
-
-        return di_test, test_to_train_i, lpd_test
-
-    di_test, test_to_train_i, lpd_test = compute_dissimilarity_index_in_chunks(
-        X_test_weighted,
-        X_train_weighted,
-        d_mean,
-        cutpoint,
-        return_all,
-        metric=metric,
-        chunk_size=chunk_size,
-    )
-
-    # if return_all:
-    #     test_to_train_d = metrics.pairwise_distances(
-    #         X_test * feature_weights[None, :],
-    #         X_train * feature_weights[None, :],
-    #         metric=metric,
-    #     )
-    #     test_to_train_d_min = test_to_train_d.min(axis=1)
-    #     test_to_train_i = test_to_train_d.argmin(axis=1)
-
-    #     di_test = test_to_train_d_min / d_mean
-    #     lpd_test = ((test_to_train_d / test_to_train_d.mean()) < cutpoint).sum(axis=1)
-
-    # else:
-    #     # if we don't need local point density, this can be used
-    #     test_to_train_i, test_to_train_d_min = metrics.pairwise_distances_argmin_min(
-    #         X_test * feature_weights[None, :],
-    #         X_train * feature_weights[None, :],
-    #         metric=metric,
-    #     )
-    #     di_test = test_to_train_d_min / d_mean
-    #     lpd_test = numpy.empty_like(di_test) * numpy.nan
+    else:
+        # if we don't need local point density, this can be used
+        test_to_train_i, test_to_train_d_min = metrics.pairwise_distances_argmin_min(
+            X_test * feature_weights[None, :],
+            X_train * feature_weights[None, :],
+            metric=metric,
+        )
+        di_test = test_to_train_d_min / d_mean
+        lpd_test = numpy.empty_like(di_test) * numpy.nan
 
     aoa = di_test >= cutpoint
 
     if return_all:
         return aoa, di_test, lpd_test, cutpoint
     else:
-        return aoa
+        return aoa, di_test
 
 if __name__ == "__main__":
     import pandas as pd
