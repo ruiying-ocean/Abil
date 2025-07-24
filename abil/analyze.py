@@ -15,6 +15,7 @@ def area_of_applicability(
     feature_weight_kwargs=None,
     threshold="tukey",
     return_all=False,
+    chunk_size=10000
 ):
     """
     Estimate the area of applicability for the data using a strategy similar to Meyer & Pebesma 2022).
@@ -110,6 +111,7 @@ def area_of_applicability(
         X_train * feature_weights[None, :], metric=metric
     )
     numpy.fill_diagonal(train_distance, train_distance.max())
+
     if cv is not None:
         d_mins = numpy.empty((X_train.shape[0],))
         mean_acc_num = 0
@@ -124,6 +126,7 @@ def area_of_applicability(
         d_mins = train_distance.min(axis=1)
         numpy.fill_diagonal(train_distance, 0)
         d_mean = d_mean = train_distance[train_distance > 0].mean()
+
     di_train = d_mins / d_mean
 
     if threshold == "tukey":
@@ -161,6 +164,7 @@ def area_of_applicability(
         lpd_test = numpy.empty_like(di_test) * numpy.nan
 
     aoa = di_test >= cutpoint
+    
     if return_all:
         return aoa, di_test, lpd_test, cutpoint, test_to_train_d
     else:

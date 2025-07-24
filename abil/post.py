@@ -894,8 +894,8 @@ class post:
         aoa_dataset['depth'].attrs['positive'] = 'down'
 
         # export aoa to netcdf:
-        aoa_dataset.to_netcdf(os.path.join(self.path_out, "aoa.nc"))
-
+        aoa_dataset.to_netcdf(os.path.join(self.path_out, "aoa.nc"), encoding=encoding)
+   
     def merge_env(self):
         """
         Merge model output with environmental data.
