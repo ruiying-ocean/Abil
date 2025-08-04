@@ -211,7 +211,7 @@ def area_of_applicability(
     if return_all:
         return aoa_, di_test_, lpd_test_, cutpoint, test_to_train_d_
     else:
-        return aoa_, di_test_
+        return aoa_, di_test_, cutpoint
 
 if __name__ == "__main__":
     import pandas as pd
