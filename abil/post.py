@@ -7,10 +7,14 @@ import gc
 import logging
 from yaml import dump, Dumper
 from skbio.diversity.alpha import shannon
-
-
 from .analyze import area_of_applicability
+import sys
 
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    format="%(message)s",
+)
 logger = logging.getLogger("abil")
 
 class AbilPostProcessor:
@@ -309,7 +313,21 @@ class AbilPostProcessor:
         The parameters for each target are aggregated into a DataFrame and saved as a CSV file in the 
         "posts/parameters" directory.
         """
-        
+        def get_inner_estimator(reg):
+            """
+            Returns the actual estimator inside a pipeline or the bare estimator.
+            """
+            if hasattr(reg, "named_steps"):          # Pipeline case
+                return reg.named_steps["estimator"]
+            return reg                                 # Bare estimator case
+
+        def get_transformation(reg):
+            """
+            Returns the transformation_ attribute if it exists, else None.
+            """
+            est = get_inner_estimator(reg)
+            return getattr(est, "transformation_", None)
+
         all_parameters = []
 
         for i in range(len(self.unique_targets)):
@@ -325,118 +343,180 @@ class AbilPostProcessor:
             if self.model_type == "reg":
 
                 if model == "rf":
-                    max_depth = m.regressor_.named_steps.estimator.max_depth
-                    max_features = m.regressor_.named_steps.estimator.max_features
-                    max_samples = m.regressor_.named_steps.estimator.max_samples
-                    min_samples_leaf = m.regressor_.named_steps.estimator.min_samples_leaf
-                    n_estimators = m.regressor_.named_steps.estimator.n_estimators
-                    parameters = pd.DataFrame({'target':[target], 'n_estimators':[n_estimators], 'max_features':[max_features], 'max_depth':[max_depth], 
-                                            'min_samples_leaf':[min_samples_leaf], 'max_samples':[max_samples]
-                                            })
+                    est = get_inner_estimator(m.regressor_)
+                    transformation = get_transformation(m.regressor_)
+
+                    max_depth = est.max_depth
+                    max_features = est.max_features
+                    max_samples = est.max_samples
+                    min_samples_leaf = est.min_samples_leaf
+                    n_estimators = est.n_estimators
+
+                    parameters = pd.DataFrame({
+                        'target': [target],
+                        'n_estimators': [n_estimators],
+                        'max_features': [max_features],
+                        'max_depth': [max_depth],
+                        'min_samples_leaf': [min_samples_leaf],
+                        'max_samples': [max_samples],
+                        'transformation': [transformation]
+                    })
                     all_parameters.append(parameters)
                 elif model == "xgb":
-                    learning_rate = m.regressor_.named_steps.estimator.learning_rate
-                    n_estimators = m.regressor_.named_steps.estimator.n_estimators
-                    max_depth = m.regressor_.named_steps.estimator.max_depth
-                    subsample = m.regressor_.named_steps.estimator.subsample
-                    colsample_bytree = m.regressor_.named_steps.estimator.colsample_bytree
-                    gamma = m.regressor_.named_steps.estimator.gamma
-                    alpha = m.regressor_.named_steps.estimator.reg_alpha
-                    parameters = pd.DataFrame({'target':[target], 'learning_rate':[learning_rate], 'n_estimators':[n_estimators], 
-                                            'max_depth':[max_depth], 'subsample':[subsample], 'colsample_bytree':[colsample_bytree],
-                                            'learning_rate':[learning_rate], 'gamma':[gamma], 'alpha':[alpha]                                           
-                                            })
+                    est = get_inner_estimator(m.regressor_)
+                    transformation = get_transformation(m.regressor_)
+
+                    learning_rate = est.learning_rate
+                    n_estimators = est.n_estimators
+                    max_depth = est.max_depth
+                    subsample = est.subsample
+                    colsample_bytree = est.colsample_bytree
+                    gamma = est.gamma
+                    alpha = est.reg_alpha
+
+                    parameters = pd.DataFrame({
+                        'target': [target],
+                        'learning_rate': [learning_rate],
+                        'n_estimators': [n_estimators],
+                        'max_depth': [max_depth],
+                        'subsample': [subsample],
+                        'colsample_bytree': [colsample_bytree],
+                        'gamma': [gamma],
+                        'alpha': [alpha],
+                        'transformation': [transformation]
+                    })
                     all_parameters.append(parameters)
                 elif model == "knn":
-                    max_samples = m.regressor_.named_steps.estimator.max_samples
-                    max_features = m.regressor_.named_steps.estimator.max_features
-                    leaf_size = m.regressor_.named_steps.estimator.estimator.leaf_size
-                    n_neighbors = m.regressor_.named_steps.estimator.estimator.n_neighbors
-                    p = m.regressor_.named_steps.estimator.estimator.p
-                    weights = m.regressor_.named_steps.estimator.estimator.weights
-                    parameters = pd.DataFrame({'target':[target], 'max_samples':[max_samples], 'max_features':[max_features],
-                                            'leaf_size':[leaf_size], 'n_neighbors':[n_neighbors], 'p':[p], 'weights':[weights]
-                                            })
-                    all_parameters.append(parameters) 
+                    est = get_inner_estimator(m.regressor_)
+                    transformation = get_transformation(m.regressor_)
+
+                    max_samples = est.max_samples
+                    max_features = est.max_features
+                    leaf_size = est.estimator.leaf_size  # if wrapped in some extra estimator
+                    n_neighbors = est.estimator.n_neighbors
+                    p = est.estimator.p
+                    weights = est.estimator.weights
+
+                    parameters = pd.DataFrame({
+                        'target': [target],
+                        'max_samples': [max_samples],
+                        'max_features': [max_features],
+                        'leaf_size': [leaf_size],
+                        'n_neighbors': [n_neighbors],
+                        'p': [p],
+                        'weights': [weights],
+                        'transformation': [transformation]
+                    })
+                    all_parameters.append(parameters)
 
             elif self.model_type == "clf":
                 raise ValueError("classifiers are not supported")
 
             elif self.model_type == "zir":
+                # Extract inner estimators
+                reg_est = get_inner_estimator(m.regressor_.regressor)
+                transformation = get_transformation(m.regressor_.regressor)
+
+                clf_est = get_inner_estimator(m.classifier)
+
                 if model == "rf":
-                    max_depth_reg = m.regressor_.regressor.named_steps.estimator.max_depth
-                    max_features_reg = m.regressor_.regressor.named_steps.estimator.max_features
-                    max_samples_reg = m.regressor_.regressor.named_steps.estimator.max_samples
-                    min_samples_leaf_reg = m.regressor_.regressor.named_steps.estimator.min_samples_leaf
-                    n_estimators_reg = m.regressor_.regressor.named_steps.estimator.n_estimators
+                    max_depth_reg = reg_est.max_depth
+                    max_features_reg = reg_est.max_features
+                    max_samples_reg = reg_est.max_samples
+                    min_samples_leaf_reg = reg_est.min_samples_leaf
+                    n_estimators_reg = reg_est.n_estimators
 
-                    n_estimators_clf = m.classifier.named_steps.estimator.n_estimators
-                    max_features_clf = m.classifier.named_steps.estimator.max_features
-                    max_depth_clf = m.classifier.named_steps.estimator.max_depth
-                    min_samples_leaf_clf = m.classifier.named_steps.estimator.min_samples_leaf
-                    max_samples_clf = m.classifier.named_steps.estimator.max_samples
+                    n_estimators_clf = clf_est.n_estimators
+                    max_features_clf = clf_est.max_features
+                    max_depth_clf = clf_est.max_depth
+                    min_samples_leaf_clf = clf_est.min_samples_leaf
+                    max_samples_clf = clf_est.max_samples
 
-                    parameters = pd.DataFrame({'target':[target], 'reg_n_estimators':[n_estimators_reg], 
-                                            'reg_max_features':[max_features_reg], 'reg_max_depth':[max_depth_reg], 
-                                            'reg_min_samples_leaf':[min_samples_leaf_reg], 'reg_max_samples':[max_samples_reg],
-                                            'clf_n_estimators':[n_estimators_clf], 
-                                            'clf_max_features':[max_features_clf], 'clf_max_depth':[max_depth_clf], 
-                                            'clf_min_samples_leaf':[min_samples_leaf_clf], 'clf_max_samples':[max_samples_clf]
-                                            })
+                    parameters = pd.DataFrame({
+                        'target':[target],
+                        'reg_n_estimators':[n_estimators_reg],
+                        'reg_max_features':[max_features_reg],
+                        'reg_max_depth':[max_depth_reg],
+                        'reg_min_samples_leaf':[min_samples_leaf_reg],
+                        'reg_max_samples':[max_samples_reg],
+                        'reg_transformation':[transformation],
+                        'clf_n_estimators':[n_estimators_clf],
+                        'clf_max_features':[max_features_clf],
+                        'clf_max_depth':[max_depth_clf],
+                        'clf_min_samples_leaf':[min_samples_leaf_clf],
+                        'clf_max_samples':[max_samples_clf]
+                    })
                     all_parameters.append(parameters)
 
                 elif model == "xgb":
-                    learning_rate_reg = m.regressor_.regressor.named_steps.estimator.learning_rate
-                    n_estimators_reg = m.regressor_.regressor.named_steps.estimator.n_estimators
-                    max_depth_reg = m.regressor_.regressor.named_steps.estimator.max_depth
-                    subsample_reg = m.regressor_.regressor.named_steps.estimator.subsample
-                    colsample_bytree_reg = m.regressor_.regressor.named_steps.estimator.colsample_bytree
-                    gamma_reg = m.regressor_.regressor.named_steps.estimator.gamma
-                    alpha_reg = m.regressor_.regressor.named_steps.estimator.reg_alpha
+                    learning_rate_reg = reg_est.learning_rate
+                    n_estimators_reg = reg_est.n_estimators
+                    max_depth_reg = reg_est.max_depth
+                    subsample_reg = reg_est.subsample
+                    colsample_bytree_reg = reg_est.colsample_bytree
+                    gamma_reg = reg_est.gamma
+                    alpha_reg = reg_est.reg_alpha
 
-                    learning_rate_clf = m.classifier.named_steps.estimator.learning_rate
-                    n_estimators_clf = m.classifier.named_steps.estimator.n_estimators
-                    max_depth_clf = m.classifier.named_steps.estimator.max_depth
-                    subsample_clf = m.classifier.named_steps.estimator.subsample
-                    colsample_bytree_clf = m.classifier.named_steps.estimator.colsample_bytree
-                    gamma_clf = m.classifier.named_steps.estimator.gamma
-                    alpha_clf = m.classifier.named_steps.estimator.reg_alpha
+                    learning_rate_clf = clf_est.learning_rate
+                    n_estimators_clf = clf_est.n_estimators
+                    max_depth_clf = clf_est.max_depth
+                    subsample_clf = clf_est.subsample
+                    colsample_bytree_clf = clf_est.colsample_bytree
+                    gamma_clf = clf_est.gamma
+                    alpha_clf = clf_est.reg_alpha
 
-
-                    parameters = pd.DataFrame({'target':[target], 'reg_learning_rate':[learning_rate_reg], 'reg_n_estimators':[n_estimators_reg], 
-                                            'reg_max_depth':[max_depth_reg], 'reg_subsample':[subsample_reg], 'reg_colsample_bytree':[colsample_bytree_reg],
-                                            'reg_learning_rate':[learning_rate_reg], 'reg_gamma':[gamma_reg], 'reg_alpha':[alpha_reg],
-                                            'clf_learning_rate':[learning_rate_clf], 'clf_n_estimators':[n_estimators_clf], 
-                                            'clf_max_depth':[max_depth_clf], 'clf_subsample':[subsample_clf], 'clf_colsample_bytree':[colsample_bytree_clf],
-                                            'clf_learning_rate':[learning_rate_clf], 'clf_gamma':[gamma_clf], 'clf_alpha':[alpha_clf]                                           
-                                            })
+                    parameters = pd.DataFrame({
+                        'target':[target],
+                        'reg_learning_rate':[learning_rate_reg],
+                        'reg_n_estimators':[n_estimators_reg],
+                        'reg_max_depth':[max_depth_reg],
+                        'reg_subsample':[subsample_reg],
+                        'reg_colsample_bytree':[colsample_bytree_reg],
+                        'reg_gamma':[gamma_reg],
+                        'reg_alpha':[alpha_reg],
+                        'reg_transformation':[transformation],
+                        'clf_learning_rate':[learning_rate_clf],
+                        'clf_n_estimators':[n_estimators_clf],
+                        'clf_max_depth':[max_depth_clf],
+                        'clf_subsample':[subsample_clf],
+                        'clf_colsample_bytree':[colsample_bytree_clf],
+                        'clf_gamma':[gamma_clf],
+                        'clf_alpha':[alpha_clf]
+                    })
                     all_parameters.append(parameters)
 
                 elif model == "knn":
-                    max_samples_reg = m.regressor_.regressor.named_steps.estimator.max_samples
-                    max_features_reg = m.regressor_.regressor.named_steps.estimator.max_features
-                    leaf_size_reg = m.regressor_.regressor.named_steps.estimator.estimator.leaf_size
-                    n_neighbors_reg = m.regressor_.regressor.named_steps.estimator.estimator.n_neighbors
-                    p_reg = m.regressor_.regressor.named_steps.estimator.estimator.p
-                    weights_reg = m.regressor_.regressor.named_steps.estimator.estimator.weights
+                    max_samples_reg = reg_est.max_samples
+                    max_features_reg = reg_est.max_features
+                    leaf_size_reg = reg_est.estimator.leaf_size
+                    n_neighbors_reg = reg_est.estimator.n_neighbors
+                    p_reg = reg_est.estimator.p
+                    weights_reg = reg_est.estimator.weights
 
-                    max_samples_clf = m.classifier.named_steps.estimator.max_samples
-                    max_features_clf = m.classifier.named_steps.estimator.max_features
-                    leaf_size_clf = m.classifier.named_steps.estimator.estimator.leaf_size
-                    n_neighbors_clf = m.classifier.named_steps.estimator.estimator.n_neighbors
-                    p_clf = m.classifier.named_steps.estimator.estimator.p
-                    weights_clf = m.classifier.named_steps.estimator.estimator.weights
+                    max_samples_clf = clf_est.max_samples
+                    max_features_clf = clf_est.max_features
+                    leaf_size_clf = clf_est.estimator.leaf_size
+                    n_neighbors_clf = clf_est.estimator.n_neighbors
+                    p_clf = clf_est.estimator.p
+                    weights_clf = clf_est.estimator.weights
 
-
-
-                    parameters = pd.DataFrame({'target':[target], 'reg_max_samples':[max_samples_reg], 'reg_max_features':[max_features_reg],
-                                            'reg_leaf_size':[leaf_size_reg], 'reg_n_neighbors':[n_neighbors_reg], 
-                                            'reg_p':[p_reg], 'reg_weights':[weights_reg],
-                                            'clf_max_samples':[max_samples_clf], 'clf_max_features':[max_features_clf],
-                                            'clf_leaf_size':[leaf_size_clf], 'clf_n_neighbors':[n_neighbors_clf], 
-                                            'clf_p':[p_clf], 'clf_weights':[weights_clf]
-                                            })
-                    all_parameters.append(parameters) 
+                    parameters = pd.DataFrame({
+                        'target':[target],
+                        'reg_max_samples':[max_samples_reg],
+                        'reg_max_features':[max_features_reg],
+                        'reg_leaf_size':[leaf_size_reg],
+                        'reg_n_neighbors':[n_neighbors_reg],
+                        'reg_p':[p_reg],
+                        'reg_weights':[weights_reg],
+                        'reg_transformation':[transformation],
+                        'clf_max_samples':[max_samples_clf],
+                        'clf_max_features':[max_features_clf],
+                        'clf_leaf_size':[leaf_size_clf],
+                        'clf_n_neighbors':[n_neighbors_clf],
+                        'clf_p':[p_clf],
+                        'clf_weights':[weights_clf]
+                    })
+                    all_parameters.append(parameters)
 
         all_parameters= pd.concat(all_parameters)
         #make new dir if needed
@@ -531,29 +611,43 @@ class AbilPostProcessor:
         self.d['total_log'] = np.log(self.d['total'])
         logger.info("finished calculating total")
 
-    def process_resampled_runs(self):
+    def process_resampled_runs(self, targets=None):
         """
-        Take mean of target rows.
-        Take the standard deviation of the target rows.
-        Calculate the 2.5th and 97.5th percentiles of target rows.
+        Compute statistics for each target and its sample columns.
+        Always includes the base target column itself.
 
-        Notes
-        -----
-        Useful when running resampled targets of the same initial target.
-        Mean is estimated based on the target list defined in model_config.
-
+        Output columns are named:
+            {target}_mean
+            {target}_stdev
+            {target}_prctile_2.5
+            {target}_prctile_97.5
         """
 
-        self.d['mean'] = self.d[self.targets].mean(axis='columns')
-        logger.info('finished calculating mean')
-    
-        self.d['stdev'] = self.d[self.targets].std(axis='columns')
-        logger.info('finished calculating standard deviation')
+        if targets is None:
+            targets = self.targets
 
-        self.d['prctile_2.5'] = self.d[self.targets].quantile(0.025, axis='columns')
-        self.d['prctile_97.5'] = self.d[self.targets].quantile(0.975, axis='columns')
+        for target in targets:
 
-        logger.info('finished calculating 2.5th and 97.5th percentiles')
+            # Always include the base target column (if it exists)
+            cols = []
+            if target in self.d.columns:
+                cols.append(target)
+
+            # Add all sample columns that begin with "target_sample_"
+            sample_cols = [c for c in self.d.columns if c.startswith(f"{target}_sample_")]
+            cols.extend(sample_cols)
+
+            if len(cols) == 0:
+                logger.warning(f"No base or sample columns found for target '{target}'. Skipping.")
+                continue
+
+            # CALCULATE
+            self.d[f"{target}_mean"] = self.d[cols].mean(axis='columns')
+            self.d[f"{target}_stdev"] = self.d[cols].std(axis='columns')
+            self.d[f"{target}_prctile_2.5"] = self.d[cols].quantile(0.025, axis='columns')
+            self.d[f"{target}_prctile_97.5"] = self.d[cols].quantile(0.975, axis='columns')
+
+            logger.info(f"Finished processing resampled stats for target '{target}'")
 
     def integration(self, *args, **kwargs):
         return self.integration_class(self, *args, **kwargs)
@@ -790,17 +884,34 @@ class AbilPostProcessor:
             """
             ds = self.parent.d.to_xarray()
             if targets is None:
-                targets = self.targets
-            if "total" in ds:
-                targets = np.append(targets, 'total')
-            if "mean" in ds:
-                targets = np.append(targets, 'mean')
-            if "stdev" in ds:
-                targets = np.append(targets, 'stdev')
-            if "prctile_2.5" in ds:
-                targets = np.append(targets, 'prctile_2.5')
-            if "prctile_97.5" in ds:
-                targets = np.append(targets, 'prctile_97.5')
+                targets = list(self.targets)
+            else:
+                targets = list(targets)
+
+            # For datasets containing resampled data that has been processed
+            derived_suffixes = [
+                "mean",
+                "stdev",
+                "prctile_2.5",
+                "prctile_97.5",
+            ]
+
+            expanded_targets = []
+
+            for t in targets:
+                expanded_targets.append(t)
+                for suffix in derived_suffixes:
+                    derived_name = f"{t}_{suffix}"
+                    if derived_name in ds:
+                        expanded_targets.append(derived_name)
+
+            # Optional: include extra standalone fields
+            for extra in ["total"]:
+                if extra in ds:
+                    expanded_targets.append(extra)
+
+            # Final targets for this step
+            targets = expanded_targets
             totals = []
 
             for target in targets:

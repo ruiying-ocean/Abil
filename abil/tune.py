@@ -4,6 +4,13 @@ import pickle
 import pandas as pd
 import numpy as np
 import logging
+import sys
+
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    format="%(message)s",
+)
 logger = logging.getLogger("abil")
 
 from joblib import parallel_backend
@@ -87,6 +94,7 @@ class ModelTuner:
             The model used for training.
         
         """
+        print('beginning init')
         self.y = y.sample(frac=1, random_state=model_config['seed']) #shuffle
         logger.info(f"length of y: {len(self.y)}")
         self.y = self.y.values.ravel()
@@ -246,7 +254,16 @@ class ModelTuner:
                 reg = LogGridSearch(reg_pipe, verbose = self.verbose, cv=cv, 
                                     param_grid=reg_param_grid, scoring='r2', regions=self.regions)
                 reg_grid_search = reg.transformed_fit(X_train, y, log, self.model_config['predictors'].copy())
-
+            
+            if log == 'both':
+                best = reg_grid_search.best_estimator_
+                # If it's a pipeline → extract "estimator"
+                if hasattr(best, "named_steps"):
+                    ttr = best.named_steps["estimator"]
+                else:
+                    # Bare Transformed Target Regressor
+                    ttr = best
+                logger.info(f"best fit: {ttr.transformation_}")
             m2 = reg_grid_search.best_estimator_
 
 
